@@ -4,7 +4,8 @@
 #include <vector>
 #include <string>
 #include <unordered_map>
-#include "simulator_codes.hpp"
+
+#include "simulator_types.hpp"
 #include "syntax_parser.hpp"
 
 class Resistor
@@ -107,7 +108,40 @@ class Resistor
             return RETURN_SUCCESS;
         }
 
+        /*!
+            @brief      Inserts the MNA stamp of the resistor in triplet form
+            (i, j, val) inside the mat array. For DC analysis resistors have 1 or 4 stamps.
+            @param      mat    The triplet matrix to insert the stamp.
+        */
+        void MNAStampDC(tripletList &mat)
+        {
+        	MNAStampBase(mat);
+        }
+
     private:
+
+        /*!
+            @brief      Inserts the MNA stamp of the resistor in triplet form
+            (i, j, val) inside the mat array. Since resistors behave the same way
+            for every analysis, in reality this is the only stamp function for it.
+            @param      mat    The triplet matrix to insert the stamp.
+        */
+        void MNAStampBase(tripletList &mat)
+        {
+        	long int pos = std::get<1>(this->_nodes[0]);
+        	long int neg = std::get<1>(this->_nodes[1]);
+        	double conduct = 1/this->_resistance;
+
+        	if(pos != -1) mat.push_back(triplet_eig(pos, pos, conduct));
+        	if(neg != -1) mat.push_back(triplet_eig(neg, neg, conduct));
+
+        	if((pos != -1) && (neg != -1))
+        	{
+    			mat.push_back(triplet_eig(pos, neg, conduct));
+    			mat.push_back(triplet_eig(neg, pos, conduct));
+        	}
+        }
+
         std::string _name;                                      	/* Name in the form of Rxxx */
         double _resistance;                                     	/* Value in Ohms */
         std::array<std::tuple<std::string, long int>, 2> _nodes;  	/* The combination of the node names */

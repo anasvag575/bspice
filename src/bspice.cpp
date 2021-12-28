@@ -1,9 +1,11 @@
+#include <simulator/mna.hpp>
+#include <simulator_types.hpp>
 #include <iostream>
 #include <fstream>
-#include "simulator_codes.hpp"
 #include "bspice.hpp"
 #include "circuit.hpp"
 #include "plot.hpp"
+#include "sim_engine.hpp"
 
 int main(int argc, char **argv)
 {
@@ -41,8 +43,12 @@ int main(int argc, char **argv)
     /* Close the netlist file */
     input_file.close();
 
+    simulator_engine sim_manager;
+
+    sim_manager.reset();
+
     /* TODO - simulator */
-    /* Step 3 -Proceed to the simulator package / MNA and simulation engine */
+    /* Step 3 - Proceed to the simulator engine */
 
     /* TODO - Leave Plot as is for now */
     /* Step 4 - Output the results either by plotting or printing to a file */

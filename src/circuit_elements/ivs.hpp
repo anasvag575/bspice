@@ -4,7 +4,8 @@
 #include <vector>
 #include <string>
 #include <unordered_map>
-#include "simulator_codes.hpp"
+
+#include "simulator_types.hpp"
 #include "syntax_parser.hpp"
 
 class ivs
@@ -112,6 +113,34 @@ class ivs
             }
 
             return RETURN_SUCCESS;
+        }
+
+        /*!
+            @brief      Inserts the MNA stamp of the IVS in triplet form
+            (i, j, val) inside the mat array. IVS need to be inserted
+            in the sub-arrays for sources, hence the offset.
+            For DC analysis coils have 3 or 5 stamps.
+            @param      mat    The triplet matrix to insert the stamp.
+            @param		offset The offset of the stamp inside the array
+        */
+        void MNAStampDC(tripletList &mat, DensVecD &rh, long int offset)
+        {
+        	long int pos = std::get<1>(this->_nodes[0]);
+        	long int neg = std::get<1>(this->_nodes[1]);
+
+			if(pos != -1)
+			{
+				mat.push_back(triplet_eig(offset, pos, 1));
+				mat.push_back(triplet_eig(pos, offset, 1));
+			}
+
+			if(neg != -1)
+			{
+				mat.push_back(triplet_eig(offset, neg, -1));
+				mat.push_back(triplet_eig(neg, offset, -1));
+			}
+
+			rh[offset] += this->_voltage_value;
         }
 
     private:

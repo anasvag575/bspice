@@ -1,6 +1,25 @@
 #ifndef __SIMULATOR_CODES_H
 #define __SIMULATOR_CODES_H
 
+/* For the types used for the simulation */
+#include <Eigen>
+#include <vector>
+
+/* Triplet - Intermediate to sparse */
+typedef Eigen::Triplet<double, long int> triplet_eig;
+typedef std::vector<triplet_eig> tripletList;
+
+/* Sparse Matrices */
+typedef Eigen::SparseMatrix<double, Eigen::ColMajor, long int> SparMatD;
+typedef Eigen::SparseMatrix<std::complex<double>, Eigen::ColMajor, long int> SparMatCompD;
+
+/* Dense Matrices */
+typedef Eigen::MatrixXd DenseMatD;
+typedef Eigen::MatrixXcd DenseMatCompD;
+
+/* Vectors */
+typedef Eigen::VectorXd DensVecD;
+
 /* A global table containing all the error codes used in the program
  * They are divided by their sub-classes in the comments below */
 typedef enum return_enum_codes

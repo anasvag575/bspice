@@ -39,7 +39,7 @@ return_codes_e Circuit::CreateCircuit(std::fstream &input_file)
             case 'R':
             {
                 Resistor tmp_res;
-                errcode = tmp_res.ParseResistor(tokens, syntax_match, this->_nodes, this->_base_element_names, this->_res.size());
+                errcode = tmp_res.ParseResistor(tokens, syntax_match, this->_nodes, this->_element_names, this->_res.size());
                 this->_res.push_back(tmp_res);
 
                 break;
@@ -47,7 +47,7 @@ return_codes_e Circuit::CreateCircuit(std::fstream &input_file)
             case 'C':
             {
                 Capacitor tmp_cap;
-                errcode = tmp_cap.ParseCapacitor(tokens, syntax_match, this->_nodes, this->_base_element_names, this->_caps.size());
+                errcode = tmp_cap.ParseCapacitor(tokens, syntax_match, this->_nodes, this->_element_names, this->_caps.size());
                 this->_caps.push_back(tmp_cap);
 
                 break;
@@ -55,7 +55,7 @@ return_codes_e Circuit::CreateCircuit(std::fstream &input_file)
             case 'L':
             {
                 Coil tmp_coil;
-                errcode = tmp_coil.ParseCoil(tokens, syntax_match, this->_nodes, this->_base_element_names, this->_coils.size());
+                errcode = tmp_coil.ParseCoil(tokens, syntax_match, this->_nodes, this->_element_names, this->_coils.size());
                 this->_coils.push_back(tmp_coil);
 
                 break;
@@ -63,7 +63,7 @@ return_codes_e Circuit::CreateCircuit(std::fstream &input_file)
             case 'I':
             {
                 ics tmp_ics;
-                errcode = tmp_ics.ParseIcs(tokens, syntax_match, this->_nodes, this->_base_element_names, this->_ics.size());
+                errcode = tmp_ics.ParseIcs(tokens, syntax_match, this->_nodes, this->_element_names, this->_ics.size());
                 this->_ics.push_back(tmp_ics);
 
                 break;
@@ -71,7 +71,7 @@ return_codes_e Circuit::CreateCircuit(std::fstream &input_file)
             case 'V':
             {
                 ivs tmp_ivs;
-                errcode = tmp_ivs.ParseIvs(tokens, syntax_match, this->_nodes, this->_base_element_names, this->_ivs.size());
+                errcode = tmp_ivs.ParseIvs(tokens, syntax_match, this->_nodes, this->_element_names, this->_ivs.size());
                 this->_ivs.push_back(tmp_ivs);
 
                 break;
@@ -134,6 +134,8 @@ return_codes_e Circuit::CreateCircuit(std::fstream &input_file)
 		cout << "Total nodes to plot: " << this->_plot_nodes.size() << endl;
 		cout << "Total sources to plot: " << this->_plot_sources.size() << endl;
 		cout << "************************************" << endl;
+
+		this->_valid = true;
     }
 
     return errcode;
@@ -142,8 +144,6 @@ return_codes_e Circuit::CreateCircuit(std::fstream &input_file)
 /*!
     @brief    Internal routine, that parses and forms a SPICE card given the syntax matcher
     and the tokens of the element.
-  	  - Plot nodes for a plot card already exists in the circuit
-  	  - DC analysis source already exists in the circuit (if any DC analysis is active)
   	@param 	tokens	The tokens that contain the SPICE card.
   	@match	match	Syntax parser instantiation.
     @return   The error code, in case of error, otherwise RETURN_SUCCESS.
@@ -244,13 +244,13 @@ return_codes_e Circuit::verify(void)
 	using namespace std;
 
 	return_codes_e errcode;
-    auto namemap_end = this->_base_element_names.end();
+    auto namemap_end = this->_element_names.end();
     auto nodemap_end = this->_nodes.end();
 
     /* After parsing the file, in case of DC analysis verify that the simulated source exists */
     if(this->_type == DC)
     {
-    	auto name_it = this->_base_element_names.find(this->_source);
+    	auto name_it = this->_element_names.find(this->_source);
 
     	/* Does not exist in map */
     	if(name_it == namemap_end)
@@ -264,7 +264,7 @@ return_codes_e Circuit::verify(void)
     /* Verify that each plot_source is correct and exists in the circuit */
     for(auto it = this->_plot_sources.begin(); it != this->_plot_sources.end(); it++)
     {
-    	auto node_it = this->_base_element_names.find(*it);
+    	auto node_it = this->_element_names.find(*it);
 
 		/* Does not exist in map */
 		if(node_it == namemap_end)

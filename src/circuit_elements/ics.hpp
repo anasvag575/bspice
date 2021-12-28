@@ -4,7 +4,8 @@
 #include <vector>
 #include <string>
 #include <unordered_map>
-#include "simulator_codes.hpp"
+
+#include "simulator_types.hpp"
 #include "syntax_parser.hpp"
 
 class ics
@@ -111,6 +112,21 @@ class ics
 
             return RETURN_SUCCESS;
         }
+
+        /*!
+            @brief      Inserts the MNA stamp of the ICS in triplet form
+            (i, j, val) inside the mat array. For DC analysis ICS have 1 or 2 stamps.
+            @param      mat    The triplet matrix to insert the stamp.
+        */
+        void MNAStampDC(DensVecD &rh)
+        {
+        	long int pos = std::get<1>(this->_nodes[0]);
+        	long int neg = std::get<1>(this->_nodes[1]);
+
+			if(pos != -1) rh[pos] -= this->_current_value;
+			if(neg != -1) rh[neg] += this->_current_value;
+        }
+
 
     private:
         std::string _name;                                          /* Name in the form of Cxxx */

@@ -15,3 +15,11 @@ https://eigen.tuxfamily.org/dox/group__TutorialSparse.html
 https://eigen.tuxfamily.org/dox/group__IterativeLinearSolvers__Module.html
 https://eigen.tuxfamily.org/dox/group__TopicSparseSystems.html
 https://eigen.tuxfamily.org/dox-devel/group__KLUSupport__Module.html
+
+## SPICE ##
+http://www.ecircuitcenter.com/SPICEsummary.htm
+
+## GNU READLINE ##
+https://courses.e-ce.uth.gr/ECE431/
+https://web.mit.edu/gnu/doc/html/rlman_2.html
+https://tiswww.case.edu/php/chet/readline/readline.html

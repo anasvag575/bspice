@@ -4,7 +4,8 @@
 #include <vector>
 #include <string>
 #include <unordered_map>
-#include "simulator_codes.hpp"
+
+#include "simulator_types.hpp"
 #include "syntax_parser.hpp"
 
 class Capacitor
@@ -107,6 +108,13 @@ class Capacitor
 
             return RETURN_SUCCESS;
         }
+
+        /*!
+            @brief      Inserts the MNA stamp of the capacitor in triplet form
+            (i, j, val) inside the mat array. For DC analysis capacitors have 0 stamps.
+            @param      mat    The triplet matrix to insert the stamp.
+        */
+        void MNAStampDC(tripletList &mat){;}
 
     private:
         std::string _name;                                      /* Name in the form of Cxxx */

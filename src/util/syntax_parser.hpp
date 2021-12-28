@@ -4,7 +4,8 @@
 #include <string>
 #include <regex>
 #include <vector>
-#include "simulator_codes.hpp"
+
+#include "../simulator_types.hpp"
 
 class syntax_parser
 {
