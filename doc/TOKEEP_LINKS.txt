@@ -1,0 +1,17 @@
+## GNUPLOT ##
+https://github.com/dstahlke/gnuplot-iostream/blob/master/example-misc.cc
+https://code.google.com/archive/p/gnuplot-cpp/
+https://github.com/dstahlke/gnuplot-iostream/wiki/BasicUsage
+
+## GRAPHBLAS ##
+https://www.youtube.com/watch?v=xnez6tloNSQ
+
+## EIGEN - MULTITHREADING ##
+https://eigen.tuxfamily.org/dox/TopicMultiThreading.html
+https://groups.google.com/g/comp.soft-sys.matlab/c/h4b7WoRsbls/m/AzMSl3JX1eQJ?pli=1
+
+## EIGEN - SPARSE ##
+https://eigen.tuxfamily.org/dox/group__TutorialSparse.html
+https://eigen.tuxfamily.org/dox/group__IterativeLinearSolvers__Module.html
+https://eigen.tuxfamily.org/dox/group__TopicSparseSystems.html
+https://eigen.tuxfamily.org/dox-devel/group__KLUSupport__Module.html
