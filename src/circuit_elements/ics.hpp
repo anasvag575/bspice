@@ -127,7 +127,6 @@ class ics
 			if(neg != -1) rh[neg] += this->_current_value;
         }
 
-
     private:
         std::string _name;                                          /* Name in the form of Cxxx */
         double _current_value;                                      /* Value in Amperes */

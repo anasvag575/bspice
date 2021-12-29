@@ -19,6 +19,7 @@ typedef Eigen::MatrixXcd DenseMatCompD;
 
 /* Vectors */
 typedef Eigen::VectorXd DensVecD;
+typedef Eigen::VectorXcd DensVecCompD;
 
 /* A global table containing all the error codes used in the program
  * They are divided by their sub-classes in the comments below */

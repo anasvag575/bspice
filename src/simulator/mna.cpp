@@ -2,14 +2,20 @@
 #include <string>
 #include <cassert>
 
-/* Main MNA creator for OP system */
+/* Main MNA creator for OP system
+ *
+ * For now the rh(s) follows this organization:
+ *
+ * Nodes - IVS - Coils
+ *
+ * TODO - Comment
+ * */
 void MNA::CreateMNASystemOP(Circuit &circuit_manager, SparMatD &mat, DensVecD &rh)
 {
 	/* Define a temporal TripleMatrix for the creation of the final matrix */
 	tripletList triplet_mat;
 
 	/* 1) Load all the elements, nodesmap and namesmap */
-	auto &nodesmap = circuit_manager.getNodes();
 	auto &caps = circuit_manager.getCapacitors();
 	auto &coils = circuit_manager.getCoils();
 	auto &res = circuit_manager.getResistors();
@@ -17,13 +23,11 @@ void MNA::CreateMNASystemOP(Circuit &circuit_manager, SparMatD &mat, DensVecD &r
 	auto &ivs = circuit_manager.getIVS();
 
 	/* Size of the matrix */
-	long int source_dim = coils.size() + ivs.size();
-	long int nodes_dim = nodesmap.size();
-	long int source_idx = nodes_dim;
+	long int circuit_dim = circuit_manager.getCircuitDim();
+	long int source_idx = circuit_manager.getSourceOffset();
 
 	/* Resize for the insertions below */
-//	rh.resize(nodes_dim + source_dim);
-	rh = DensVecD::Zero(nodes_dim + source_dim);
+	rh = DensVecD::Zero(circuit_dim);
 
 	/* 1) Iterate over all the passive elements */
 	for(auto &it : res) it.MNAStampDC(triplet_mat);
@@ -43,7 +47,7 @@ void MNA::CreateMNASystemOP(Circuit &circuit_manager, SparMatD &mat, DensVecD &r
 	}
 
 	/* 2) Compress the matrix into its final form */
-	mat.resize(nodes_dim + source_dim, nodes_dim + source_dim);
+	mat.resize(circuit_dim, circuit_dim);
 	mat.setFromTriplets(triplet_mat.begin(), triplet_mat.end());
 
 //	std::cout << "Eigen Vector:\n"<<std::endl;
@@ -54,14 +58,11 @@ void MNA::CreateMNASystemOP(Circuit &circuit_manager, SparMatD &mat, DensVecD &r
 
 }
 
-/* Main MNA creator for OP system */
+/* TODO - Comment */
 void MNA::CreateMNASystemDC(Circuit &circuit_manager, SparMatD &mat, DenseMatD &rhs)
 {
 	/* Use this to get the initial state of the RH */
 	DensVecD init_rh;
-
-	long int total_size =  circuit_manager.getIVS().size() + circuit_manager.getCoils().size()
-							+ circuit_manager.getNodes().size();
 
 	/* Fill the Matrix and the vector */
 	CreateMNASystemOP(circuit_manager, mat, init_rh);
@@ -75,15 +76,17 @@ void MNA::CreateMNASystemDC(Circuit &circuit_manager, SparMatD &mat, DenseMatD &
 
 	if(src_dut[0] == 'V') /* Voltage sweep needs an offset */
 	{
-		offset_idx += circuit_manager.getIVS().size() + circuit_manager.getCoils().size();
+		offset_idx += circuit_manager.getSourceOffset();
 	}
 
 	auto &sim_vector = circuit_manager.getSimValues();
 	long int sim_size = sim_vector.size();
+	long int circ_dim = circuit_manager.getCircuitDim();
 
 	/* Copy the initial vector to the matrix */
-	rhs.resize(total_size, sim_size);
+	rhs.resize(circ_dim, sim_size);
 
+	/* Copy initial vector and then modify only the simulated source */
 	for(long int k = 0; k < sim_size; k++)
 	{
 		rhs.col(k) = init_rh;

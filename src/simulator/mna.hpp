@@ -1,7 +1,6 @@
 #ifndef __MNA_H
 #define __MNA_H
 
-#include <vector>
 #include "simulator_types.hpp"
 #include "circuit.hpp"
 
@@ -17,8 +16,6 @@ class MNA
 	private:
 //		void EvalTranSources(std::vector<>);
 //		void EvalDCSource();
-
-
 };
 
 #endif // __MNA_H //

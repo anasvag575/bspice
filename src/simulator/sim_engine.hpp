@@ -1,7 +1,6 @@
 #ifndef __SIM_ENGINE_H
 #define __SIM_ENGINE_H
 
-#include <vector>
 #include "simulator_types.hpp"
 #include "circuit.hpp"
 #include "mna.hpp"
@@ -10,18 +9,9 @@ class simulator_engine
 {
 	public:
 
-		simulator_engine()
+		simulator_engine(Circuit &circuit_manager)
 		{
-			_source_dim = 0;
-			_total_dim = 0;
-			_total_sim_steps = 0;
-			_analysis = OP;
-			_scale = DEC_SCALE;
-			_valid = false;
-		}
-
-		void init(Circuit &circuit_manager)
-		{
+			_valid = true;
 			this->_analysis = circuit_manager.getAnalysisType();
 			this->_scale = circuit_manager.getAnalysisScale();
 			this->_source_dim = circuit_manager.getCoils().size() +
@@ -46,11 +36,19 @@ class simulator_engine
 
 		void run(Circuit &circuit_manager);
 	private:
-		void OP_analysis(Circuit &circuit_manager, MNA &mna_engine);
-		void DC_analysis(Circuit &circuit_manager, MNA &mna_engine);
-		void TRAN_analysis(Circuit &circuit_manager, MNA &mna_engine);
-		void AC_analysis(Circuit &circuit_manager, MNA &mna_engine);
+		void OP_analysis(Circuit &circuit_manager);
+		void DC_analysis(Circuit &circuit_manager);
+		void TRAN_analysis(Circuit &circuit_manager);
+		void AC_analysis(Circuit &circuit_manager);
 
+		void solve(SparMatD &mat, DensVecD &rh, DensVecD &res);
+		void solve(SparMatD &mat, DenseMatD &rh, DenseMatD &res);
+		void solve(SparMatCompD &mat, DensVecCompD &rh, DensVecCompD &res);
+
+		/* Simulator sub-engines */
+		MNA _mna_engine;
+
+		/* Base parameters of the circuit */
 		size_t _source_dim;
 		size_t _total_dim;
 		size_t _total_sim_steps;

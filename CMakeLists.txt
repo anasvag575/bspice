@@ -13,7 +13,9 @@ set(CMAKE_CXX_COMPILER "g++")
 
 # Compilation parameters and flags
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c++17 -g -march=native -O4 -flto -Wall")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -g -march=native -O4 -flto -Wall")
+#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -g -march=native -O4 -flto -Wall")
+
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -g -march=native -O4 -Wall")
 
 # Include directories
 include_directories(${PROJECT_SOURCE_DIR}/src)

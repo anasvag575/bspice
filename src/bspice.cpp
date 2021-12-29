@@ -43,16 +43,14 @@ int main(int argc, char **argv)
     /* Close the netlist file */
     input_file.close();
 
-    simulator_engine sim_manager;
-
-    sim_manager.reset();
-
     /* TODO - simulator */
     /* Step 3 - Proceed to the simulator engine */
+    simulator_engine sim_manager(circuit_manager);
+    sim_manager.run(circuit_manager);
 
     /* TODO - Leave Plot as is for now */
     /* Step 4 - Output the results either by plotting or printing to a file */
-    plot_rand();
+//    plot_rand();
 
     return 1;
 }

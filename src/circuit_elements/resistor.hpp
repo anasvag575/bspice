@@ -137,8 +137,8 @@ class Resistor
 
         	if((pos != -1) && (neg != -1))
         	{
-    			mat.push_back(triplet_eig(pos, neg, conduct));
-    			mat.push_back(triplet_eig(neg, pos, conduct));
+    			mat.push_back(triplet_eig(pos, neg, -conduct));
+    			mat.push_back(triplet_eig(neg, pos, -conduct));
         	}
         }
 

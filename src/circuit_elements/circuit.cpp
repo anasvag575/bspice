@@ -13,6 +13,7 @@
 return_codes_e Circuit::CreateCircuit(std::fstream &input_file)
 {
     using namespace std;
+    using namespace chrono;
 
     string line;                                    /* Current line*/
     size_t linenum = 0;                             /* Linenumber */
@@ -21,7 +22,7 @@ return_codes_e Circuit::CreateCircuit(std::fstream &input_file)
     vector<string> tokens;							/* Tokens produced for each line */
 
     /* Start of parsing - For statistics */
-    auto begin = chrono::high_resolution_clock::now();
+    auto begin_time = high_resolution_clock::now();
 
     while(getline(input_file, line))
     {
@@ -111,15 +112,15 @@ return_codes_e Circuit::CreateCircuit(std::fstream &input_file)
     errcode = verify();
 
     /* Measure the total time taken for parsing and verification */
-    auto end = chrono::high_resolution_clock::now();
+    auto end_time = high_resolution_clock::now();
 
     /* Output information only in case of success */
     if(errcode == RETURN_SUCCESS)
     {
-		cout << "************************************" << endl;
+    	cout << endl << "************************************" << endl;
 		cout << "************CIRCUIT INFO************" << endl;
 		cout << "************************************" << endl;
-		cout << "Load time: " << chrono::duration_cast<chrono::milliseconds>(end-begin).count() << "ms" << endl;
+		cout << "Load time: " << duration_cast<milliseconds>(end_time-begin_time).count() << "ms" << endl;
 		cout << "Total lines: " << linenum << endl;
 		cout << "************************************" << endl;
 		cout << "Resistors: " << this->_res.size() << endl;
@@ -133,9 +134,7 @@ return_codes_e Circuit::CreateCircuit(std::fstream &input_file)
 		cout << "Total simulation points: " << this->_sim_vals.size() << endl;
 		cout << "Total nodes to plot: " << this->_plot_nodes.size() << endl;
 		cout << "Total sources to plot: " << this->_plot_sources.size() << endl;
-		cout << "************************************" << endl;
-
-		this->_valid = true;
+		cout << "************************************" << endl << endl;
     }
 
     return errcode;
@@ -183,6 +182,10 @@ return_codes_e Circuit::CreateSPICECard(std::vector<std::string> &tokens, syntax
 
 		/* Timing checks */
 		if((stop <= start) || (steps <= 0))
+			return FAIL_PARSER_ANALYSIS_INVALID_ARGS;
+
+		/* It has to be a voltage source */
+		if(!(this->_source[0] == 'V') && !(this->_source[0] == 'I'))
 			return FAIL_PARSER_ANALYSIS_INVALID_ARGS;
 
 		this->_type = DC;
@@ -237,6 +240,7 @@ return_codes_e Circuit::CreateSPICECard(std::vector<std::string> &tokens, syntax
     @brief    Internal routine, that verifies the following for a given circuit:
   	  - Plot nodes for a plot card already exists in the circuit
   	  - DC analysis source already exists in the circuit (if any DC analysis is active)
+  	  - Set the circuit dimension and the source offset in the MNA equivalent matrix.
     @return   The error code, in case of error, otherwise RETURN_SUCCESS.
 */
 return_codes_e Circuit::verify(void)
@@ -288,6 +292,11 @@ return_codes_e Circuit::verify(void)
 			return errcode;
 		}
     }
+
+    /* Set dimension, offset and valid flag */
+    this->_source_offset = this->_nodes.size();
+    this->_circuit_dim = this->_source_offset + this->_coils.size() + this->_ivs.size();
+    this->_valid = true;
 
     return RETURN_SUCCESS;
 }

@@ -19,6 +19,8 @@ class Circuit
 			this->_scale = DEC_SCALE;
 			this->_type = OP;
 			this->_valid = false;
+			_circuit_dim = 0;
+			_source_offset = 0;
 		}
 
         /*!
@@ -31,8 +33,10 @@ class Circuit
 			/* Default */
 			this->_scale = DEC_SCALE;
 			this->_type = OP;
-			this->_source = "";
 			this->_valid = false;
+			this->_source = "";
+			_circuit_dim = 0;
+			_source_offset = 0;
 
 			/* For vectors call clean method to accelerate next circuit */
 			this->_res.clear();
@@ -175,6 +179,25 @@ class Circuit
         	return this->_scale;
         }
 
+        /*!
+            @brief    Get the circuit (matrix) dimension.
+            @return   The dimension.
+        */
+        long int getCircuitDim(void)
+        {
+        	return this->_circuit_dim;
+        }
+
+        /*!
+            @brief    Get the voltage sources offset in the
+            circuit (matrix).
+            @return   The offset.
+        */
+        long int getSourceOffset(void)
+        {
+        	return this->_source_offset;
+        }
+
         return_codes_e CreateCircuit(std::fstream &input_file);
     private:
         return_codes_e CreateSPICECard(std::vector<std::string> &tokens, syntax_parser &match);
@@ -193,6 +216,10 @@ class Circuit
         /* Elements/Nodes maps */
         std::unordered_map<std::string, size_t> _element_names;
         std::unordered_map<std::string, long int> _nodes;
+
+        /* Circuit size and info for MNA creation */
+        long int _circuit_dim;
+        long int _source_offset;
 
         /* SPICE CARDS - Analysis */
         std::vector<double> _sim_vals; 	/* The simulation points to be used */
