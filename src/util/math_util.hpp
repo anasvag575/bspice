@@ -19,6 +19,9 @@ void StepVecGen(std::vector<T> &vec, T start, T end, T step)
 {
 	static_assert(std::is_arithmetic<T>::value, "Input arguments have to be numeric types");
 
+	/* Avoid infinite loops */
+	if(step == 0) return;
+
 	/* Incrementaly add */
 	while(start <= end)
 	{

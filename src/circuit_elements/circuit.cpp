@@ -1,6 +1,5 @@
 #include <chrono>		/* For time reporting */
 #include "circuit.hpp"
-#include "math_util.hpp"
 
 /*!
     @brief    Routine, that creates a circuit representation of the specified netlist
@@ -26,6 +25,10 @@ return_codes_e Circuit::CreateCircuit(std::fstream &input_file)
 
     while(getline(input_file, line))
     {
+    	node2_device node2_base;
+    	source_spec source_spec_base;
+    	size_t id;
+
         /* Keep the line number for debugging */
         linenum++;
 
@@ -39,42 +42,48 @@ return_codes_e Circuit::CreateCircuit(std::fstream &input_file)
         {
             case 'R':
             {
-                Resistor tmp_res;
-                errcode = tmp_res.ParseResistor(tokens, syntax_match, this->_nodes, this->_element_names, this->_res.size());
-                this->_res.push_back(tmp_res);
+                id = this->_res.size();
+                errcode = syntax_match.Parse2NodeDevice(tokens, node2_base, this->_nodes, this->_element_names, id, true);
+                this->_res.push_back({node2_base}); // C++17 aggregation initialize
 
                 break;
             }
             case 'C':
             {
-                Capacitor tmp_cap;
-                errcode = tmp_cap.ParseCapacitor(tokens, syntax_match, this->_nodes, this->_element_names, this->_caps.size());
-                this->_caps.push_back(tmp_cap);
+                id = this->_caps.size();
+                errcode = syntax_match.Parse2NodeDevice(tokens, node2_base, this->_nodes, this->_element_names, id, true);
+                this->_caps.push_back({node2_base}); // C++17 aggregation initialize
 
                 break;
             }
             case 'L':
             {
-                Coil tmp_coil;
-                errcode = tmp_coil.ParseCoil(tokens, syntax_match, this->_nodes, this->_element_names, this->_coils.size());
-                this->_coils.push_back(tmp_coil);
+                id = this->_coils.size();
+                errcode = syntax_match.Parse2NodeDevice(tokens, node2_base, this->_nodes, this->_element_names, id, true);
+                this->_coils.push_back({node2_base}); // C++17 aggregation initialize
 
                 break;
             }
             case 'I':
             {
-                ics tmp_ics;
-                errcode = tmp_ics.ParseIcs(tokens, syntax_match, this->_nodes, this->_element_names, this->_ics.size());
-                this->_ics.push_back(tmp_ics);
+                id = this->_ics.size();
+                errcode = syntax_match.Parse2NodeDevice(tokens, node2_base, this->_nodes, this->_element_names, id, false);
 
+                /* Continue parsing only in case of success */
+                if(errcode == RETURN_SUCCESS) errcode = syntax_match.ParseSourceSpec(tokens, source_spec_base);
+
+                this->_ics.push_back({node2_base, source_spec_base}); // C++17 aggregation initialize
                 break;
             }
             case 'V':
             {
-                ivs tmp_ivs;
-                errcode = tmp_ivs.ParseIvs(tokens, syntax_match, this->_nodes, this->_element_names, this->_ivs.size());
-                this->_ivs.push_back(tmp_ivs);
+                id = this->_ivs.size();
+                errcode = syntax_match.Parse2NodeDevice(tokens, node2_base, this->_nodes, this->_element_names, id, false);
 
+                /* Continue parsing only in case of success */
+                if(errcode == RETURN_SUCCESS) errcode = syntax_match.ParseSourceSpec(tokens, source_spec_base);
+
+                this->_ivs.push_back({node2_base, source_spec_base}); // C++17 aggregation initialize
                 break;
             }
             case '.':
@@ -131,11 +140,23 @@ return_codes_e Circuit::CreateCircuit(std::fstream &input_file)
 		cout << "************************************" << endl;
 		cout << "Simulation Type: " << this->_type << endl;
 		cout << "Scale: " << this->_scale << endl;
-		cout << "Total simulation points: " << this->_sim_vals.size() << endl;
 		cout << "Total nodes to plot: " << this->_plot_nodes.size() << endl;
 		cout << "Total sources to plot: " << this->_plot_sources.size() << endl;
 		cout << "************************************" << endl << endl;
     }
+
+    /* TODO - Add this to the report */
+    int arr_ics[5] = {0};
+    int arr_ivs[5] = {0};
+
+	/* Calculate the IVS, ICS tran sources */
+    for(auto &it : this->_ics) arr_ics[it.getType()]++;
+    for(auto &it : this->_ivs) arr_ivs[it.getType()]++;
+
+    cout << "I[C E S PW PU] " << arr_ics[0] <<  " " << arr_ics[1] <<  " " << arr_ics[2] <<  " " << arr_ics[3] <<  " " << arr_ics[4] << endl;
+    cout << "V[C E S PW PU] " << arr_ivs[0] <<  " " << arr_ivs[1] <<  " " << arr_ivs[2] <<  " " << arr_ivs[3] <<  " " << arr_ivs[4] << endl;
+
+    cout << "************************************" << endl << endl;
 
     return errcode;
 }
@@ -157,83 +178,44 @@ return_codes_e Circuit::CreateSPICECard(std::vector<std::string> &tokens, syntax
 	/* Special case identified before everything else */
 	if(spice_card == "PLOT" || spice_card == "PRINT")
 	{
-		if(match.isValidSetPLOTCard(tokens, this->_plot_nodes, this->_plot_sources))
-			return RETURN_SUCCESS;
-		else
-			return FAIL_PARSER_INVALID_FORMAT;
+		return match.isValidSetPLOTCard(tokens, this->_plot_nodes, this->_plot_sources);
 	}
 
 	/* Base parameters for analysis */
 	double start, stop, steps;
-
-	/* Before moving to an analysis case, clear any existing simulation points */
-	this->_sim_vals.clear();
+	return_codes_e errcode = RETURN_SUCCESS;
 
 	/* Handle each analaysis */
 	if(spice_card == "OP" && tokens.size() == 1)
 	{
 		this->_type = OP;
-		return RETURN_SUCCESS;
 	}
 	else if(spice_card == "DC")
 	{
-		if(!match.isValidDCCard(tokens, steps, stop, start, this->_scale, this->_source))
-			return FAIL_PARSER_INVALID_FORMAT;
-
-		/* Timing checks */
-		if((stop <= start) || (steps <= 0))
-			return FAIL_PARSER_ANALYSIS_INVALID_ARGS;
-
-		/* It has to be a voltage source */
-		if(!(this->_source[0] == 'V') && !(this->_source[0] == 'I'))
-			return FAIL_PARSER_ANALYSIS_INVALID_ARGS;
-
 		this->_type = DC;
+		errcode = match.isValidDCCard(tokens, steps, stop, start, this->_scale, this->_source);
 	}
 	else if(spice_card == "TRAN")
 	{
-		if(!match.isValidTRANCard(tokens, steps, stop, start))
-			return FAIL_PARSER_INVALID_FORMAT;
-
-		/* Timing checks */
-		if((stop <= start) || (steps <= 0) || (start < 0.0))
-			return FAIL_PARSER_ANALYSIS_INVALID_ARGS;
-
 		this->_type = TRAN;
+		errcode = match.isValidTRANCard(tokens, steps, stop, start);
 	}
 	else if(spice_card == "AC")
 	{
-		if(!match.isValidACCard(tokens, steps, stop, start, this->_scale))
-			return FAIL_PARSER_INVALID_FORMAT;
-
-		/* Timing checks */
-		if((stop <= start) || (steps <= 0) || (start <= 0.0))
-			return FAIL_PARSER_ANALYSIS_INVALID_ARGS;
-
 		this->_type = AC;
+		errcode = match.isValidACCard(tokens, steps, stop, start, this->_scale);
 	}
 	else
 	{
 		return FAIL_PARSER_UKNOWN_SPICE_CARD;
 	}
 
-	/* Now create the simulation times/values vector */
-	if(this->_scale == DEC_SCALE)
-	{
-		/* We need to exclude <0> timepoint in case of transient analysis */
-		if(start == 0.0 && this->_type == TRAN) start += steps;
+	/* Set the simulation parameters */
+	this->_sim_step = steps;
+	this->_sim_start = start;
+	this->_sim_end = stop;
 
-		/* For AC we generate based on step (since argument is [points]) */
-		if(this->_type == AC) linspaceVecGen(this->_sim_vals, start, stop, static_cast<size_t>(steps));
-		else StepVecGen(this->_sim_vals, start, stop, steps);
-	}
-	else
-	{
-		/* Generate logarithmically spaced vector */
-		logspaceVecGen(this->_sim_vals, start, stop, static_cast<size_t>(steps));
-	}
-
-    return RETURN_SUCCESS;
+    return errcode;
 }
 
 /*!
@@ -293,9 +275,7 @@ return_codes_e Circuit::verify(void)
 		}
     }
 
-    /* Set dimension, offset and valid flag */
-    this->_source_offset = this->_nodes.size();
-    this->_circuit_dim = this->_source_offset + this->_coils.size() + this->_ivs.size();
+    /* Set valid flag */
     this->_valid = true;
 
     return RETURN_SUCCESS;

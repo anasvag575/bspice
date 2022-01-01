@@ -1,11 +1,10 @@
 #ifndef __CIRCUIT_H
 #define __CIRCUIT_H
 
-#include <unordered_map>
 #include <iostream>
 #include <fstream>
+
 #include "syntax_parser.hpp"
-#include "circuit_elements.hpp"
 
 class Circuit
 {
@@ -19,8 +18,9 @@ class Circuit
 			this->_scale = DEC_SCALE;
 			this->_type = OP;
 			this->_valid = false;
-			_circuit_dim = 0;
-			_source_offset = 0;
+			this->_sim_step = 0;
+			this->_sim_start = 0;
+			this->_sim_end = 0;
 		}
 
         /*!
@@ -35,8 +35,9 @@ class Circuit
 			this->_type = OP;
 			this->_valid = false;
 			this->_source = "";
-			_circuit_dim = 0;
-			_source_offset = 0;
+			this->_sim_step = 0;
+			this->_sim_start = 0;
+			this->_sim_end = 0;
 
 			/* For vectors call clean method to accelerate next circuit */
 			this->_res.clear();
@@ -44,7 +45,6 @@ class Circuit
 			this->_coils.clear();
 			this->_ics.clear();
 			this->_ivs.clear();
-			this->_sim_vals.clear();
 			this->_plot_nodes.clear();
 			this->_plot_sources.clear();
 
@@ -111,7 +111,7 @@ class Circuit
             @brief    Get the nodes map (map contains the <NodeName, NodeNum> pairs).
             @return   The map.
         */
-        std::unordered_map<std::string, long int> &getNodes(void)
+        hashmap_str_t &getNodes(void)
         {
             return _nodes;
         }
@@ -120,7 +120,7 @@ class Circuit
             @brief    Get the elements map (map contains the <ElmementName, ElementID> pairs).
             @return   The map.
         */
-        std::unordered_map<std::string, size_t> &getElementNames(void)
+        hashmap_str_t &getElementNames(void)
         {
             return _element_names;
         }
@@ -144,12 +144,30 @@ class Circuit
         }
 
         /*!
-            @brief    Get the simulation values for the circuit.
-            @return   The simulation vector (either in A/V, s, Hz).
+            @brief    Get the simulation start value.
+            @return   The start.
         */
-        std::vector<double> &getSimValues(void)
+        double &getSimStart(void)
         {
-            return _sim_vals;
+            return _sim_start;
+        }
+
+        /*!
+            @brief    Get the simulation end value.
+            @return   The end.
+        */
+        double &getSimEnd(void)
+        {
+            return _sim_end;
+        }
+
+        /*!
+            @brief    Get the simulation step.
+            @return   The step.
+        */
+        double getSimStep(void)
+        {
+        	return this->_sim_step;
         }
 
         /*!
@@ -179,25 +197,6 @@ class Circuit
         	return this->_scale;
         }
 
-        /*!
-            @brief    Get the circuit (matrix) dimension.
-            @return   The dimension.
-        */
-        long int getCircuitDim(void)
-        {
-        	return this->_circuit_dim;
-        }
-
-        /*!
-            @brief    Get the voltage sources offset in the
-            circuit (matrix).
-            @return   The offset.
-        */
-        long int getSourceOffset(void)
-        {
-        	return this->_source_offset;
-        }
-
         return_codes_e CreateCircuit(std::fstream &input_file);
     private:
         return_codes_e CreateSPICECard(std::vector<std::string> &tokens, syntax_parser &match);
@@ -214,15 +213,13 @@ class Circuit
         std::vector<ivs> _ivs;
 
         /* Elements/Nodes maps */
-        std::unordered_map<std::string, size_t> _element_names;
-        std::unordered_map<std::string, long int> _nodes;
-
-        /* Circuit size and info for MNA creation */
-        long int _circuit_dim;
-        long int _source_offset;
+        hashmap_str_t _element_names;
+        hashmap_str_t _nodes;
 
         /* SPICE CARDS - Analysis */
-        std::vector<double> _sim_vals; 	/* The simulation points to be used */
+        double _sim_start;				/* The simulation start value */
+        double _sim_end;				/* The simulation end value */
+        double _sim_step;				/* The simulation step */
         as_scale_t _scale;				/* Scale of the analysis */
         analysis_t _type;				/* Analysis type */
         std::string _source;			/* In case of DC analysis - Name of source */

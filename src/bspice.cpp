@@ -1,11 +1,10 @@
-#include <simulator/mna.hpp>
-#include <simulator_types.hpp>
 #include <iostream>
 #include <fstream>
+
 #include "bspice.hpp"
 #include "circuit.hpp"
-#include "plot.hpp"
 #include "sim_engine.hpp"
+#include "plot.hpp"
 
 int main(int argc, char **argv)
 {
@@ -43,7 +42,6 @@ int main(int argc, char **argv)
     /* Close the netlist file */
     input_file.close();
 
-    /* TODO - simulator */
     /* Step 3 - Proceed to the simulator engine */
     simulator_engine sim_manager(circuit_manager);
     sim_manager.run(circuit_manager);

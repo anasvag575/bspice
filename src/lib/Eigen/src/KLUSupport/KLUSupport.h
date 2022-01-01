@@ -10,6 +10,8 @@
 #ifndef EIGEN_KLUSUPPORT_H
 #define EIGEN_KLUSUPPORT_H
 
+#include <type_traits>
+
 namespace Eigen {
 
 /* TODO extract L, extract U, compute det, etc... */
@@ -55,6 +57,54 @@ inline klu_numeric* klu_factor(int Ap[], int Ai[], std::complex<double> Ax[], kl
    return klu_z_factor(Ap, Ai, &numext::real_ref(Ax[0]), Symbolic, Common);
 }
 
+/* TODO - Start BSPICE additions */
+inline long int klu_solve(klu_l_symbolic *Symbolic, klu_l_numeric *Numeric, long int ldim, long int nrhs, double B [ ], klu_l_common *Common, double) {
+   return klu_l_solve(Symbolic, Numeric, ldim, nrhs, B, Common);
+}
+
+inline long int klu_tsolve(klu_l_symbolic *Symbolic, klu_l_numeric *Numeric, long int ldim, long int nrhs, double B[], klu_l_common *Common, double) {
+   return klu_l_tsolve(Symbolic, Numeric, ldim, nrhs, B, Common);
+}
+
+inline klu_l_numeric* klu_factor(long int Ap [ ], long int Ai [ ], double Ax [ ], klu_l_symbolic *Symbolic, klu_l_common *Common, double) {
+   return klu_l_factor(Ap, Ai, Ax, Symbolic, Common);
+}
+
+inline int free_symbolic( klu_symbolic **Symbolic, klu_common *Common){
+	return klu_free_symbolic(Symbolic, Common);
+}
+
+inline long int free_symbolic( klu_l_symbolic **Symbolic, klu_l_common *Common){
+	return klu_l_free_symbolic(Symbolic, Common);
+}
+
+inline int free_numeric(klu_numeric **Numeric, klu_common *Common){
+	return klu_free_numeric(Numeric, Common);
+}
+
+inline long int free_numeric(klu_l_numeric **Numeric, klu_l_common *Common){
+	return klu_l_free_numeric(Numeric, Common);
+}
+
+inline int klu_defaults_impl(klu_common *Common){
+	return klu_defaults(Common);
+}
+
+inline long int klu_defaults_impl(klu_l_common *Common){
+	return klu_l_defaults(Common);
+}
+
+klu_symbolic *klu_analyze_impl(int n, int *Ap, int *Ai, klu_common *Common)
+{
+	return klu_analyze(n, Ap, Ai, Common);
+}
+
+klu_l_symbolic *klu_analyze_impl(long int n, long int *Ap, long int *Ai, klu_l_common *Common)
+{
+	return klu_l_analyze(n, Ap, Ai, Common);
+}
+
+/* TODO - End BSPICE additions*/
 
 template<typename _MatrixType>
 class KLU : public SparseSolverBase<KLU<_MatrixType> >
@@ -69,11 +119,22 @@ class KLU : public SparseSolverBase<KLU<_MatrixType> >
     typedef typename MatrixType::RealScalar RealScalar;
     typedef typename MatrixType::StorageIndex StorageIndex;
     typedef Matrix<Scalar,Dynamic,1> Vector;
-    typedef Matrix<int, 1, MatrixType::ColsAtCompileTime> IntRowVectorType;
-    typedef Matrix<int, MatrixType::RowsAtCompileTime, 1> IntColVectorType;
-    typedef SparseMatrix<Scalar> LUMatrixType;
-    typedef SparseMatrix<Scalar,ColMajor,int> KLUMatrixType;
+
+    /* BSPICE - Start */
+//    typedef Matrix<int, 1, MatrixType::ColsAtCompileTime> IntRowVectorType;
+//    typedef Matrix<int, MatrixType::RowsAtCompileTime, 1> IntColVectorType;
+//    typedef SparseMatrix<Scalar> LUMatrixType;
+    /* BSPICE - End */
+
+    typedef SparseMatrix<Scalar,ColMajor,StorageIndex> KLUMatrixType;
     typedef Ref<const KLUMatrixType, StandardCompressedFormat> KLUMatrixRef;
+
+    /* BSPICE - Start */
+    typedef typename std::conditional<sizeof(StorageIndex) <= 4, klu_common, klu_l_common>::type klu_common_eig;
+    typedef typename std::conditional<sizeof(StorageIndex) <= 4, klu_numeric, klu_l_numeric>::type klu_numeric_eig;
+    typedef typename std::conditional<sizeof(StorageIndex) <= 4, klu_symbolic, klu_l_symbolic>::type klu_symbolic_eig;
+
+    /* BSPICE - End */
     enum {
       ColsAtCompileTime = MatrixType::ColsAtCompileTime,
       MaxColsAtCompileTime = MatrixType::MaxColsAtCompileTime
@@ -97,8 +158,8 @@ class KLU : public SparseSolverBase<KLU<_MatrixType> >
 
     ~KLU()
     {
-      if(m_symbolic) klu_free_symbolic(&m_symbolic,&m_common);
-      if(m_numeric)  klu_free_numeric(&m_numeric,&m_common);
+      if(m_symbolic) free_symbolic(&m_symbolic,&m_common);
+      if(m_numeric)  free_numeric(&m_numeric,&m_common);
     }
 
     EIGEN_CONSTEXPR inline Index rows() const EIGEN_NOEXCEPT { return mp_matrix.rows(); }
@@ -146,8 +207,8 @@ class KLU : public SparseSolverBase<KLU<_MatrixType> >
     template<typename InputMatrixType>
     void compute(const InputMatrixType& matrix)
     {
-      if(m_symbolic) klu_free_symbolic(&m_symbolic, &m_common);
-      if(m_numeric)  klu_free_numeric(&m_numeric, &m_common);
+      if(m_symbolic) free_symbolic(&m_symbolic, &m_common);
+      if(m_numeric)  free_numeric(&m_numeric, &m_common);
       grab(matrix.derived());
       analyzePattern_impl();
       factorize_impl();
@@ -162,8 +223,8 @@ class KLU : public SparseSolverBase<KLU<_MatrixType> >
     template<typename InputMatrixType>
     void analyzePattern(const InputMatrixType& matrix)
     {
-      if(m_symbolic) klu_free_symbolic(&m_symbolic, &m_common);
-      if(m_numeric)  klu_free_numeric(&m_numeric, &m_common);
+      if(m_symbolic) free_symbolic(&m_symbolic, &m_common);
+      if(m_numeric)  free_numeric(&m_numeric, &m_common);
 
       grab(matrix.derived());
 
@@ -175,7 +236,7 @@ class KLU : public SparseSolverBase<KLU<_MatrixType> >
       *
       * See KLU documentation for details.
       */
-    inline const klu_common& kluCommon() const
+    inline const klu_common_eig& kluCommon() const
     {
       return m_common;
     }
@@ -186,7 +247,7 @@ class KLU : public SparseSolverBase<KLU<_MatrixType> >
       *
       * See KLU documentation for details.
       */
-    inline klu_common& kluCommon()
+    inline klu_common_eig& kluCommon()
     {
       return m_common;
     }
@@ -202,7 +263,7 @@ class KLU : public SparseSolverBase<KLU<_MatrixType> >
     {
       eigen_assert(m_analysisIsOk && "KLU: you must first call analyzePattern()");
       if(m_numeric)
-        klu_free_numeric(&m_numeric,&m_common);
+        free_numeric(&m_numeric,&m_common);
 
       grab(matrix.derived());
 
@@ -229,7 +290,7 @@ class KLU : public SparseSolverBase<KLU<_MatrixType> >
       m_symbolic              = 0;
       m_extractedDataAreDirty = true;
 
-      klu_defaults(&m_common);
+      klu_defaults_impl(&m_common);
     }
 
     void analyzePattern_impl()
@@ -237,7 +298,7 @@ class KLU : public SparseSolverBase<KLU<_MatrixType> >
       m_info = InvalidInput;
       m_analysisIsOk = false;
       m_factorizationIsOk = false;
-      m_symbolic = klu_analyze(internal::convert_index<int>(mp_matrix.rows()),
+      m_symbolic = klu_analyze_impl(internal::convert_index<StorageIndex>(mp_matrix.rows()),
                                      const_cast<StorageIndex*>(mp_matrix.outerIndexPtr()), const_cast<StorageIndex*>(mp_matrix.innerIndexPtr()),
                                      &m_common);
       if (m_symbolic) {
@@ -287,9 +348,9 @@ class KLU : public SparseSolverBase<KLU<_MatrixType> >
     KLUMatrixType m_dummy;
     KLUMatrixRef mp_matrix;
 
-    klu_numeric* m_numeric;
-    klu_symbolic* m_symbolic;
-    klu_common m_common;
+    klu_numeric_eig* m_numeric;
+    klu_symbolic_eig* m_symbolic;
+    klu_common_eig m_common;
     mutable ComputationInfo m_info;
     int m_factorizationIsOk;
     int m_analysisIsOk;
@@ -347,7 +408,7 @@ bool KLU<MatrixType>::_solve_impl(const MatrixBase<BDerived> &b, MatrixBase<XDer
   eigen_assert(m_factorizationIsOk && "The decomposition is not in a valid state for solving, you must first call either compute() or analyzePattern()/factorize()");
 
   x = b;
-  int info = klu_solve(m_symbolic, m_numeric, b.rows(), rhsCols, x.const_cast_derived().data(), const_cast<klu_common*>(&m_common), Scalar());
+  int info = klu_solve(m_symbolic, m_numeric, b.rows(), rhsCols, x.const_cast_derived().data(), const_cast<klu_common_eig*>(&m_common), Scalar());
 
   m_info = info!=0 ? Success : NumericalIssue;
   return true;
