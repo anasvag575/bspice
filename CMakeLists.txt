@@ -12,9 +12,15 @@ set(CMAKE_CXX_COMPILER "g++")
 
 # Compilation parameters and flags
 #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -g -march=native -O4 -flto -Wall")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -g -march=native -O2 -Wall")
 
-#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -g -DEIGEN_NO_DEBUG -march=native -flto -O4 -Wall ${OpenMP_CXX_FLAGS}")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -g -march=native -flto -O4 -Wall")
+######################################
+#### Parameters for the simulator ####
+######################################
+#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DNDEBUG ${OpenMP_CXX_FLAGS}")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DBSPICE_EIGEN_USE_KLU")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DBSPICE_TRAN_USE_EULER")
+
 # Include directories
 include_directories(${PROJECT_SOURCE_DIR}/src)
 include_directories(${PROJECT_SOURCE_DIR}/src/circuit_elements)
@@ -25,23 +31,20 @@ include_directories(${PROJECT_SOURCE_DIR}/src/lib/)
 include_directories(${PROJECT_SOURCE_DIR}/src/lib/Eigen)
 include_directories(${PROJECT_SOURCE_DIR}/src/lib/tsl)
 
-#For Suitesparse and Eigen
+# For Suitesparse and Eigen
 include_directories(/usr/include/suitesparse/)
 
 #Output to the console some info
 message(STATUS "CMAKE_BUILD_TYPE: " ${CMAKE_BUILD_TYPE})
-message(STATUS "CMAKE_C_COMPILER: " ${CMAKE_C_COMPILER})
-message(STATUS "CMAKE_C_FLAGS: " ${CMAKE_C_FLAGS})
 message(STATUS "CMAKE_CXX_COMPILER: " ${CMAKE_CXX_COMPILER})
 message(STATUS "CMAKE_CXX_FLAGS: " ${CMAKE_CXX_FLAGS})
 message(STATUS "CMAKE_EXE_LINKER_FLAGS: " ${CMAKE_EXE_LINKER_FLAGS})
 
 # Dependency libs for the project
-# OpenBLAS
-# Lapacke / Lapack
+# Suitesparse, Boost
 #set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
-#find_package(OpenBLAS REQUIRED)
 find_package(OpenMP REQUIRED)
+#find_package(suitesparse)
 
 # Source code
 add_library(circuit_lib src/circuit_elements/circuit.cpp)
@@ -58,9 +61,6 @@ target_link_libraries(bspice
 	parser_lib 
 	plot_lib 
 	simulator_lib 
-	boost_iostreams 
-	boost_system 
-	boost_filesystem 
 	#OpenMP::OpenMP_CXX
 	klu
 	btf)

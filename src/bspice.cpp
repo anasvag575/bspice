@@ -44,11 +44,17 @@ int main(int argc, char **argv)
 
     /* Step 3 - Proceed to the simulator engine */
     simulator_engine sim_manager(circuit_manager);
-    sim_manager.run(circuit_manager);
-
-    /* TODO - Leave Plot as is for now */
-    /* Step 4 - Output the results either by plotting or printing to a file */
-//    plot_rand();
+    if(sim_manager.run(circuit_manager) != RETURN_SUCCESS)
+    {
+        cout << "[ERROR - " << FAIL_SIMULATOR_RUN << "]: Unable to simulate circuit." <<endl;
+        return FAIL_LOADING_FILE;
+    }
+    else
+    {
+        /* TODO - Leave Plot as is for now */
+        /* Step 4 - Output the results either by plotting or printing to a file */
+        plot(circuit_manager, sim_manager);
+    }
 
     return 1;
 }

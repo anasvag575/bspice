@@ -1,5 +1,6 @@
 #include <chrono>		/* For time reporting */
 #include "circuit.hpp"
+#include <algorithm>
 
 /*!
     @brief    Routine, that creates a circuit representation of the specified netlist
@@ -43,7 +44,7 @@ return_codes_e Circuit::CreateCircuit(std::fstream &input_file)
             case 'R':
             {
                 id = this->_res.size();
-                errcode = syntax_match.Parse2NodeDevice(tokens, node2_base, this->_nodes, this->_element_names, id, true);
+                errcode = syntax_match.Parse2NodeDevice(tokens, node2_base, this->_element_names, this->_nodes, id, true);
                 this->_res.push_back({node2_base}); // C++17 aggregation initialize
 
                 break;
@@ -51,7 +52,7 @@ return_codes_e Circuit::CreateCircuit(std::fstream &input_file)
             case 'C':
             {
                 id = this->_caps.size();
-                errcode = syntax_match.Parse2NodeDevice(tokens, node2_base, this->_nodes, this->_element_names, id, true);
+                errcode = syntax_match.Parse2NodeDevice(tokens, node2_base, this->_element_names, this->_nodes, id, true);
                 this->_caps.push_back({node2_base}); // C++17 aggregation initialize
 
                 break;
@@ -59,7 +60,7 @@ return_codes_e Circuit::CreateCircuit(std::fstream &input_file)
             case 'L':
             {
                 id = this->_coils.size();
-                errcode = syntax_match.Parse2NodeDevice(tokens, node2_base, this->_nodes, this->_element_names, id, true);
+                errcode = syntax_match.Parse2NodeDevice(tokens, node2_base, this->_element_names, this->_nodes, id, true);
                 this->_coils.push_back({node2_base}); // C++17 aggregation initialize
 
                 break;
@@ -67,7 +68,7 @@ return_codes_e Circuit::CreateCircuit(std::fstream &input_file)
             case 'I':
             {
                 id = this->_ics.size();
-                errcode = syntax_match.Parse2NodeDevice(tokens, node2_base, this->_nodes, this->_element_names, id, false);
+                errcode = syntax_match.Parse2NodeDevice(tokens, node2_base, this->_element_names, this->_nodes, id, false);
 
                 /* Continue parsing only in case of success */
                 if(errcode == RETURN_SUCCESS) errcode = syntax_match.ParseSourceSpec(tokens, source_spec_base);
@@ -78,7 +79,7 @@ return_codes_e Circuit::CreateCircuit(std::fstream &input_file)
             case 'V':
             {
                 id = this->_ivs.size();
-                errcode = syntax_match.Parse2NodeDevice(tokens, node2_base, this->_nodes, this->_element_names, id, false);
+                errcode = syntax_match.Parse2NodeDevice(tokens, node2_base, this->_element_names, this->_nodes, id, false);
 
                 /* Continue parsing only in case of success */
                 if(errcode == RETURN_SUCCESS) errcode = syntax_match.ParseSourceSpec(tokens, source_spec_base);
@@ -89,7 +90,7 @@ return_codes_e Circuit::CreateCircuit(std::fstream &input_file)
             case '.':
             {
             	errcode = CreateSPICECard(tokens, syntax_match);
-            	cout << "[INFO]: - At line " << linenum << ": Found SPICE CARD" << endl;
+            	cout << "[INFO]: - At line " << linenum << ": Found SPICE CARD\n";
 
             	break;
             }
@@ -108,11 +109,7 @@ return_codes_e Circuit::CreateCircuit(std::fstream &input_file)
         /* Early out, along with type, when dealing with an error */
         if(errcode != RETURN_SUCCESS)
         {
-            cout << "[ERROR - " << errcode << "]: - At line " << linenum << ": " << line << endl;
-
-//            cout << "Tokens with separator: " << endl;
-//            for(string it: tokens) cout << "<" << it << ">" << endl;
-
+            cout << "[ERROR - " << errcode << "]: - At line " << linenum << ": " << line << "\n";
             return errcode;
         }
     }
@@ -126,37 +123,42 @@ return_codes_e Circuit::CreateCircuit(std::fstream &input_file)
     /* Output information only in case of success */
     if(errcode == RETURN_SUCCESS)
     {
-    	cout << endl << "************************************" << endl;
-		cout << "************CIRCUIT INFO************" << endl;
-		cout << "************************************" << endl;
-		cout << "Load time: " << duration_cast<milliseconds>(end_time-begin_time).count() << "ms" << endl;
-		cout << "Total lines: " << linenum << endl;
-		cout << "************************************" << endl;
-		cout << "Resistors: " << this->_res.size() << endl;
-		cout << "Caps: " << this->_caps.size() << endl;
-		cout << "Coils: " << this->_coils.size() << endl;
-		cout << "ICS: " << this->_ics.size() << endl;
-		cout << "IVS: " << this->_ivs.size() << endl;
-		cout << "************************************" << endl;
-		cout << "Simulation Type: " << this->_type << endl;
-		cout << "Scale: " << this->_scale << endl;
-		cout << "Total nodes to plot: " << this->_plot_nodes.size() << endl;
-		cout << "Total sources to plot: " << this->_plot_sources.size() << endl;
-		cout << "************************************" << endl << endl;
+    	IntTp ics_count[TRANSIENT_SOURCE_TYPENUM] = {0};
+    	IntTp ivs_count[TRANSIENT_SOURCE_TYPENUM] = {0};
+
+    	cout << "\n************************************\n";
+		cout << "************CIRCUIT INFO************\n";
+		cout << "************************************\n";
+		cout << "Load time: " << duration_cast<milliseconds>(end_time-begin_time).count() << "ms\n";
+		cout << "Total lines: " << linenum << "\n";
+		cout << "************************************\n";
+		cout << "Resistors: " << this->_res.size() << "\n";
+		cout << "Caps: " << this->_caps.size() << "\n";
+		cout << "Coils: " << this->_coils.size() << "\n";
+
+		cout << "ICS: " << this->_ics.size() << "\n";
+		for(auto &it : this->_ics) ics_count[it.getType()]++;
+		cout << "\tCONST: " << ics_count[CONSTANT_SOURCE] << "\n";
+		cout << "\tEXP: " << ics_count[EXP_SOURCE] << "\n";
+		cout << "\tSINE: " << ics_count[SINE_SOURCE] << "\n";
+		cout << "\tPWL: " << ics_count[PWL_SOURCE] << "\n";
+		cout << "\tPULSE: " << ics_count[PULSE_SOURCE] << "\n";
+
+		cout << "IVS: " << this->_ivs.size() << "\n";
+		for(auto &it : this->_ivs) ivs_count[it.getType()]++;
+		cout << "\tCONST: " << ivs_count[CONSTANT_SOURCE] << "\n";
+		cout << "\tEXP: " << ivs_count[EXP_SOURCE] << "\n";
+		cout << "\tSINE: " << ivs_count[SINE_SOURCE] << "\n";
+		cout << "\tPWL: " << ivs_count[PWL_SOURCE] << "\n";
+		cout << "\tPULSE: " << ivs_count[PULSE_SOURCE] << "\n";
+
+		cout << "************************************\n";
+		cout << "Simulation Type: " << this->_type << "\n";
+		cout << "Scale: " << this->_scale << "\n";
+		cout << "Total nodes to plot: " << this->_plot_nodes.size() << "\n";
+		cout << "Total sources to plot: " << this->_plot_sources.size() << "\n";
+		cout << "************************************\n\n";
     }
-
-    /* TODO - Add this to the report */
-    int arr_ics[5] = {0};
-    int arr_ivs[5] = {0};
-
-	/* Calculate the IVS, ICS tran sources */
-    for(auto &it : this->_ics) arr_ics[it.getType()]++;
-    for(auto &it : this->_ivs) arr_ivs[it.getType()]++;
-
-    cout << "I[C E S PW PU] " << arr_ics[0] <<  " " << arr_ics[1] <<  " " << arr_ics[2] <<  " " << arr_ics[3] <<  " " << arr_ics[4] << endl;
-    cout << "V[C E S PW PU] " << arr_ivs[0] <<  " " << arr_ivs[1] <<  " " << arr_ivs[2] <<  " " << arr_ivs[3] <<  " " << arr_ivs[4] << endl;
-
-    cout << "************************************" << endl << endl;
 
     return errcode;
 }

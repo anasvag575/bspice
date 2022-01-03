@@ -51,10 +51,7 @@ void MNA::CoilMNAStamp(tripletList_d &mat, IntTp offset, Coil &coil, const analy
 	}
 	else if(type == TRAN)
 	{
-		if(arr[0] != -1 || arr[1] != -1)
-		{
-			mat.push_back(triplet_eig_d(offset, offset, -coil.getVal()));
-		}
+		mat.push_back(triplet_eig_d(offset, offset, -coil.getVal()));
 	}
 }
 
@@ -191,7 +188,7 @@ double MNA::PULSESourceEval(std::vector<double> &vvals, double time)
 	/* This normalizes the pulse inside a period's length */
 	IntTp k = (time - td)/ per;
 	k = (k <= 0) ? 0 : k;
-	const double temp_time = time - k *per;
+	double temp_time = time - k *per;
 
 	if(temp_time <= td)
 		return i1;
@@ -203,6 +200,9 @@ double MNA::PULSESourceEval(std::vector<double> &vvals, double time)
 		return (i2 + ((i1 - i2) / tf) * (temp_time - (td + tr + pw)));
 	else if((temp_time > (td + tr + pw + tf)) && (temp_time <= (td + per)))
 		return i1;
+
+	/* TODO - Debug */
+	std::cout << "ERROR: " << std::endl;
 
 	/* Supress compiler warnings */
 	return -1;
@@ -270,7 +270,10 @@ void MNA::UpdateTRANVec(Circuit &circuit_manager, DensVecD &rh, double time)
 				rh[ivs_start] += PULSESourceEval(vvals, time);
 				break;
 			}
-			default: break;
+			default:
+			{
+				std::cout << "ERROR MNA UPDATE TRAN:" << std::endl;
+			}
 		}
 
 		ivs_start++;
@@ -316,12 +319,15 @@ void MNA::UpdateTRANVec(Circuit &circuit_manager, DensVecD &rh, double time)
 			case PULSE_SOURCE:
 			{
 				auto val = PULSESourceEval(vvals, time);
-//				std::cout << "Time: " << time << " Val:" << val << std::endl;
 				if(pos != -1) rh[pos] -= val;
 				if(neg != -1) rh[neg] += val;
+
 				break;
 			}
-			default: break;
+			default:
+			{
+				std::cout << "ERROR MNA UPDATE TRAN:" << std::endl;
+			}
 		}
 	}
 

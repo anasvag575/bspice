@@ -22,7 +22,15 @@ typedef enum return_enum_codes
 	FAIL_PARSER_ANALYSIS_INVALID_ARGS,
 
 	/* Simulator engine opcodes - Used inside mna/sim_engine.cpp */
+	FAIL_SIMULATOR_RUN,
+	FAIL_SIMULATOR_EMPTY,
+	FAIL_SIMULATOR_FACTORIZATION,
+	FAIL_SIMULATOR_SOLVE,
 
+	/* Plotter engine opcodes - Used inside plot.cpp */
+	FAIL_PLOTTER_CIRCUIT_INVALID,
+	FAIL_PLOTTER_RESULTS_INVALID,
+	FAIL_PLOTTER_IO_OPERATIONS
 } return_codes_e;
 
 /* A global table containing all the SPICE cards supported by the simulator */
@@ -51,5 +59,8 @@ typedef enum transient_sources
     PWL_SOURCE,
     PULSE_SOURCE,
 } tran_source_t;
+
+/* TODO - More C++ way of defining it */
+#define TRANSIENT_SOURCE_TYPENUM 5
 
 #endif // __SIMULATOR_TYPES_H //

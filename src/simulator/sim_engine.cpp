@@ -2,8 +2,7 @@
 #include "sim_engine.hpp"
 #include "KLUSupport"
 
-// TODO - EIGEN_USE_KLU
-#if 1
+#ifdef BSPICE_EIGEN_USE_KLU
 	/* KLU direct solvers - Supports both int/long */
 	typedef Eigen::KLU<SparMatD> direct_solver;
 	typedef Eigen::KLU<SparMatCompD> direct_solver_c;
@@ -14,11 +13,17 @@
 #endif
 
 
-/* TODO - Comment */
-void simulator_engine::run(Circuit &circuit_manager)
+/*!
+	@brief      Performs a simulation run based on the initialization performed.
+	@param		circuit_manager		The circuit where the simulation is performed.
+	@return		Error code in case of error, otherwise RETURN_SUCCESS.
+*/
+return_codes_e simulator_engine::run(Circuit &circuit_manager)
 {
 	using namespace std;
 	using namespace chrono;
+
+	return_codes_e ret;
 
 	/* Statistics */
 	auto begin = high_resolution_clock::now();
@@ -26,11 +31,11 @@ void simulator_engine::run(Circuit &circuit_manager)
 	/* Depending on analysis, call the appropriate sub-simulator */
 	switch(circuit_manager.getAnalysisType())
 	{
-		case OP: OP_analysis(circuit_manager); break;
-		case DC: DC_analysis(circuit_manager); break;
-		case TRAN: TRAN_analysis(circuit_manager); break;
-		case AC: AC_analysis(circuit_manager); break;
-		default: OP_analysis(circuit_manager); break;
+		case OP: ret = OP_analysis(circuit_manager); break;
+		case DC: ret = DC_analysis(circuit_manager); break;
+		case TRAN: ret = TRAN_analysis(circuit_manager); break;
+		case AC: ret = AC_analysis(circuit_manager); break;
+		default: ret = OP_analysis(circuit_manager); break;
 	}
 
 	/* Statistics */
@@ -38,46 +43,76 @@ void simulator_engine::run(Circuit &circuit_manager)
 
 	std::cout << std::endl << "************************************" << std::endl;
 	std::cout << "Total simulation time: " << duration_cast<milliseconds>(end-begin).count() << "ms"  << std::endl;
+	std::cout << "Total simulation points: " << this->_mna_engine.getSimDim() << std::endl;
+	std::cout << "System size: " << this->_mna_engine.getSystemDim() << std::endl;
 	std::cout << "************************************" << std::endl << std::endl;
+
+	if(ret == RETURN_SUCCESS) this->_run = true;
+
+	return ret;
 }
 
 
-
-/* TODO - Comment */
-void simulator_engine::OP_analysis(Circuit &circuit_manager)
+/*!
+	@brief      Performs an operating point (OP) simulation.
+	@param		circuit_manager		The circuit where the simulation is performed.
+	@return		Error code in case of error, otherwise RETURN_SUCCESS.
+*/
+return_codes_e simulator_engine::OP_analysis(Circuit &circuit_manager)
 {
+	using namespace Eigen;
+
+	/* Solver and matrices */
+	direct_solver solver;
 	SparMatD mat;
 	DensVecD rh;
-	DensVecD res;
 
-	/* The matrix has to be created once */
+	/* 1) MNA formation */
 	this->_mna_engine.CreateMNASystemOP(circuit_manager, mat, rh);
 
-	/* Perform solve */
-	solve_linear(mat, rh, res);
+	/* 2) Factorization/Symbolic analysis*/
+	solver.compute(mat);
 
-	/* TODO - Debug */
+	/* Checks */
+	if(solver.info() != Success) return FAIL_SIMULATOR_FACTORIZATION;
+
+	/* Solve */
+	this->_results_d = solver.solve(rh);
+
+//	/* TODO - Debug */
 //	auto &nodes = circuit_manager.getNodes();
 //	for(auto it = nodes.begin(); it != nodes.end(); it++)
 //	{
-//		std::cout << "V[" << it->first << "]:" << res[it->second] << std::endl;
+//		std::cout << "V[" << it->first << "]:" << this->_results_d(it->second, 0) << std::endl;
 //	}
 
-	/* Copy result */
-	this->_results_d = res;
+	return (solver.info() != Success) ? FAIL_SIMULATOR_SOLVE : RETURN_SUCCESS;
 }
 
-/* TODO - Comment */
-void simulator_engine::DC_analysis(Circuit &circuit_manager)
+/*!
+	@brief      Performs a direct current (DC) simulation.
+	@param		circuit_manager		The circuit where the simulation is performed.
+	@return		Error code in case of error, otherwise RETURN_SUCCESS.
+*/
+return_codes_e simulator_engine::DC_analysis(Circuit &circuit_manager)
 {
+	using namespace Eigen;
+
+	direct_solver solver;
 	SparMatD mat;
-	DenseMatD rhs, res;
+	DenseMatD rhs;
 
 	/* The matrix has to be created once */
 	this->_mna_engine.CreateMNASystemDC(circuit_manager, mat, rhs);
 
+	/* 2) Factorization/Symbolic analysis*/
+	solver.compute(mat);
+
+	/* Checks */
+	if(solver.info() != Success) return FAIL_SIMULATOR_FACTORIZATION;
+
 	/* Solve */
-	solve_linear(mat, rhs, res);
+	this->_results_d = solver.solve(rhs);
 
 //	/* TODO - Debug */
 //	auto &nodes = circuit_manager.getNodes();
@@ -90,12 +125,15 @@ void simulator_engine::DC_analysis(Circuit &circuit_manager)
 //					std::endl;
 //	}
 
-
-	this->_results_d = res;
+	return (solver.info() != Success) ? FAIL_SIMULATOR_SOLVE : RETURN_SUCCESS;
 }
 
-/* TODO - Implement */
-void simulator_engine::TRAN_analysis(Circuit &circuit_manager)
+/*!
+	@brief      Performs a transient (TRAN) simulation.
+	@param		circuit_manager		The circuit where the simulation is performed.
+	@return		Error code in case of error, otherwise RETURN_SUCCESS.
+*/
+return_codes_e simulator_engine::TRAN_analysis(Circuit &circuit_manager)
 {
 	/* TODO - EULER */
 	/* TODO - Start time is selected at 0 for now */
@@ -106,7 +144,6 @@ void simulator_engine::TRAN_analysis(Circuit &circuit_manager)
 	/* Matrices */
 	SparMatD op_mat, tran_mat;
 	DensVecD cur;
-	DenseMatD res;
 
 	/* Solver instance */
 	direct_solver solver;
@@ -114,11 +151,12 @@ void simulator_engine::TRAN_analysis(Circuit &circuit_manager)
 	/* Simulation vector */
 	auto &sim_vector = this->_mna_engine.getSimVals();
 	auto timestep = circuit_manager.getSimStep();
+	double inverse_timestep = 1/timestep;
 	auto mat_sz = this->_mna_engine.getSystemDim();
 	auto sim_sz = this->_mna_engine.getSimDim();
 
 	/* Copy the initial vector to the matrix */
-	res.resize(mat_sz, sim_sz); // Also the initial timepoint 0
+	this->_results_d.resize(mat_sz, sim_sz); // Also the initial timepoint 0
 
 	/* Create the matrices */
 	this->_mna_engine.CreateMNASystemOP(circuit_manager, op_mat, cur);
@@ -126,44 +164,87 @@ void simulator_engine::TRAN_analysis(Circuit &circuit_manager)
 
 	/****** 1st step find the op vector (t = 0) ******/
 
-	/* Analyze pattern */
-	solver.analyzePattern(op_mat);
+	std::cout << "Sim System Coil IVS: " << this->_mna_engine.getSimDim() << " "
+										 << this->_mna_engine.getSystemDim()<< " "
+										 << this->_mna_engine.getCoilOffset()<< " "
+										 << this->_mna_engine.getIVSOffset()<< "\n\n";
 
-	/* Compute numerical factorization */
-	solver.factorize(op_mat);
+	/* Factorization/Symbolic analysis*/
+	solver.compute(op_mat);
 
 	/* t = 0 */
-	res.col(0) = solver.solve(cur);
+	this->_results_d.col(0) = solver.solve(cur);
 
-	/****** 2nd step compute the final transient array ******/
-	tran_mat = (1/timestep) * tran_mat;
+#ifdef BSPICE_TRAN_USE_EULER
+	/****** 2nd step compute the final transient array ******/\
+
+	tran_mat = inverse_timestep * tran_mat;
 	op_mat = op_mat + tran_mat;	// A = G + 1/h * C
 
-	/* Analyze pattern */
-	solver.analyzePattern(op_mat);
-
-	/* Compute numerical factorization */
-	solver.factorize(op_mat);
+	/* Factorization/Symbolic analysis*/
+	solver.compute(op_mat);
 
 	/****** 3rd step Run for each simulation timepoint ******/
-	IntTp rep = 0;
 
 	/* Solve A*x = C*e(t) + x(t0)*/
-	for(auto it : sim_vector)
+	for(size_t i = 1; i < sim_vector.size(); i++) /* Skip t=0 timepoint (already computed from OP) */
 	{
-		/* Skip t=0 timepoint (already computed from OP) */
-		if(it == 0.0) continue;
+		cur = tran_mat * this->_results_d.col(i - 1);	// C/h*x(tk-1) + e(tk)
+//		this->_mna_engine.UpdateTRANVec(circuit_manager, cur, sim_vector[i]);
 
-		cur = tran_mat * res.col(rep);	// C/h*x(tk-1) + e(tk)
+		DensVecD tmp = DensVecD::Zero(mat_sz);
+		this->_mna_engine.UpdateTRANVec(circuit_manager, tmp, sim_vector[i]);
 
-		this->_mna_engine.UpdateTRANVec(circuit_manager, cur, it);
+//		if(i == 500)
+//		{
+//			std::cout << "Time is: " << i * timestep << "\n";
+//			std::cout << std::scientific;
+//			auto &nodes = circuit_manager.getNodes();
+//
+//			for(auto it = nodes.begin(); it != nodes.end(); it++)
+//			{
+//				std::cout << "Cur V[" << it->first << "]:" <<
+//						cur[it->second] << "\t" << std::endl;
+//			}
+//
+//			for(auto it = nodes.begin(); it != nodes.end(); it++)
+//			{
+//				std::cout << "Tmp V[" << it->first << "]:" <<
+//						tmp[it->second] << "\t" << std::endl;
+//			}
+//
+//		}
+		cur = cur + tmp;
 
-		res.col(rep + 1) = solver.solve(cur);
-
-		rep++;
+		this->_results_d.col(i) = solver.solve(cur);
 	}
+#else
+	/****** 2nd step compute the final transient array ******/\
+	SparMatD tmp;
+	tmp = op_mat;
+	tran_mat = 2*inverse_timestep * tran_mat;
 
-	/* TODO - TRAP */
+	/* Left hand matrix => Gnew0 = 2*C/h + G */
+	op_mat = op_mat + tran_mat;
+
+	/* Right hand matrix => Gnew1 = 2*C/h - G */
+	tran_mat = tran_mat - tmp;
+
+	/* Factorization/Symbolic analysis*/
+	solver.compute(op_mat);
+
+	/****** 3rd step Run for each simulation timepoint ******/
+
+	/* Solve A*x = C*e(t) + x(t0)*/
+	for(size_t i = 1; i < sim_vector.size(); i++) /* Skip t=0 timepoint (already computed from OP) */
+	{
+		cur = tran_mat * this->_results_d.col(i - 1);
+		this->_mna_engine.UpdateTRANVec(circuit_manager, cur, sim_vector[i]);
+		this->_mna_engine.UpdateTRANVec(circuit_manager, cur, sim_vector[i - 1]);
+
+		this->_results_d.col(i) = solver.solve(cur);
+	}
+#endif
 
 //	/* TODO - Debug */
 //	auto &nodes = circuit_manager.getNodes();
@@ -176,69 +257,16 @@ void simulator_engine::TRAN_analysis(Circuit &circuit_manager)
 //					std::endl;
 //	}
 
-
-	/* Copy result */
-	this->_results_d = res;
+	return RETURN_SUCCESS;
 }
 
-/* TODO - Implement */
-void simulator_engine::AC_analysis(Circuit &circuit_manager)
+/*!
+	@brief      Performs an alternating current (AC) simulation.
+	@param		circuit_manager		The circuit where the simulation is performed.
+	@return		Error code in case of error, otherwise RETURN_SUCCESS.
+*/
+return_codes_e simulator_engine::AC_analysis(Circuit &circuit_manager)
 {
-
+	/* TODO - Implement */
+	return RETURN_SUCCESS;
 }
-
-
-
-/* TODO - Comment */
-void simulator_engine::solve_linear(SparMatD &mat, DensVecD &rh, DensVecD &res)
-{
-	direct_solver solver;
-
-	/* Analyze pattern */
-	solver.analyzePattern(mat);
-
-	/* Compute numerical factorization */
-	solver.factorize(mat);
-
-	/* Solve */
-	res = solver.solve(rh);
-
-//	indirect_solver solver2;
-//
-//	solver2.setTolerance(1e-3);
-//
-//	solver2.compute(mat);
-//	res = solver2.solve(rh);
-
-}
-
-/* TODO - Implement */
-void simulator_engine::solve_linear(SparMatD &mat, DenseMatD &rhs, DenseMatD &res)
-{
-	direct_solver solver;
-
-	/* Analyze pattern */
-	solver.analyzePattern(mat);
-
-	/* Compute numerical factorization */
-	solver.factorize(mat);
-
-	/* Solve */
-	res = solver.solve(rhs);
-}
-
-/* TODO - Implement */
-void simulator_engine::solve_linear(SparMatCompD &mat, DensVecCompD &rh, DensVecCompD &res)
-{
-	direct_solver_c solver;
-
-	/* Analyze pattern */
-	solver.analyzePattern(mat);
-
-	/* Compute numerical factorization */
-	solver.factorize(mat);
-
-	/* Solve */
-	res = solver.solve(rh);
-}
-

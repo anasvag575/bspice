@@ -17,6 +17,24 @@ class node2_device
 		}
 
         /*!
+            @brief    Get the device's name
+            @return   The name.
+        */
+        std::string &getName(void)
+        {
+            return this->_name;
+        }
+
+        /*!
+            @brief    Set the device's name
+            @param    The name.
+        */
+        void setName(std::string &name)
+        {
+            this->_name = name;
+        }
+
+        /*!
             @brief    Get the device's value
             @return   The value.
         */
@@ -53,6 +71,7 @@ class node2_device
         }
 
     private:
+        std::string _name;									   /* Name of element */
         double _value;                                 		   /* Value in Element's SI units */
         std::array<std::string, 2> _node_names;  			   /* The node names */
         std::array<IntTp, 2> _nodes_ids;  					   /* The node IDs */

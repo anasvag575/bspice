@@ -18,8 +18,8 @@ class syntax_parser
 		/* Spice elements */
 		return_codes_e Parse2NodeDevice(std::vector<std::string> &tokens,
 									    node2_device &element,
-									    hashmap_str_t &nodes,
 									    hashmap_str_t &elements,
+										hashmap_str_t &nodes,
 									    size_t device_id,
 									    bool complete);
 

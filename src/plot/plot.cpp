@@ -1,47 +1,88 @@
 #include <iostream>
+#include <fstream>
+#include <iomanip>
 #include <vector>
-#include <cmath>
-#include <gnuplot-iostream.h>
-#include <boost/tuple/tuple.hpp>
+#include <cstdio>
+#include <limits>
 #include "plot.hpp"
 
-void plot_rand(void)
+/* TODO - Comment */
+static void sendPlotData(Circuit &circuit_manager, simulator_engine &simulator_manager, std::ofstream &stream)
 {
-	std::cout << "Hello from PLOT" << std::endl;
+	using namespace std;
 
-	Gnuplot gp;
+	/* Necessary components */
+	auto &nodesmap = circuit_manager.getNodes();
+	auto &results = simulator_manager.getResultsD();
+	auto &sim_vals = simulator_manager.getSimulationVec();
+	auto &plotnodes = circuit_manager.getPlotNodes();
+	vector<IntTp> plot_nodes_idx;
 
-	/** CUSTOM OPTIONS FOR GNUPLOT **/
-//	gp << "set xrange [-2:2]\nset yrange [-2:2]\n"; /* Setting specific range for x or y axsi*/
-	gp << "set title 'Simulation results'\n" << std::endl;		/* Base title */
-	gp << "set time\n" << std::endl;
-
-	// Create a script which can be manually fed into gnuplot later:
-	//    Gnuplot gp(">script.gp");
-	// Create script and also feed to gnuplot:
-	//    Gnuplot gp("tee plot.gp | gnuplot -persist");
-	// Or choose any of those options at runtime by setting the GNUPLOT_IOSTREAM_CMD
-	// environment variable.
-
-	// Gnuplot points require two columns: (x,y)
-	std::vector<boost::tuple<double, double>> pts_A;
-
-	for(size_t i = 0; i < 100; i++)
+	/* Create a temporal vector of indices for accessing the results */
+	for(size_t i = 0; i < plotnodes.size(); i++)
 	{
-		pts_A.push_back(boost::make_tuple(i, i * 100));
+		auto it = nodesmap.find(plotnodes[i]);
+		plot_nodes_idx.push_back(it->second);
 	}
 
-	// Don't forget to put "\n" at the end of each line!
-	// '-' means read from stdin.  The send1d() function sends data to gnuplot's stdin.
+	for(size_t i = 0; i < sim_vals.size(); i++)
+	{
+		/* First iteration send also the x value */
+		IntTp x_idx = plot_nodes_idx.front();
+		stream << sim_vals[i] << "\t" << results(x_idx, i);
 
-//    gp << "set output 'Currents'\n";
-	gp << "plot '-' with points title 'pts_A'\n";
-	gp.send1d(pts_A);
+		for(size_t k = 0; k < (plot_nodes_idx.size() - 1); k++)
+		{
+			x_idx = plot_nodes_idx[k];
+			stream << "\t" << results(x_idx, i);
+		}
+
+		x_idx = plot_nodes_idx.back();
+		stream << "\t" << results(x_idx, i) << "\n";
+	}
 }
 
-/* Set the default options for a plot window */
-void SetPlotWindowOptions(void)
+/* TODO - Comment */
+return_codes_e plot(Circuit &circuit_manager, simulator_engine &simulator_manager)
 {
+	using namespace std;
 
+	/* Checks */
+	if(!circuit_manager.valid()) return FAIL_PLOTTER_CIRCUIT_INVALID;
+	if(!simulator_manager.valid()) return FAIL_PLOTTER_RESULTS_INVALID;
+
+	/* Set precision and gnuplot environment */
+	std::cout.precision(std::numeric_limits<double>::digits10 + 2);
+	FILE *gnuplotPipe = popen("gnuplot -persistent", "w");
+	ofstream data_file(".gnuplotdata", ios::out);
+
+	/* Checks */
+	if(!data_file || !gnuplotPipe) return FAIL_PLOTTER_IO_OPERATIONS;
+
+	/* TODO - Commands */
+	std::string commands("set title 'Simulation results'\n");
+	commands += "set xlabel 'Sweep var'\n";
+	commands += "set ylabel 'Node voltage(V)'\n";
+
+	/* Send the commands and the plot data */
+	fprintf(gnuplotPipe, commands.c_str());
+	sendPlotData(circuit_manager, simulator_manager, data_file);
+
+	auto &plotnodes = circuit_manager.getPlotNodes();
+
+	/* Send the final commands to plot the vectors */
+	fprintf(gnuplotPipe, "plot '.gnuplotdata' using 1:2 title '%s' with lines", plotnodes.front().c_str());
+
+	for (size_t i = 1; i < plotnodes.size(); i++)
+	{
+		fprintf(gnuplotPipe, ",'' using 1:%ld title '%s' with lines", (i + 2), plotnodes[i].c_str());
+	}
+	fprintf(gnuplotPipe, "\nquit\n");
+
+	/* Close files */
+	data_file.close();
+	pclose(gnuplotPipe);
+	remove(".gnuplotdata");
+
+	return RETURN_SUCCESS;
 }
-

@@ -19,8 +19,8 @@ class Circuit
 			this->_type = OP;
 			this->_valid = false;
 			this->_sim_step = 0;
-			this->_sim_start = 0;
-			this->_sim_end = 0;
+			this->_sim_start = 1;
+			this->_sim_end = 1;
 		}
 
         /*!
@@ -36,8 +36,8 @@ class Circuit
 			this->_valid = false;
 			this->_source = "";
 			this->_sim_step = 0;
-			this->_sim_start = 0;
-			this->_sim_end = 0;
+			this->_sim_start = 1;
+			this->_sim_end = 1;
 
 			/* For vectors call clean method to accelerate next circuit */
 			this->_res.clear();
@@ -57,7 +57,7 @@ class Circuit
             @brief    Check if the current circuit is valid.
             @return   True or False.
         */
-        bool isCircuitValid(void)
+        bool valid(void)
         {
             return _valid;
         }

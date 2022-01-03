@@ -67,14 +67,14 @@ bool syntax_parser::tokenizer(std::string &line, std::vector<std::string> &token
 */
 return_codes_e syntax_parser::Parse2NodeDevice(std::vector<std::string> &tokens,
 											   node2_device &element,
-											   hashmap_str_t &nodes,
 											   hashmap_str_t &elements,
+											   hashmap_str_t &nodes,
 											   size_t device_id,
 											   bool complete)
 {
 	double val;
-	auto &node_pairs = element.getNodeNames();
-	auto &node_ids = element.getNodeIDs();
+	auto &node_names = element.getNodeNames();
+	auto &node_IDs = element.getNodeIDs();
 
 	/* Check the size of the tokens at hand.
 	 * Complete devices need exactly 4, while extended at least 4 */
@@ -86,40 +86,38 @@ return_codes_e syntax_parser::Parse2NodeDevice(std::vector<std::string> &tokens,
     /* Check uniqueness  */
     if(elements.find(tokens[0]) != elements.end()) return FAIL_PARSER_ELEMENT_EXISTS;
     elements[tokens[0]] = device_id;
+    element.setName(tokens[0]);
 
     /* No short circuits for any elements allowed */
     if(tokens[1] == tokens[2]) return FAIL_PARSER_SHORTED_ELEMENT;
 
-    /* Check for the nodes if they already exist */
-    for(int i = 0; i < 2; i++)
-    {
-        /* Ground node - Do not insert in map (-1) */
-        if(tokens[i + 1] == "0")
-        {
-        	node_pairs[i] = "0";
-        	node_ids[i] = -1;
-            continue;
-        }
+	for(int i = 0; i < 2; i++)
+	{
+		/* Ground node - Do not insert in map (-1) */
+		if(tokens[i + 1] == "0")
+		{
+			node_names[i] = "0";
+			node_IDs[i] = -1;
+			continue;
+		}
 
-        /* Normal node */
-        auto it = nodes.find(tokens[i + 1]);
+		/* Normal node */
+		auto it = nodes.find(tokens[i + 1]);
 
-        if(it != nodes.end()) /* First time encountering this node */
-        {
-        	node_pairs[i] = it->first;
-        	node_ids[i] = it->second;
-        }
-        else
-        {
-            size_t tmp_sz = nodes.size();
+		if(it != nodes.end())
+		{
+			node_names[i] = tokens[i + 1];
+			node_IDs[i] = it->second;
+		}
+		else /* First time encountering this node */
+		{
+			node_names[i] = tokens[i + 1];
+			node_IDs[i] = nodes.size();
+			nodes[node_names[i]] = node_IDs[i]; /* Also insert in map */
+		}
+	}
 
-        	node_pairs[i] = tokens[i + 1];
-        	node_ids[i] = tmp_sz;
-            nodes[tokens[i + 1]] = tmp_sz; /* Also insert in map */
-        }
-    }
-
-    /* Set the values for the element */
+    /* Set the value for the element */
     element.setVal(val);
 
     return RETURN_SUCCESS;

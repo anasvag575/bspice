@@ -125,6 +125,8 @@ class MNA
 		void CreateMNASystemTRAN(Circuit &circuit_manager, SparMatD &mat);
 		void UpdateTRANVec(Circuit &circuit_manager, DensVecD &rh, double time);
 
+		/* Formation of plot matrices */
+		void CreatePLOTNodeVec(Circuit &circuit_manager, DensVecD &out, std::string node, DenseMatD &res);
 	private:
 
 		/* MNA stampers */

@@ -62,12 +62,24 @@ inline long int klu_solve(klu_l_symbolic *Symbolic, klu_l_numeric *Numeric, long
    return klu_l_solve(Symbolic, Numeric, ldim, nrhs, B, Common);
 }
 
+inline int klu_solve(klu_l_symbolic *Symbolic, klu_l_numeric *Numeric, Index ldim, Index nrhs, std::complex<double>B[], klu_l_common *Common, std::complex<double>) {
+   return klu_zl_solve(Symbolic, Numeric, internal::convert_index<int>(ldim), internal::convert_index<int>(nrhs), &numext::real_ref(B[0]), Common);
+}
+
 inline long int klu_tsolve(klu_l_symbolic *Symbolic, klu_l_numeric *Numeric, long int ldim, long int nrhs, double B[], klu_l_common *Common, double) {
    return klu_l_tsolve(Symbolic, Numeric, ldim, nrhs, B, Common);
 }
 
+inline int klu_tsolve(klu_l_symbolic *Symbolic, klu_l_numeric *Numeric, Index ldim, Index nrhs, std::complex<double>B[], klu_l_common *Common, std::complex<double>) {
+   return klu_zl_tsolve(Symbolic, Numeric, internal::convert_index<int>(ldim), internal::convert_index<int>(nrhs), &numext::real_ref(B[0]), 0, Common);
+}
+
 inline klu_l_numeric* klu_factor(long int Ap [ ], long int Ai [ ], double Ax [ ], klu_l_symbolic *Symbolic, klu_l_common *Common, double) {
    return klu_l_factor(Ap, Ai, Ax, Symbolic, Common);
+}
+
+inline klu_l_numeric* klu_factor(long int Ap[], long int Ai[], std::complex<double> Ax[], klu_l_symbolic *Symbolic, klu_l_common *Common, std::complex<double>) {
+   return klu_zl_factor(Ap, Ai, &numext::real_ref(Ax[0]), Symbolic, Common);
 }
 
 inline int free_symbolic( klu_symbolic **Symbolic, klu_common *Common){
