@@ -51,6 +51,10 @@ return_codes_e plot(Circuit &circuit_manager, simulator_engine &simulator_manage
 	if(!circuit_manager.valid()) return FAIL_PLOTTER_CIRCUIT_INVALID;
 	if(!simulator_manager.valid()) return FAIL_PLOTTER_RESULTS_INVALID;
 
+	/* TODO - Checks if we really have anything to plot */
+	if(!circuit_manager.getPlotNodes().size())
+	    return RETURN_SUCCESS;
+
 	/* Set precision and gnuplot environment */
 	std::cout.precision(std::numeric_limits<double>::digits10 + 2);
 	FILE *gnuplotPipe = popen("gnuplot -persistent", "w");

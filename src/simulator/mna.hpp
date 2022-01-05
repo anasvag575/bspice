@@ -142,6 +142,9 @@ class MNA
 		double PULSESourceEval(std::vector<double> &vvals, double time);
 		double PWLSourceEval(std::vector<double> &tvals, std::vector<double> &vvals, double time);
 
+		/* Debug functionalities */
+		void debug_triplet_mat(tripletList_d &mat);
+
 		/* Information about the system */
 		IntTp _sim_dim;
 		IntTp _system_dim;

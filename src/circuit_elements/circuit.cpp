@@ -10,7 +10,7 @@
 	@param	  input_file	The file that contains the SPICE netlist.
     @return   The error code, in case of error, otherwise RETURN_SUCCESS.
 */
-return_codes_e Circuit::CreateCircuit(std::fstream &input_file)
+return_codes_e Circuit::createCircuit(std::fstream &input_file)
 {
     using namespace std;
     using namespace chrono;
@@ -89,7 +89,7 @@ return_codes_e Circuit::CreateCircuit(std::fstream &input_file)
             }
             case '.':
             {
-            	errcode = CreateSPICECard(tokens, syntax_match);
+            	errcode = createSPICECard(tokens, syntax_match);
             	cout << "[INFO]: - At line " << linenum << ": Found SPICE CARD\n";
 
             	break;
@@ -117,12 +117,12 @@ return_codes_e Circuit::CreateCircuit(std::fstream &input_file)
     /* Verify that circuit meets the criteria */
     errcode = verify();
 
-    /* Measure the total time taken for parsing and verification */
-    auto end_time = high_resolution_clock::now();
-
     /* Output information only in case of success */
     if(errcode == RETURN_SUCCESS)
     {
+        /* Measure the total time taken */
+        auto end_time = high_resolution_clock::now();
+
     	IntTp ics_count[TRANSIENT_SOURCE_TYPENUM] = {0};
     	IntTp ivs_count[TRANSIENT_SOURCE_TYPENUM] = {0};
 
@@ -138,19 +138,19 @@ return_codes_e Circuit::CreateCircuit(std::fstream &input_file)
 
 		cout << "ICS: " << this->_ics.size() << "\n";
 		for(auto &it : this->_ics) ics_count[it.getType()]++;
-		cout << "\tCONST: " << ics_count[CONSTANT_SOURCE] << "\n";
-		cout << "\tEXP: " << ics_count[EXP_SOURCE] << "\n";
-		cout << "\tSINE: " << ics_count[SINE_SOURCE] << "\n";
+		cout << "\tConstant: " << ics_count[CONSTANT_SOURCE] << "\n";
+		cout << "\tExp: " << ics_count[EXP_SOURCE] << "\n";
+		cout << "\tSine: " << ics_count[SINE_SOURCE] << "\n";
 		cout << "\tPWL: " << ics_count[PWL_SOURCE] << "\n";
-		cout << "\tPULSE: " << ics_count[PULSE_SOURCE] << "\n";
+		cout << "\tPulse: " << ics_count[PULSE_SOURCE] << "\n";
 
 		cout << "IVS: " << this->_ivs.size() << "\n";
 		for(auto &it : this->_ivs) ivs_count[it.getType()]++;
-		cout << "\tCONST: " << ivs_count[CONSTANT_SOURCE] << "\n";
-		cout << "\tEXP: " << ivs_count[EXP_SOURCE] << "\n";
-		cout << "\tSINE: " << ivs_count[SINE_SOURCE] << "\n";
+		cout << "\tConstant: " << ivs_count[CONSTANT_SOURCE] << "\n";
+		cout << "\tExp: " << ivs_count[EXP_SOURCE] << "\n";
+		cout << "\tSine: " << ivs_count[SINE_SOURCE] << "\n";
 		cout << "\tPWL: " << ivs_count[PWL_SOURCE] << "\n";
-		cout << "\tPULSE: " << ivs_count[PULSE_SOURCE] << "\n";
+		cout << "\tPulse: " << ivs_count[PULSE_SOURCE] << "\n";
 
 		cout << "************************************\n";
 		cout << "Simulation Type: " << this->_type << "\n";
@@ -170,7 +170,7 @@ return_codes_e Circuit::CreateCircuit(std::fstream &input_file)
   	@match	match	Syntax parser instantiation.
     @return   The error code, in case of error, otherwise RETURN_SUCCESS.
 */
-return_codes_e Circuit::CreateSPICECard(std::vector<std::string> &tokens, syntax_parser &match)
+return_codes_e Circuit::createSPICECard(std::vector<std::string> &tokens, syntax_parser &match)
 {
 	using namespace std;
 
@@ -184,7 +184,7 @@ return_codes_e Circuit::CreateSPICECard(std::vector<std::string> &tokens, syntax
 	}
 
 	/* Base parameters for analysis */
-	double start, stop, steps;
+	double start = 0, stop = 0, steps = 0;
 	return_codes_e errcode = RETURN_SUCCESS;
 
 	/* Handle each analaysis */
@@ -282,3 +282,97 @@ return_codes_e Circuit::verify(void)
 
     return RETURN_SUCCESS;
 }
+
+
+/*!
+    @brief    Internal debug routine, that recreates the nodesmap, based on
+    the ordering defined by debug_circuit(). Used only for debugging.
+    @param  element   The current element whose nodes we insert in the map
+*/
+void Circuit::debug_insert_nodes(node2_device &element)
+{
+    auto &node_names = element.getNodeNames();
+    auto &node_IDs = element.getNodeIDs();
+
+    for(int i = 0; i < 2; i++)
+    {
+        /* Ground node - Do not insert in map (-1) */
+        if(node_names[i] == "0")
+        {
+            node_IDs[i] = -1;
+            continue;
+        }
+
+        /* Normal node */
+        auto it = _nodes.find(node_names[i]);
+
+        if(it != _nodes.end())
+        {
+            node_IDs[i] = it->second;
+        }
+        else /* First time encountering this node */
+        {
+            node_IDs[i] = _nodes.size();
+            _nodes[node_names[i]] = node_IDs[i]; /* Also insert in map */
+        }
+    }
+}
+
+/*!
+    @brief    Internal routine that reorders the elements in their containers,
+    specified by the comparator and the recreate the elements and nodes maps.
+    Used only for debugging.
+*/
+void Circuit::debug_circuit(void)
+{
+    /* Perform ordering of the elements in their containers by name and
+     * then order the nodes unique numbering by inserting in this exact order:
+     * IVS - Coils - ICS - Res - Caps */
+	using namespace std;
+
+	vector<Coil> tmp_coils = this->_coils;
+	vector<Capacitor> tmp_caps = this->_caps;
+	vector<Resistor> tmp_res = this->_res;
+	vector<ivs> tmp_ivs = this->_ivs;
+	vector<ics> tmp_ics = this->_ics;
+
+	/* Sort and print by order */
+	sort(tmp_coils.begin(), tmp_coils.end());
+	sort(tmp_caps.begin(), tmp_caps.end());
+	sort(tmp_res.begin(), tmp_res.end());
+	sort(tmp_ivs.begin(), tmp_ivs.end());
+	sort(tmp_ics.begin(), tmp_ics.end());
+
+	/* Reset both maps */
+	this->_element_names.clear();
+	auto &elementmap = this->_element_names;
+	for(size_t i = 0; i < tmp_ivs.size(); i++) elementmap[tmp_ivs[i].getName()] = i;
+	for(size_t i = 0; i < tmp_coils.size(); i++) elementmap[tmp_coils[i].getName()] = i;
+	for(size_t i = 0; i < tmp_ics.size(); i++) elementmap[tmp_ics[i].getName()] = i;
+	for(size_t i = 0; i < tmp_res.size(); i++) elementmap[tmp_res[i].getName()] = i;
+	for(size_t i = 0; i < tmp_caps.size(); i++) elementmap[tmp_caps[i].getName()] = i;
+
+    /* Recreate the nodesmap */
+	this->_nodes.clear();
+    for(auto &it : tmp_ivs) debug_insert_nodes(it);
+    for(auto &it : tmp_coils) debug_insert_nodes(it);
+    for(auto &it : tmp_ics) debug_insert_nodes(it);
+    for(auto &it : tmp_res) debug_insert_nodes(it);
+    for(auto &it : tmp_caps) debug_insert_nodes(it);
+
+	/* Output */
+    this->_coils = tmp_coils;
+    this->_caps = tmp_caps;
+    this->_res = tmp_res;
+    this->_ivs = tmp_ivs;
+    this->_ics = tmp_ics;
+
+//	cout.precision(12);
+//	cout << std::fixed;
+//	for(auto &it : tmp_ivs) cout << it;
+//	for(auto &it : tmp_coils) cout << it;
+//	for(auto &it : tmp_ics) cout << it;
+//	for(auto &it : tmp_res) cout << it;
+//	for(auto &it : tmp_caps) cout << it;
+}
+

@@ -3,6 +3,7 @@
 
 #include <string>
 #include <array>
+#include <iostream>
 #include "base_types.hpp"
 
 class node2_device
@@ -14,6 +15,8 @@ class node2_device
 		node2_device(void)
 		{
 			_value = 0;
+			_nodes_ids[0] = -1;
+            _nodes_ids[1] = -1;
 		}
 
         /*!
@@ -68,6 +71,31 @@ class node2_device
         std::array<IntTp, 2> &getNodeIDs(void)
         {
         	return this->_nodes_ids;
+        }
+
+        /*!
+            @brief    Overloaded operator for stdout, that prints the contents of the
+            element.
+            @return   The reference to the stream.
+        */
+        friend std::ostream &operator<<(std::ostream& os, const node2_device& a)
+        {
+        	os << a._name << " " ;
+        	os << a._nodes_ids[0] << " " << a._nodes_ids[1] << " ";
+//        	os << a._node_names[0] << " " << a._node_names[1] << " ";
+        	os << a._value << "\n";
+
+        	return os;
+        }
+
+        /*!
+            @brief    Overloaded comparison operator, used when sorting
+            elements in a container.
+            @return   Boolean with the results of the comparison.
+        */
+        bool operator<(node2_device &b)
+        {
+            return this->_name < b._name;
         }
 
     private:

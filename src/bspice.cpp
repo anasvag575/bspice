@@ -9,7 +9,7 @@
 int main(int argc, char **argv)
 {
     using namespace std;
-    const string syntax = "./v2b_simulator <filename>";
+    const string syntax = "./bspice <filename>";
 
     /* Check for valid number of input arguments */
     if (argc != 2)
@@ -32,7 +32,7 @@ int main(int argc, char **argv)
 
     /* Step 2 - Instantiate a circuit and parse the file */
     Circuit circuit_manager;
-    if(circuit_manager.CreateCircuit(input_file) != RETURN_SUCCESS)
+    if(circuit_manager.createCircuit(input_file) != RETURN_SUCCESS)
     {
         input_file.close();
         cout << "[ERROR - " << FAIL_LOADING_FILE << "]: Unable to load input file <" << input_file_name << ">." <<endl;
@@ -47,7 +47,7 @@ int main(int argc, char **argv)
     if(sim_manager.run(circuit_manager) != RETURN_SUCCESS)
     {
         cout << "[ERROR - " << FAIL_SIMULATOR_RUN << "]: Unable to simulate circuit." <<endl;
-        return FAIL_LOADING_FILE;
+        return FAIL_SIMULATOR_RUN;
     }
     else
     {

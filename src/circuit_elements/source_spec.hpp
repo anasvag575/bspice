@@ -9,7 +9,9 @@
 class source_spec
 {
     public:
-		/* Default constructor */
+        /*!
+            @brief    Default constructor.
+        */
 		source_spec()
 		{
 			_type = CONSTANT_SOURCE;

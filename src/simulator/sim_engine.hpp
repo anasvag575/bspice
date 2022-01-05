@@ -76,6 +76,7 @@ class simulator_engine
 
 		return_codes_e run(Circuit &circuit_manager);
 	private:
+		/* Analysis supported */
 		return_codes_e OP_analysis(Circuit &circuit_manager);
 		return_codes_e DC_analysis(Circuit &circuit_manager);
 		return_codes_e TRAN_analysis(Circuit &circuit_manager);

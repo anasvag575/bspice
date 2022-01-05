@@ -22,7 +22,7 @@ void StepVecGen(std::vector<T> &vec, T start, T end, T step)
 	/* Avoid infinite loops */
 	if(step == 0) return;
 
-	/* Incrementaly add */
+	/* Incrementally add */
 	while(start <= end)
 	{
 		vec.push_back(start);

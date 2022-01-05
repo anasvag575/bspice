@@ -17,8 +17,8 @@ void MNA::ResMNAStamp(tripletList_d &mat, Resistor &res)
 
 	if((arr[0] != -1) && (arr[1] != -1))
 	{
+	    mat.push_back(triplet_eig_d(arr[1], arr[0], -conduct));
 		mat.push_back(triplet_eig_d(arr[0], arr[1], -conduct));
-		mat.push_back(triplet_eig_d(arr[1], arr[0], -conduct));
 	}
 }
 
@@ -135,8 +135,8 @@ double MNA::EXPSourceEval(std::vector<double> &vvals, double time)
 	const double i1 = vvals[0];
 	const double i2 = vvals[1];
 	const double td1 = vvals[2];
-	const double td2 = vvals[3];
-	const double tc1 = vvals[4];
+    const double tc1 = vvals[3];
+	const double td2 = vvals[4];
 	const double tc2 = vvals[5];
 
 	if (time <= td1)
@@ -157,9 +157,9 @@ double MNA::SINSourceEval(std::vector<double> &vvals, double time)
 	const double i1 = vvals[0];
 	const double ia = vvals[1];
 	const double fr = vvals[2];
-	const double ph = vvals[3];
-	const double td = vvals[4];
-	const double df = vvals[5];
+	const double td = vvals[3];
+	const double df = vvals[4];
+    const double ph = vvals[5];
 
 	if (time <= td)
 		return i1 + ia * sin((2 * M_PI * ph) / 360);
@@ -180,9 +180,9 @@ double MNA::PULSESourceEval(std::vector<double> &vvals, double time)
 	const double i1 = vvals[0];
 	const double i2 = vvals[1];
 	const double td = vvals[2];
-	const double pw = vvals[3];
-	const double tr = vvals[4];
-	const double tf = vvals[5];
+	const double tr = vvals[3];
+	const double tf = vvals[4];
+	const double pw = vvals[5];
 	const double per = vvals[6];
 
 	/* This normalizes the pulse inside a period's length */
@@ -409,8 +409,6 @@ void MNA::CreateMNASystemDC(Circuit &circuit_manager, SparMatD &mat, DenseMatD &
 	/* Voltage sweep needs an offset */
 	if(src_dut[0] == 'V') ivs_idx += this->_ivs_offset;
 
-	std::cout << "System dim - Sim dim: " << this->_system_dim << " " << this->_sim_dim << std::endl;
-
 	/* Copy the initial vector to the matrix */
 	rhs.resize(this->_system_dim, this->_sim_dim);
 
@@ -450,7 +448,28 @@ void MNA::CreateMNASystemTRAN(Circuit &circuit_manager, SparMatD &mat)
 		coil_start++;
 	}
 
+
 	/* 2) Compress the matrix into its final form */
 	mat.resize(mat_sz, mat_sz);
 	mat.setFromTriplets(triplet_mat.begin(), triplet_mat.end());
+}
+
+
+
+/*!
+    @brief      Prints the triplet matrix given. Used only for debugging.
+    @param      circuit     The triplet matrix to be printed
+*/
+void debug_triplet_mat(tripletList_d &mat)
+{
+    /* Set precision */
+    std::cout.precision(15);
+    std::cout << std::fixed;
+
+    /* Output to console */
+    std::cout << "Triplet matrix:\n";
+    for(auto &it : mat)
+    {
+        std::cout << it.row() << " " << it.col() << " " << it.value() << "\n";
+    }
 }

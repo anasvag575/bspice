@@ -1,6 +1,6 @@
-#include <chrono> /* For time */
+#include <chrono>       /* For time */
+#include "KLUSupport"   /* For Eigen KLU */
 #include "sim_engine.hpp"
-#include "KLUSupport"
 
 #ifdef BSPICE_EIGEN_USE_KLU
 	/* KLU direct solvers - Supports both int/long */
@@ -11,7 +11,6 @@
 	typedef Eigen::SparseLU<SparMatD, Eigen::COLAMDOrdering<IntTp>> direct_solver;
 	typedef Eigen::SparseLU<SparMatCompD, Eigen::COLAMDOrdering<IntTp>> direct_solver_c;
 #endif
-
 
 /*!
 	@brief      Performs a simulation run based on the initialization performed.
@@ -52,7 +51,6 @@ return_codes_e simulator_engine::run(Circuit &circuit_manager)
 	return ret;
 }
 
-
 /*!
 	@brief      Performs an operating point (OP) simulation.
 	@param		circuit_manager		The circuit where the simulation is performed.
@@ -78,13 +76,6 @@ return_codes_e simulator_engine::OP_analysis(Circuit &circuit_manager)
 
 	/* Solve */
 	this->_results_d = solver.solve(rh);
-
-//	/* TODO - Debug */
-//	auto &nodes = circuit_manager.getNodes();
-//	for(auto it = nodes.begin(); it != nodes.end(); it++)
-//	{
-//		std::cout << "V[" << it->first << "]:" << this->_results_d(it->second, 0) << std::endl;
-//	}
 
 	return (solver.info() != Success) ? FAIL_SIMULATOR_SOLVE : RETURN_SUCCESS;
 }
@@ -135,7 +126,6 @@ return_codes_e simulator_engine::DC_analysis(Circuit &circuit_manager)
 */
 return_codes_e simulator_engine::TRAN_analysis(Circuit &circuit_manager)
 {
-	/* TODO - EULER */
 	/* TODO - Start time is selected at 0 for now */
 
 	/* First compute the operating point of the circuit.
@@ -164,12 +154,7 @@ return_codes_e simulator_engine::TRAN_analysis(Circuit &circuit_manager)
 
 	/****** 1st step find the op vector (t = 0) ******/
 
-	std::cout << "Sim System Coil IVS: " << this->_mna_engine.getSimDim() << " "
-										 << this->_mna_engine.getSystemDim()<< " "
-										 << this->_mna_engine.getCoilOffset()<< " "
-										 << this->_mna_engine.getIVSOffset()<< "\n\n";
-
-	/* Factorization/Symbolic analysis*/
+	/* Factorization/Symbolic analysis */
 	solver.compute(op_mat);
 
 	/* t = 0 */
@@ -189,35 +174,14 @@ return_codes_e simulator_engine::TRAN_analysis(Circuit &circuit_manager)
 	/* Solve A*x = C*e(t) + x(t0)*/
 	for(size_t i = 1; i < sim_vector.size(); i++) /* Skip t=0 timepoint (already computed from OP) */
 	{
+	    /* Create the right hand side */
 		cur = tran_mat * this->_results_d.col(i - 1);	// C/h*x(tk-1) + e(tk)
-//		this->_mna_engine.UpdateTRANVec(circuit_manager, cur, sim_vector[i]);
+		this->_mna_engine.UpdateTRANVec(circuit_manager, cur, sim_vector[i]);
 
-		DensVecD tmp = DensVecD::Zero(mat_sz);
-		this->_mna_engine.UpdateTRANVec(circuit_manager, tmp, sim_vector[i]);
-
-//		if(i == 500)
-//		{
-//			std::cout << "Time is: " << i * timestep << "\n";
-//			std::cout << std::scientific;
-//			auto &nodes = circuit_manager.getNodes();
-//
-//			for(auto it = nodes.begin(); it != nodes.end(); it++)
-//			{
-//				std::cout << "Cur V[" << it->first << "]:" <<
-//						cur[it->second] << "\t" << std::endl;
-//			}
-//
-//			for(auto it = nodes.begin(); it != nodes.end(); it++)
-//			{
-//				std::cout << "Tmp V[" << it->first << "]:" <<
-//						tmp[it->second] << "\t" << std::endl;
-//			}
-//
-//		}
-		cur = cur + tmp;
-
+		/* */
 		this->_results_d.col(i) = solver.solve(cur);
 	}
+
 #else
 	/****** 2nd step compute the final transient array ******/\
 	SparMatD tmp;
@@ -245,17 +209,6 @@ return_codes_e simulator_engine::TRAN_analysis(Circuit &circuit_manager)
 		this->_results_d.col(i) = solver.solve(cur);
 	}
 #endif
-
-//	/* TODO - Debug */
-//	auto &nodes = circuit_manager.getNodes();
-//	for(auto it = nodes.begin(); it != nodes.end(); it++)
-//	{
-//		std::cout << "V[" << it->first << "]:" <<
-//					res(it->second, 0) << "\t" <<
-//					res(it->second, 1) << "\t" <<
-//					res(it->second, 2) << "\t" <<
-//					std::endl;
-//	}
 
 	return RETURN_SUCCESS;
 }

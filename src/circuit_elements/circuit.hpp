@@ -19,8 +19,8 @@ class Circuit
 			this->_type = OP;
 			this->_valid = false;
 			this->_sim_step = 0;
-			this->_sim_start = 1;
-			this->_sim_end = 1;
+			this->_sim_start = 0;
+			this->_sim_end = 0;
 		}
 
         /*!
@@ -38,6 +38,8 @@ class Circuit
 			this->_sim_step = 0;
 			this->_sim_start = 1;
 			this->_sim_end = 1;
+
+			/* TODO - Resize */
 
 			/* For vectors call clean method to accelerate next circuit */
 			this->_res.clear();
@@ -197,15 +199,19 @@ class Circuit
         	return this->_scale;
         }
 
-        return_codes_e CreateCircuit(std::fstream &input_file);
+        return_codes_e createCircuit(std::fstream &input_file);
     private:
-        return_codes_e CreateSPICECard(std::vector<std::string> &tokens, syntax_parser &match);
+        return_codes_e createSPICECard(std::vector<std::string> &tokens, syntax_parser &match);
         return_codes_e verify(void);
 
-        /* Flag */
+        /* Debugging only functions */
+        void debug_insert_nodes(node2_device &element);
+        void debug_circuit(void);
+
+        /* Flag indicating this is a valid circuit */
         bool _valid;
 
-        /* A circuit contains the elements supported by the simulator */
+        /* Elements contained in the circuit */
         std::vector<Resistor> _res;
         std::vector<Capacitor> _caps;
         std::vector<Coil> _coils;
