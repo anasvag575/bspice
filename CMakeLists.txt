@@ -47,8 +47,7 @@ find_package(OpenMP REQUIRED)
 #find_package(suitesparse)
 
 # Source code
-add_library(circuit_lib src/circuit_elements/circuit.cpp)
-add_library(parser_lib src/util/syntax_parser.cpp)
+add_library(circuit_lib src/circuit_elements/circuit.cpp src/util/parser.cpp)
 add_library(plot_lib src/plot/plot.cpp)
 add_library(simulator_lib src/simulator/mna.cpp src/simulator/sim_engine.cpp)
 
@@ -57,8 +56,7 @@ add_executable(bspice src/bspice.cpp)
 
 # Here you can add dynamic libraries 
 target_link_libraries(bspice 
-	circuit_lib 
-	parser_lib 
+	circuit_lib
 	plot_lib 
 	simulator_lib 
 	#OpenMP::OpenMP_CXX

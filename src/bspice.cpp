@@ -6,16 +6,17 @@
 #include "sim_engine.hpp"
 #include "plot.hpp"
 
-int main(int argc, char **argv)
+/* TODO - This is non-interactive execution */
+static return_codes_e bspice_single_run(int argc, char **argv)
 {
+    return_codes_e errcode = RETURN_SUCCESS;
     using namespace std;
-    const string syntax = "./bspice <filename>";
 
     /* Check for valid number of input arguments */
     if (argc != 2)
     {
         cout << "[ERROR - " << FAIL_ARG_NUM << "]: Invalid number of input arguments." << endl;
-        cout << "[ERROR - " << FAIL_ARG_NUM << "]: Syntax is as follows => " << syntax << endl;
+        cout << "\tSyntax is as follows => " << "./bspice <filename>" << endl;
         return FAIL_ARG_NUM;
     }
 
@@ -30,31 +31,38 @@ int main(int argc, char **argv)
         return FAIL_INPUT_FILE;
     }
 
-    /* Step 2 - Instantiate a circuit and parse the file */
+    /* Step 2 - Instantiate a circuit, parse and then close the file */
     Circuit circuit_manager;
-    if(circuit_manager.createCircuit(input_file) != RETURN_SUCCESS)
+    errcode = circuit_manager.createCircuit(input_file);
+    input_file.close();
+
+    if(errcode != RETURN_SUCCESS)
     {
-        input_file.close();
-        cout << "[ERROR - " << FAIL_LOADING_FILE << "]: Unable to load input file <" << input_file_name << ">." <<endl;
+        cout << "[ERROR]: Unable to load input file <" << input_file_name << ">." <<endl;
         return FAIL_LOADING_FILE;
     }
 
-    /* Close the netlist file */
-    input_file.close();
-
     /* Step 3 - Proceed to the simulator engine */
     simulator_engine sim_manager(circuit_manager);
-    if(sim_manager.run(circuit_manager) != RETURN_SUCCESS)
+    errcode = sim_manager.run(circuit_manager);
+
+    if(errcode != RETURN_SUCCESS)
     {
-        cout << "[ERROR - " << FAIL_SIMULATOR_RUN << "]: Unable to simulate circuit." <<endl;
+        cout << "[ERROR]: Unable to properly simulate circuit." <<endl;
         return FAIL_SIMULATOR_RUN;
     }
-    else
-    {
-        /* TODO - Leave Plot as is for now */
-        /* Step 4 - Output the results either by plotting or printing to a file */
-        plot(circuit_manager, sim_manager);
-    }
 
-    return 1;
+    /* Step 4 - Output the results */
+    return plot(circuit_manager, sim_manager);
 }
+
+
+int main(int argc, char **argv)
+{
+//    return_codes_e errcode = RETURN_SUCCESS;
+
+    /* TODO - Only non-interactive run exists now */
+    return bspice_single_run(argc, argv);
+}
+
+

@@ -105,17 +105,6 @@ return_codes_e simulator_engine::DC_analysis(Circuit &circuit_manager)
 	/* Solve */
 	this->_results_d = solver.solve(rhs);
 
-//	/* TODO - Debug */
-//	auto &nodes = circuit_manager.getNodes();
-//	for(auto it = nodes.begin(); it != nodes.end(); it++)
-//	{
-//		std::cout << "V[" << it->first << "]:" <<
-//					res(it->second, 0) << "\t" <<
-//					res(it->second, 1) << "\t" <<
-//					res(it->second, 2) << "\t" <<
-//					std::endl;
-//	}
-
 	return (solver.info() != Success) ? FAIL_SIMULATOR_SOLVE : RETURN_SUCCESS;
 }
 

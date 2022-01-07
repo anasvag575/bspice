@@ -14,4 +14,4 @@ typedef tsl::robin_map<std::string, IntTp> hashmap_str_t;
 //typedef std::unordered_map<std::string, IntTp> hashmap_str_t;
 
 
-#endif // __MATRIX_TYPES_H //
+#endif // __BASE_TYPES_H //

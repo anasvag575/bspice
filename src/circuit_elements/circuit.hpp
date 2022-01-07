@@ -3,8 +3,7 @@
 
 #include <iostream>
 #include <fstream>
-
-#include "syntax_parser.hpp"
+#include "parser.hpp"
 
 class Circuit
 {
@@ -201,7 +200,7 @@ class Circuit
 
         return_codes_e createCircuit(std::fstream &input_file);
     private:
-        return_codes_e createSPICECard(std::vector<std::string> &tokens, syntax_parser &match);
+        return_codes_e createSPICECard(std::vector<std::string> &tokens, parser &match);
         return_codes_e verify(void);
 
         /* Debugging only functions */

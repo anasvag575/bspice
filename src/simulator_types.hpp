@@ -10,7 +10,7 @@ typedef enum return_enum_codes
     FAIL_ARG_NUM,
     FAIL_INPUT_FILE,
 
-    /* Parser opcodes - Used inside circuit.cpp */
+    /* Parser opcodes - Used inside circuit.cpp/parser.cpp */
     FAIL_LOADING_FILE,
     FAIL_PARSER_INVALID_FORMAT,
     FAIL_PARSER_ELEMENT_EXISTS,
@@ -19,6 +19,8 @@ typedef enum return_enum_codes
     FAIL_PARSER_SHORTED_ELEMENT,
 	FAIL_PARSER_UKNOWN_SPICE_CARD,
 	FAIL_PARSER_SOURCE_SPEC_ARGS,
+	FAIL_PARSER_SOURCE_SPEC_ARGS_NUM,
+	FAIL_PARSER_SOURCE_SPEC_ARGS_FORMAT,
 	FAIL_PARSER_ANALYSIS_INVALID_ARGS,
 
 	/* Simulator engine opcodes - Used inside mna/sim_engine.cpp */
@@ -30,6 +32,7 @@ typedef enum return_enum_codes
 	/* Plotter engine opcodes - Used inside plot.cpp */
 	FAIL_PLOTTER_CIRCUIT_INVALID,
 	FAIL_PLOTTER_RESULTS_INVALID,
+	FAIL_PLOTTER_NOTHING_TO_PLOT,
 	FAIL_PLOTTER_IO_OPERATIONS
 } return_codes_e;
 

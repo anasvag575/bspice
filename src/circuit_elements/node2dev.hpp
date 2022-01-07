@@ -56,21 +56,61 @@ class node2_device
         }
 
         /*!
-            @brief    Get the nodes (names) of the device.
-            @return   The array of nodes.
+            @brief    Get the positive idx node of the device.
+            @return   The idx.
         */
-        std::array<std::string, 2> &getNodeNames(void)
+        IntTp getPosNodeID(void)
         {
-        	return this->_node_names;
+            return this->_nodes_ids[0];
         }
 
         /*!
-            @brief    Get the nodes (IDs) of the device.
-            @return   The array of nodes.
+            @brief    Get the positive idx node of the device.
+            @return   The idx.
         */
-        std::array<IntTp, 2> &getNodeIDs(void)
+        IntTp getNegNodeID(void)
         {
-        	return this->_nodes_ids;
+            return this->_nodes_ids[1];
+        }
+
+        /*!
+            @brief    Get the positive node name of the device.
+            @return   The idx.
+        */
+        const std::string &getPosNode(void)
+        {
+            return this->_node_names[0];
+        }
+
+        /*!
+            @brief    Get the positive node name of the device.
+            @return   The idx.
+        */
+        const std::string &getNegNode(void)
+        {
+            return this->_node_names[1];
+        }
+
+        /*!
+            @brief   Set the nodes of the device.
+            @param   pos    The positive node name.
+            @param   neg    The negative node name.
+        */
+        void setNodeNames(std::string &pos, std::string &neg)
+        {
+            this->_node_names[0] = pos;
+            this->_node_names[1] = neg;
+        }
+
+        /*!
+            @brief   Set the node IDs of the device.
+            @param   pos    The positive node ID.
+            @param   pos    The positive node ID.
+        */
+        void setNodeIDs(IntTp pos, IntTp neg)
+        {
+            this->_nodes_ids[0] = pos;
+            this->_nodes_ids[1] = neg;
         }
 
         /*!

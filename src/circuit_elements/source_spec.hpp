@@ -1,5 +1,5 @@
-#ifndef __SOURCE_SPECS_HPP
-#define __SOURCE_SPECS_HPP
+#ifndef __SOURCE_SPEC_HPP
+#define __SOURCE_SPEC_HPP
 
 #include <vector>
 #include <complex>
@@ -88,4 +88,4 @@ class source_spec
         tran_source_t _type;
 };
 
-#endif // __BASE_ELEMENTS_HPP //
+#endif // __SOURCE_SPECS_HPP //

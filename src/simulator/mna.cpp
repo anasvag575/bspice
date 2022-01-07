@@ -9,16 +9,16 @@
 */
 void MNA::ResMNAStamp(tripletList_d &mat, Resistor &res)
 {
-	auto &arr = res.getNodeIDs();
 	auto conduct = 1/res.getVal();
+	auto pos = res.getPosNodeID(), neg = res.getNegNodeID();
 
-	if(arr[0] != -1) mat.push_back(triplet_eig_d(arr[0], arr[0], conduct));
-	if(arr[1] != -1) mat.push_back(triplet_eig_d(arr[1], arr[1], conduct));
+	if(pos != -1) mat.push_back(triplet_eig_d(pos, pos, conduct));
+	if(neg != -1) mat.push_back(triplet_eig_d(neg, neg, conduct));
 
-	if((arr[0] != -1) && (arr[1] != -1))
+	if((pos != -1) && (neg != -1))
 	{
-	    mat.push_back(triplet_eig_d(arr[1], arr[0], -conduct));
-		mat.push_back(triplet_eig_d(arr[0], arr[1], -conduct));
+	    mat.push_back(triplet_eig_d(neg, pos, -conduct));
+		mat.push_back(triplet_eig_d(pos, neg, -conduct));
 	}
 }
 
@@ -34,19 +34,19 @@ void MNA::ResMNAStamp(tripletList_d &mat, Resistor &res)
 */
 void MNA::CoilMNAStamp(tripletList_d &mat, IntTp offset, Coil &coil, const analysis_t type)
 {
-	auto &arr = coil.getNodeIDs();
+    auto pos = coil.getPosNodeID(), neg = coil.getNegNodeID();
 
 	if(type == OP)
 	{
-		if(arr[0] != -1)
+		if(pos != -1)
 		{
-			mat.push_back(triplet_eig_d(offset, arr[0], 1));
-			mat.push_back(triplet_eig_d(arr[0], offset, 1));
+			mat.push_back(triplet_eig_d(offset, pos, 1));
+			mat.push_back(triplet_eig_d(pos, offset, 1));
 		}
-		if(arr[1] != -1)
+		if(neg != -1)
 		{
-			mat.push_back(triplet_eig_d(offset, arr[1], -1));
-			mat.push_back(triplet_eig_d(arr[1], offset, -1));
+			mat.push_back(triplet_eig_d(offset, neg, -1));
+			mat.push_back(triplet_eig_d(neg, offset, -1));
 		}
 	}
 	else if(type == TRAN)
@@ -65,16 +65,16 @@ void MNA::CapMNAStamp(tripletList_d &mat, Capacitor &cap, const analysis_t type)
 {
 	if(type == TRAN)
 	{
-		auto &arr = cap.getNodeIDs();
+	    auto pos = cap.getPosNodeID(), neg = cap.getNegNodeID();
 		auto capacitance = cap.getVal();
 
-		if(arr[0] != -1) mat.push_back(triplet_eig_d(arr[0], arr[0], capacitance));
-		if(arr[1] != -1) mat.push_back(triplet_eig_d(arr[1], arr[1], capacitance));
+		if(pos != -1) mat.push_back(triplet_eig_d(pos, pos, capacitance));
+		if(neg != -1) mat.push_back(triplet_eig_d(neg, neg, capacitance));
 
-		if((arr[0] != -1) && (arr[1] != -1))
+		if((pos != -1) && (neg != -1))
 		{
-			mat.push_back(triplet_eig_d(arr[0], arr[1], -capacitance));
-			mat.push_back(triplet_eig_d(arr[1], arr[0], -capacitance));
+			mat.push_back(triplet_eig_d(pos, neg, -capacitance));
+			mat.push_back(triplet_eig_d(neg, pos, -capacitance));
 		}
 	}
 }
@@ -87,11 +87,11 @@ void MNA::CapMNAStamp(tripletList_d &mat, Capacitor &cap, const analysis_t type)
 */
 void MNA::IcsMNAStamp(DensVecD &rh, ics &source)
 {
-	auto &arr = source.getNodeIDs();
+    auto pos = source.getPosNodeID(), neg = source.getNegNodeID();
 	auto val = source.getVal();
 
-	if(arr[0] != -1) rh[arr[0]] -= val;
-	if(arr[1] != -1) rh[arr[1]] += val;
+	if(pos != -1) rh[pos] -= val;
+	if(neg != -1) rh[neg] += val;
 }
 
 /*!
@@ -106,18 +106,18 @@ void MNA::IcsMNAStamp(DensVecD &rh, ics &source)
 */
 void MNA::IvsMNAStamp(tripletList_d &mat, DensVecD &rh, IntTp offset, ivs &source)
 {
-	auto &arr = source.getNodeIDs();
+    auto pos = source.getPosNodeID(), neg = source.getNegNodeID();
 
-	if(arr[0] != -1)
+	if(pos != -1)
 	{
-		mat.push_back(triplet_eig_d(offset, arr[0], 1));
-		mat.push_back(triplet_eig_d(arr[0], offset, 1));
+		mat.push_back(triplet_eig_d(offset, pos, 1));
+		mat.push_back(triplet_eig_d(pos, offset, 1));
 	}
 
-	if(arr[1] != -1)
+	if(neg != -1)
 	{
-		mat.push_back(triplet_eig_d(offset, arr[1], -1));
-		mat.push_back(triplet_eig_d(arr[1], offset, -1));
+		mat.push_back(triplet_eig_d(offset, neg, -1));
+		mat.push_back(triplet_eig_d(neg, offset, -1));
 	}
 
 	rh[offset] += source.getVal();
@@ -166,7 +166,7 @@ double MNA::SINSourceEval(std::vector<double> &vvals, double time)
 	else
 		return i1 + ia * sin(2 * M_PI * fr * (time - td) + 2 * M_PI * ph / 360) * exp(-(time - td) * df);
 
-	/* Supress compiler warnings */
+	/* Suppress compiler warnings */
 	return -1;
 }
 
@@ -201,10 +201,7 @@ double MNA::PULSESourceEval(std::vector<double> &vvals, double time)
 	else if((temp_time > (td + tr + pw + tf)) && (temp_time <= (td + per)))
 		return i1;
 
-	/* TODO - Debug */
-	std::cout << "ERROR: " << std::endl;
-
-	/* Supress compiler warnings */
+	/* Suppress compiler warnings */
 	return -1;
 }
 
@@ -282,8 +279,8 @@ void MNA::UpdateTRANVec(Circuit &circuit_manager, DensVecD &rh, double time)
 	/* Transient stamps for ICS */
 	for(auto &it : ics)
 	{
-		auto pos = it.getNodeIDs()[0];
-		auto neg = it.getNodeIDs()[1];
+		auto pos = it.getPosNodeID();
+		auto neg = it.getNegNodeID();
 		auto &vvals = it.getTranVals();
 
 		switch(it.getType())
@@ -447,7 +444,6 @@ void MNA::CreateMNASystemTRAN(Circuit &circuit_manager, SparMatD &mat)
 		CoilMNAStamp(triplet_mat, coil_start, it, TRAN);
 		coil_start++;
 	}
-
 
 	/* 2) Compress the matrix into its final form */
 	mat.resize(mat_sz, mat_sz);

@@ -6,7 +6,6 @@
 #include "source_spec.hpp"
 
 /* All the available circuit elements */
-
 class Coil : public node2_device{};
 class Capacitor : public node2_device{};
 class Resistor : public node2_device{};
