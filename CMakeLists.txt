@@ -11,15 +11,16 @@ set(CMAKE_VERBOSE_MAKEFILE ON)
 set(CMAKE_CXX_COMPILER "g++")
 
 # Compilation parameters and flags
-#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -g -march=native -O4 -flto -Wall")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -g -march=native -O2 -Wall")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -g -march=native -O4 -flto -Wall")
+#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -g -march=native -O2 -Wall")
 
 ######################################
 #### Parameters for the simulator ####
 ######################################
-#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DNDEBUG ${OpenMP_CXX_FLAGS}")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DNDEBUG ${OpenMP_CXX_FLAGS}")
+#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DBSPICE_EIGEN_USE_STLMAPS")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DBSPICE_EIGEN_USE_KLU")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DBSPICE_TRAN_USE_EULER")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DBSPICE_TRAN_USE_EULER") 
 
 # Include directories
 include_directories(${PROJECT_SOURCE_DIR}/src)
@@ -59,7 +60,7 @@ target_link_libraries(bspice
 	circuit_lib
 	plot_lib 
 	simulator_lib 
-	#OpenMP::OpenMP_CXX
+	OpenMP::OpenMP_CXX
 	klu
 	btf)
 

@@ -2,13 +2,17 @@
 #include <iomanip>
 #include <cstdio>
 #include <limits>
-#include "plot.hpp"
+#include <math.h>
 #include <unistd.h>
+#include "plot.hpp"
 
 class GNU_plotter
 {
 
 public:
+    /*!
+        @brief    Default constructor, creates the GNUPLOT pipe.
+    */
     GNU_plotter()
     {
         this->_plot_num = 0;
@@ -21,6 +25,9 @@ public:
         }
     }
 
+    /*!
+        @brief    Default destructor, closes GNUPLOT pipe and removes the files created.
+    */
     ~GNU_plotter()
     {
         /* Close gnuplot */
@@ -32,6 +39,9 @@ public:
         for(auto &it : this->_file_names) remove(it.c_str());
     }
 
+    /*!
+        @brief    Creates the next plot window.
+    */
     void next_plot()
     {
         /* Close previous file */
@@ -60,12 +70,16 @@ public:
 
     /* Ploter function */
     void plot(Circuit &circuit_manager, simulator_engine &simulator_manager);
-    void setPlotOptions(Circuit &circuit_manager, bool source);
-    void sendPlotData(Circuit &circuit_manager, simulator_engine &simulator_manager, bool source);
+    void setPlotOptions(analysis_t type, as_scale_t scale, std::string &sweep, bool source, bool mag);
+    void sendPlotData(std::vector<double> &xvals, std::vector<std::vector<double>> &yvals, bool log);
+    void sendPlotData(std::vector<double> &xvals, std::vector<std::vector<std::complex<double>>> &yvals, bool mag, bool log);
     void finalize(std::vector<std::string> &plotnames);
 };
 
-/* TODO Comment */
+/*!
+    @brief      Sends the final plot command to GNUPLOT to display the graph.
+    @param      plotnames     The legend names for the staff to plot.
+*/
 void GNU_plotter::finalize(std::vector<std::string> &plotnames)
 {
     /* Send the final commands to plot the vectors */
@@ -76,71 +90,103 @@ void GNU_plotter::finalize(std::vector<std::string> &plotnames)
         fprintf(this->_pipe, ",'' using 1:%ld title '%s' with lines", (i + 2), plotnames[i].c_str());
     }
 
+    /* Newline to finish and flush for synchronization */
     fprintf(this->_pipe, "\n");
     fflush(this->_pipe);
 }
 
-/* TODO - Comment */
-void GNU_plotter::sendPlotData(Circuit &circuit_manager, simulator_engine &simulator_manager, bool source)
+/*!
+    @brief      Sends the data that will be plotted on the current window.
+    @param      xvals     The x values vector, simulation vector.
+    @param      yvals     The y values vector(s), result(s) vector.
+*/
+void GNU_plotter::sendPlotData(std::vector<double> &xvals, std::vector<std::vector<double>> &yvals, bool log)
 {
 	using std::vector;
+	using std::endl;
 
-	/* Necessary components */
-	auto &results = simulator_manager.getResultsD();
-	auto &sim_vals = simulator_manager.getSimulationVec();
-	vector<IntTp> plot_nodes_idx;
-
-	/* Create a temporal vector of indices for accessing the results */
-	if(source)
+	for(size_t i = 0; i < xvals.size(); i++)
 	{
-	    auto &elementsmap = circuit_manager.getElementNames();
-	    auto &plotsources = circuit_manager.getPlotSources();
+	    auto &tmp = yvals[i];
 
-        for(size_t i = 0; i < plotsources.size(); i++)
-        {
-            auto it = elementsmap.find(plotsources[i]);
-            plot_nodes_idx.push_back(it->second + circuit_manager.getNodes().size());
-        }
-	}
-	else
-	{
-	    auto &nodesmap = circuit_manager.getNodes();
-	    auto &plotnodes = circuit_manager.getPlotNodes();
-
-	    for(size_t i = 0; i < plotnodes.size(); i++)
-	    {
-	        auto it = nodesmap.find(plotnodes[i]);
-	        plot_nodes_idx.push_back(it->second);
-	    }
-	}
-
-	for(size_t i = 0; i < sim_vals.size(); i++)
-	{
 		/* First iteration send also the x value */
-		IntTp x_idx = plot_nodes_idx.front();
-		this->_data_file << sim_vals[i] << "\t" << results(x_idx, i);
+		this->_data_file << xvals[i];
 
-		for(size_t k = 1; k < (plot_nodes_idx.size() - 1); k++)
+		/* Create the columns of data */
+		if(log) //TODO - Check log?
 		{
-			x_idx = plot_nodes_idx[k];
-			this->_data_file << "\t" << results(x_idx, i);
+		    for(size_t k = 0; k < tmp.size(); k++) this->_data_file << "\t" << -20 * log10(tmp[k]);
+		}
+		else
+		{
+		    for(size_t k = 0; k < tmp.size(); k++) this->_data_file << "\t" << tmp[k];
 		}
 
-		x_idx = plot_nodes_idx.back();
-		this->_data_file << "\t" << results(x_idx, i) << "\n";
+		/* Next sim time */
+		this->_data_file << "\n";
 	}
 
-	this->_data_file << std::endl;
+	/* Endl also performs a flush */
+	this->_data_file << endl;
 }
 
-/* TODO Comment */
-void GNU_plotter::setPlotOptions(Circuit &circuit_manager, bool source)
+/*!
+    @brief      Sends the data that will be plotted on the current window, for AC analysis only.
+    @param      xvals     The x values vector, simulation vector.
+    @param      yvals     The y values vector(s), result(s) vector.
+    @param      mag       Whether to send magnitude data or phase
+*/
+void GNU_plotter::sendPlotData(std::vector<double> &xvals, std::vector<std::vector<std::complex<double>>> &yvals, bool log, bool mag)
+{
+    using std::vector;
+    using std::abs;
+    using std::arg;
+    using std::endl;
+
+    for(size_t i = 0; i < xvals.size(); i++)
+    {
+        auto &tmp = yvals[i];
+
+        /* First iteration send also the x value */
+        this->_data_file << xvals[i];
+
+        /* Create the columns of data */
+        if(mag)
+        {
+            if(log)  //TODO - Check log?
+            {
+                for(size_t k = 0; k < tmp.size(); k++) this->_data_file << "\t" << -20 * log10(abs(tmp[k]));
+            }
+            else
+            {
+                for(size_t k = 0; k < tmp.size(); k++) this->_data_file << "\t" << abs(tmp[k]);
+            }
+        }
+        else
+        {
+            /* Arg returns in radians convert to degrees */
+            for(size_t k = 0; k < tmp.size(); k++) this->_data_file << "\t" << arg(tmp[k]) * 180/M_PI;
+        }
+
+        /* Next sim time */
+        this->_data_file << "\n";
+    }
+
+    /* Endl also performs a flush */
+    this->_data_file << endl;
+}
+
+/*!
+    @brief      Sends the data that will be plotted on the current window.
+    @param      type       The type of analysis.
+    @param      scale      The scale of the analysis.
+    @param      sweep      The sweeped source (for DC only)
+    @param      source     Whether, we plot a source(true) or a node
+    @param      mag        Whether, we plot magnitude(true) or phase (only for AC)
+*/
+void GNU_plotter::setPlotOptions(analysis_t type, as_scale_t scale, std::string &sweep, bool source, bool mag)
 {
     using std::string;
-
-    auto &source_name = circuit_manager.getDCSource();
-    auto analysis_type = circuit_manager.getAnalysisType();
-    auto analysis_scale = circuit_manager.getAnalysisScale();
 
     /* Base options */
     string title("set title ");
@@ -148,46 +194,30 @@ void GNU_plotter::setPlotOptions(Circuit &circuit_manager, bool source)
     string ylabel("set ylabel ");
     string scaleauto("set autoscale\n");
     string grid("set grid\n");
-    string scale = (analysis_scale == LOG_SCALE) ? "set logscale y 10\n":"\n"; /* TODO - Logscale */
     string legend("set key outside\nset key right top\n");
 
-    switch(analysis_type)
+    switch(type)
     {
         case DC:
         {
             title += "'DC analysis results'";
 
             xlabel += "'";
-            xlabel += source_name + " ";
-            xlabel += (source_name[0] == 'I') ? "(A)" : "(V)";
+            xlabel += sweep + " ";
+            xlabel += (sweep[0] == 'I') ? "(A)" : "(V)";
             xlabel += "'";
-
-            ylabel += "'";
-            ylabel += (source) ? "Source Current (A)": "Node Voltage (V)";
-            ylabel += "'";
-
             break;
         }
         case TRAN:
         {
             title += "'Transient analysis results'";
             xlabel += "'Time (s)'";
-
-            ylabel += "'";
-            ylabel += (source) ? "Source Current (A)": "Node Voltage (V)";
-            ylabel += "'";
-
             break;
         }
         case AC: // TODO - Also have to check if it phase or
         {
             title += "'AC analysis results'";
             xlabel += "'Frequency (Hz)'";
-
-            ylabel += "'";
-            ylabel += (source) ? "Source Current (A)": "Node Voltage (V)";
-            ylabel += "'";
-
             break;
         }
         default: // OP analysis is ignored
@@ -196,47 +226,171 @@ void GNU_plotter::setPlotOptions(Circuit &circuit_manager, bool source)
         }
     }
 
+    /* For y label we have same global config */
+    ylabel += "'";
+    if(mag)
+    {
+        ylabel += (source) ? "Source Current (A)" : "Node Voltage (V)";
+        ylabel += (scale == LOG_SCALE) ? " - dB scale" : "";
+    }
+    else
+    {
+        ylabel += (source) ? "Source Current phase (degrees)" : "Node Voltage phase (degrees)";
+    }
+    ylabel += "'";
+
     /* Terminate with newline each command */
     title += "\n";
     xlabel += "\n";
     ylabel += "\n";
 
     /* Form the commands and send */
-    string commands = title + xlabel + ylabel + legend + grid + scale + scaleauto;
+    string commands = title + xlabel + ylabel + legend + grid + scaleauto;
     fprintf(this->_pipe, "%s", commands.c_str());
 }
 
-/* TODO - Comment */
+/*!
+    @brief      Sends the data that will be plotted on the current window.
+    @param      circuit_manager     The simulated circuit.
+    @param      source     Whether, we plot a source(true) or a node.
+    @param      mag        Whether, we plot magnitude(true) or phase (only for AC).
+*/
 void GNU_plotter::plot(Circuit &circuit_manager, simulator_engine &simulator_manager)
 {
-	using namespace std;
+	using std::vector;
+	using std::complex;
 
 	auto &plotsources = circuit_manager.getPlotSources();
 	auto &plotnodes = circuit_manager.getPlotNodes();
 
+	auto analysis_type = circuit_manager.getAnalysisType();
+	auto analysis_scale = circuit_manager.getAnalysisScale();
+	auto sweep_source = circuit_manager.getDCSource();
+
+    /* Get the x-values */
+    auto &x_simvals = simulator_manager.getSimulationVec();
+
+    /* For TRAN we have only 1 value to print */
+	if(analysis_type != AC)
+	{
+	    /* Get the plot data */
+	    vector<vector<double>> res_nodes, res_sources;
+	    simulator_manager.getPlotResults(circuit_manager, res_nodes, res_sources);
+
+        /* Send */
+        if(plotsources.size())
+        {
+            this->next_plot();
+            sendPlotData(x_simvals, res_sources, analysis_scale == LOG_SCALE);
+            setPlotOptions(analysis_type, analysis_scale, sweep_source, true, true);
+            finalize(plotsources);
+        }
+
+        /* Send */
+        if(plotnodes.size())
+        {
+            this->next_plot();
+            sendPlotData(x_simvals, res_nodes, analysis_scale == LOG_SCALE);
+            setPlotOptions(analysis_type, analysis_scale, sweep_source, false, true);
+            finalize(plotnodes);
+        }
+	}
+	else
+	{
+        /* Get the plot data */
+        vector<vector<complex<double>>> res_nodes, res_sources;
+        simulator_manager.getPlotResults(circuit_manager, res_nodes, res_sources);
+
+        /* Send */
+        if(plotsources.size())
+        {
+            /* Magnitude */
+            this->next_plot();
+            sendPlotData(x_simvals, res_sources, true, analysis_scale == LOG_SCALE);
+            setPlotOptions(analysis_type, analysis_scale, sweep_source, true, true);
+            finalize(plotsources);
+
+            /* Phase */
+            this->next_plot();
+            sendPlotData(x_simvals, res_sources, false, false);
+            setPlotOptions(analysis_type, analysis_scale, sweep_source, true, false);
+            finalize(plotsources);
+        }
+
+        /* Send */
+        if(plotnodes.size())
+        {
+            /* Magnitude */
+            this->next_plot();
+            sendPlotData(x_simvals, res_nodes, true, analysis_scale == LOG_SCALE);
+            setPlotOptions(analysis_type, analysis_scale, sweep_source, true, true);
+            finalize(plotsources);
+
+            /* Phase */
+            this->next_plot();
+            sendPlotData(x_simvals, res_nodes, false, false);
+            setPlotOptions(analysis_type, analysis_scale, sweep_source, true, false);
+            finalize(plotsources);
+        }
+	}
+}
+
+/*!
+    @brief      Prints the data (PRINT or PLOT cards) to standard output, only for OP analysis.
+    @param      circuit_manager     The simulated circuit.
+    @param      simulator_manager   The simulator engines, containing the results of the simulation.
+*/
+void print_cout(Circuit &circuit_manager, simulator_engine &simulator_manager)
+{
+    using std::vector;
+    using std::cout;
+
+    auto &plotsources = circuit_manager.getPlotSources();
+    auto &plotnodes = circuit_manager.getPlotNodes();
+
+    /* Get the plot data */
+    vector<vector<double>> res_nodes, res_sources;
+    simulator_manager.getPlotResults(circuit_manager, res_nodes, res_sources);
+
+    cout << "***PLOT - RESULTS***\n";
+
     /* Send */
     if(plotsources.size())
     {
-        this->next_plot();
-        sendPlotData(circuit_manager, simulator_manager, true);
-        setPlotOptions(circuit_manager, true);
-        finalize(plotsources);
+        cout << "Branch currents:\n";
+
+        auto &tmp = res_sources.front();
+
+        for(size_t i = 0; i < tmp.size(); i++)
+        {
+            cout << "\t" << plotsources[i] << ": "  << tmp[i] << "\n";
+        }
     }
 
     /* Send */
     if(plotnodes.size())
     {
-        this->next_plot();
-        sendPlotData(circuit_manager, simulator_manager, false);
-        setPlotOptions(circuit_manager, false);
-        finalize(plotnodes);
+        cout << "Node Voltages:\n";
+
+        auto &tmp = res_nodes.front();
+
+        for(size_t i = 0; i < tmp.size(); i++)
+        {
+            cout << "\t" << plotnodes[i] << ": "  << tmp[i] << "\n";
+        }
     }
 }
 
-/* TODO - Comment */
+/*!
+    @brief      Wrapper that calls the appropriate routines for plotting of data.
+    @param      circuit_manager     The simulated circuit.
+    @param      simulator_manager   The simulator engines, containing the results of the simulation.
+*/
 return_codes_e plot(Circuit &circuit_manager, simulator_engine &simulator_manager)
 {
-    using namespace std;
+    using std::streamsize;
+    using std::cout;
+    using std::numeric_limits;
 
     /* Checks */
     if(!circuit_manager.valid()) return FAIL_PLOTTER_CIRCUIT_INVALID;
@@ -245,24 +399,21 @@ return_codes_e plot(Circuit &circuit_manager, simulator_engine &simulator_manage
         return FAIL_PLOTTER_NOTHING_TO_PLOT;
 
     /* Set precision */
-    streamsize cout_stream_sz = std::cout.precision(std::numeric_limits<double>::digits10 + 2);
+    streamsize cout_stream_sz = cout.precision(numeric_limits<double>::digits10 + 2);
 
     /* OP analysis need only printing of the values */
     if(circuit_manager.getAnalysisType() != OP)
     {
         GNU_plotter plotter;
         plotter.plot(circuit_manager, simulator_manager);
-
-
     }
     else
-    { /* TODO - Implement printing for OP */
-
+    {
+        print_cout(circuit_manager, simulator_manager);
     }
 
-
     /* Reset precision */
-    std::cout.precision(cout_stream_sz);
+    cout.precision(cout_stream_sz);
 
     return RETURN_SUCCESS;
 }

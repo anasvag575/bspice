@@ -330,6 +330,43 @@ void MNA::UpdateTRANVec(Circuit &circuit_manager, DensVecD &rh, double time)
 
 }
 
+/*!
+    @brief      Creates the index vectors for the requested nodes's voltage and
+    sources's current, inside the solution vectors.
+    The indices are in order of the plot nodes inside the circuit manager interface.
+    @param      circuit     The circuit that the results are requested for
+    @param      nodes_idx   The nodes indices, must be an empty vector
+    @param      nodes_idx   The sources indices, must be an empty vector
+*/
+void MNA::CreateIdxVecs(Circuit &circuit_manager, std::vector<IntTp> &nodes_idx, std::vector<IntTp> &sources_idx)
+{
+    /* Get all the sources and the nodes for plotting */
+    auto &node_names = circuit_manager.getPlotNodes();
+    auto &source_names = circuit_manager.getPlotSources();
+
+    /* Get the maps needed */
+    auto &nodesmap = circuit_manager.getNodes();
+    auto &elementsmap = circuit_manager.getElementNames();
+
+    for(auto &it : node_names)
+    {
+        /* Search the map - Always exists */
+        auto tmp = nodesmap.find(it);
+
+        /* For nodes idx is the unique node ID */
+        nodes_idx.push_back(tmp->second);
+    }
+
+    for(auto &it : source_names)
+    {
+        /* Search the map - Always exists */
+        auto tmp = elementsmap.find(it);
+
+        /* For voltage sources, (IVSoffset + <idx in the IVS vector>) */
+        sources_idx.push_back(tmp->second + this->_ivs_offset);
+    }
+}
+
 
 
 /*!
@@ -392,6 +429,7 @@ void MNA::CreateMNASystemDC(Circuit &circuit_manager, SparMatD &mat, DenseMatD &
 {
 	/* Use this to get the initial state of the RH */
 	DensVecD init_rh;
+	IntTp sim_dim = this->_sim_vals.size();
 
 	/* Fill the Matrix and the vector */
 	CreateMNASystemOP(circuit_manager, mat, init_rh);
@@ -407,10 +445,10 @@ void MNA::CreateMNASystemDC(Circuit &circuit_manager, SparMatD &mat, DenseMatD &
 	if(src_dut[0] == 'V') ivs_idx += this->_ivs_offset;
 
 	/* Copy the initial vector to the matrix */
-	rhs.resize(this->_system_dim, this->_sim_dim);
+	rhs.resize(this->_system_dim, sim_dim);
 
 	/* Copy initial vector and then modify only the simulated source */
-	for(IntTp k = 0; k < this->_sim_dim; k++)
+	for(IntTp k = 0; k < sim_dim; k++)
 	{
 		rhs.col(k) = init_rh;
 		rhs(ivs_idx, k) = this->_sim_vals[k];
@@ -449,7 +487,6 @@ void MNA::CreateMNASystemTRAN(Circuit &circuit_manager, SparMatD &mat)
 	mat.resize(mat_sz, mat_sz);
 	mat.setFromTriplets(triplet_mat.begin(), triplet_mat.end());
 }
-
 
 
 /*!

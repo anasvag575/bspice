@@ -13,7 +13,6 @@ class MNA
 		*/
 		MNA()
 		{
-			_sim_dim = 0;
 			_system_dim = 0;
 			_ivs_offset = 0;
 			_coil_offset = 0;
@@ -41,20 +40,25 @@ class MNA
 			double end = circuit_manager.getSimEnd();
 			double steps = circuit_manager.getSimStep();
 
-			/* Now create the simulation times/values vector */
-			if(sim_scale == DEC_SCALE)
+			if(sim_type != OP)
 			{
-				/* For AC we generate based on step (since argument is [points]) */
-				if(sim_type == AC) linspaceVecGen(this->_sim_vals, start, end, static_cast<size_t>(steps));
-				else StepVecGen(this->_sim_vals, start, end, steps);
+                /* Now create the simulation times/values vector */
+                if(sim_scale == DEC_SCALE)
+                {
+                    /* For AC we generate based on step (since argument is [points]) */
+                    if(sim_type == AC) linspaceVecGen(this->_sim_vals, start, end, static_cast<size_t>(steps));
+                    else StepVecGen(this->_sim_vals, start, end, steps);
+                }
+                else
+                {
+                    /* Generate logarithmically spaced vector */
+                    logspaceVecGen(this->_sim_vals, start, end, static_cast<size_t>(steps));
+                }
 			}
 			else
 			{
-				/* Generate logarithmically spaced vector */
-				logspaceVecGen(this->_sim_vals, start, end, static_cast<size_t>(steps));
+			    this->_sim_vals.push_back(0.0);
 			}
-
-			this->_sim_dim = this->_sim_vals.size();
 		}
 
 		/*!
@@ -62,7 +66,6 @@ class MNA
 		*/
 		void clear(void)
 		{
-			this->_sim_dim = 0;
 			this->_system_dim = 0;
 			this->_ivs_offset = 0;
 			this->_coil_offset = 0;
@@ -116,7 +119,7 @@ class MNA
 		*/
 		IntTp getSimDim(void)
 		{
-			return this->_sim_dim;
+			return this->_sim_vals.size();
 		}
 
 		/* MNA and systems formation */
@@ -126,7 +129,7 @@ class MNA
 		void UpdateTRANVec(Circuit &circuit_manager, DensVecD &rh, double time);
 
 		/* Formation of plot matrices */
-		void CreatePLOTNodeVec(Circuit &circuit_manager, DensVecD &out, std::string node, DenseMatD &res);
+		void CreateIdxVecs(Circuit &circuit_manager, std::vector<IntTp> &outnodes, std::vector<IntTp> &outsources);
 	private:
 
 		/* MNA stampers */
@@ -146,7 +149,6 @@ class MNA
 		void debug_triplet_mat(tripletList_d &mat);
 
 		/* Information about the system */
-		IntTp _sim_dim;
 		IntTp _system_dim;
 		IntTp _ivs_offset;
 		IntTp _coil_offset;

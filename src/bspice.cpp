@@ -6,7 +6,9 @@
 #include "sim_engine.hpp"
 #include "plot.hpp"
 
-/* TODO - This is non-interactive execution */
+/*!
+    @brief      The entire simulation run, non-interactive.
+*/
 static return_codes_e bspice_single_run(int argc, char **argv)
 {
     return_codes_e errcode = RETURN_SUCCESS;

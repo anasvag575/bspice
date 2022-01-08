@@ -19,8 +19,10 @@
 */
 return_codes_e simulator_engine::run(Circuit &circuit_manager)
 {
-	using namespace std;
-	using namespace chrono;
+	using std::cout;
+	using std::chrono::high_resolution_clock;
+	using std::chrono::duration_cast;
+	using std::chrono::milliseconds;    // Accuracy for report
 
 	return_codes_e ret;
 
@@ -40,11 +42,11 @@ return_codes_e simulator_engine::run(Circuit &circuit_manager)
 	/* Statistics */
 	auto end = high_resolution_clock::now();
 
-	std::cout << std::endl << "************************************" << std::endl;
-	std::cout << "Total simulation time: " << duration_cast<milliseconds>(end-begin).count() << "ms"  << std::endl;
-	std::cout << "Total simulation points: " << this->_mna_engine.getSimDim() << std::endl;
-	std::cout << "System size: " << this->_mna_engine.getSystemDim() << std::endl;
-	std::cout << "************************************" << std::endl << std::endl;
+	cout << "\n************************************\n";
+	cout << "Total simulation time: " << duration_cast<milliseconds>(end-begin).count() << "ms\n";
+	cout << "Total simulation points: " << this->_mna_engine.getSimDim() << "\n";
+	cout << "System size: " << this->_mna_engine.getSystemDim() << "\n";
+	cout << "************************************\n\n";
 
 	if(ret == RETURN_SUCCESS) this->_run = true;
 
@@ -58,7 +60,7 @@ return_codes_e simulator_engine::run(Circuit &circuit_manager)
 */
 return_codes_e simulator_engine::OP_analysis(Circuit &circuit_manager)
 {
-	using namespace Eigen;
+    using Eigen::Success; // Eigen success value
 
 	/* Solver and matrices */
 	direct_solver solver;
@@ -87,7 +89,7 @@ return_codes_e simulator_engine::OP_analysis(Circuit &circuit_manager)
 */
 return_codes_e simulator_engine::DC_analysis(Circuit &circuit_manager)
 {
-	using namespace Eigen;
+    using Eigen::Success; // Eigen success value
 
 	direct_solver solver;
 	SparMatD mat;
@@ -209,6 +211,90 @@ return_codes_e simulator_engine::TRAN_analysis(Circuit &circuit_manager)
 */
 return_codes_e simulator_engine::AC_analysis(Circuit &circuit_manager)
 {
+    using Eigen::Success; // Eigen success value
+
 	/* TODO - Implement */
 	return RETURN_SUCCESS;
 }
+
+/*!
+    @brief      Returns the results of the simulation for any non-AC analysis. The result vectors
+    contain the sources currents and node voltages requested for the circuit.
+    @param      circuit_manager     The circuit where the simulation is performed.
+    @param      res_nodes           The results for the nodes.
+    @param      res_sources         The results for the source.
+*/
+void simulator_engine::getPlotResults(Circuit &circuit_manager, std::vector<std::vector<double>> &res_nodes,
+                                      std::vector<std::vector<double>> &res_sources)
+{
+    auto sim_size = this->_mna_engine.getSimDim();
+
+    /* Get the indices from the MNA engine */
+    std::vector<IntTp> nodes_idx, sources_idx;
+    this->_mna_engine.CreateIdxVecs(circuit_manager, nodes_idx, sources_idx);
+
+    /* We need the data in {t - col(x), col(x+1)} format */
+    for(IntTp i = 0; i < sim_size; i++)
+    {
+        std::vector<double> tmp_vec, tmp_vec2;
+
+        /* Create the vectors - nodes */
+        for(auto it : nodes_idx)
+        {
+            tmp_vec.push_back(this->_results_d(it, i));
+        }
+
+        /* Create the vectors - sources */
+        for(auto it : sources_idx)
+        {
+            tmp_vec2.push_back(this->_results_d(it, i));
+        }
+
+        /* Out */
+        res_nodes.push_back(tmp_vec);
+        res_sources.push_back(tmp_vec2);
+    }
+}
+
+/*!
+    @brief      Returns the results of the simulation for the AC analysis. The result vectors
+    contain the sources currents and node voltages requested for the circuit.
+    @param      circuit_manager     The circuit where the simulation is performed.
+    @param      res_nodes           The results for the nodes.
+    @param      res_sources         The results for the source.
+*/
+void simulator_engine::getPlotResults(Circuit &circuit_manager, std::vector<std::vector<std::complex<double>>> &res_nodes,
+                                      std::vector<std::vector<std::complex<double>>> &res_sources)
+{
+    using std::vector;
+    using std::complex;
+
+    auto sim_size = this->_mna_engine.getSimDim();
+
+    /* Get the indices from the MNA engine */
+    vector<IntTp> nodes_idx, sources_idx;
+    this->_mna_engine.CreateIdxVecs(circuit_manager, nodes_idx, sources_idx);
+
+    /* We need the data in {t - col(x), col(x+1)} format */
+    for(IntTp i = 0; i < sim_size; i++)
+    {
+        vector<complex<double>> tmp_vec, tmp_vec2;
+
+        /* Create the vectors - nodes */
+        for(auto it : nodes_idx)
+        {
+            tmp_vec.push_back(this->_results_cd(it, i));
+        }
+
+        /* Create the vectors - sources */
+        for(auto it : sources_idx)
+        {
+            tmp_vec2.push_back(this->_results_cd(it, i));
+        }
+
+        /* Out */
+        res_nodes.push_back(tmp_vec);
+        res_sources.push_back(tmp_vec2);
+    }
+}
+

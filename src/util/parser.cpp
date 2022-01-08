@@ -130,7 +130,7 @@ return_codes_e parser::parseSourceSpec(std::vector<std::string> &tokens, source_
             if(tokens_left < 3 || ac_found) return FAIL_PARSER_SOURCE_SPEC_ARGS_NUM;
 
             /* Verify the needed  */
-            if(IsValidFpValue(tokens[idx + 1]) && IsValidFpValue(tokens[idx + 2]))
+            if(!IsValidFpValue(tokens[idx + 1]) || !IsValidFpValue(tokens[idx + 2]))
                 return FAIL_PARSER_SOURCE_SPEC_ARGS_FORMAT;
 
             /* Set the values */
@@ -267,36 +267,33 @@ return_codes_e parser::parseDCCard(std::vector<std::string> &tokens, double &poi
 
 /*!
 	@brief      Function verifies the syntax for a transient analysis spice card (.TRAN):
-							##### .TRAN  <tstep>  <tstop>  {tstart} #####
+							##### .TRAN  <tstep>  <tstop>  #####
 	Along with this, it returns the value contained in the <Value> token via the
 	converted_val argument.
 
 	@param      tokens    	The tokens that form the element.
 	@param      step     	The time step point of the analysis.
 	@param      tstop     	The end time of the analysis
-	@param      tstart     	Optional - Starting time of the analysis.
+	@param      tstart     	Starting time of the analysis, always set at 0.
 	@return     The error code in case of error, otherwise RETURN_SUCESS.
 */
 return_codes_e parser::parseTRANCard(std::vector<std::string> &tokens, double &step, double &tstop, double &tstart)
 {
-    if(tokens.size() != 3 && tokens.size() != 4) return FAIL_PARSER_INVALID_FORMAT;
-
-    tstart = 0; /* Default is to set the simulation start point at 0 */
+    if(tokens.size() != 3) return FAIL_PARSER_INVALID_FORMAT;
 
     /* Verify the validity of all tokens */
     bool format = IsValidFpValue(tokens[1]) && IsValidFpValue(tokens[2]);
-    if(tokens.size() == 4) format &= IsValidFpValue(tokens[3]);
 
     /* Verify */
     if(!format) return FAIL_PARSER_INVALID_FORMAT;
 
     /* Set values */
+    tstart = 0;           // Default is to start at 0
     step = resolveFloatNum(tokens[1]);
     tstop = resolveFloatNum(tokens[2]);
-    if(tokens.size() == 4) tstart = resolveFloatNum(tokens[3]);
 
     /* Verify */
-	if((tstop <= tstart) || (step <= 0) || (tstart < 0.0))
+	if((tstop <= tstart) || (step <= 0))
 		return FAIL_PARSER_ANALYSIS_INVALID_ARGS;
 
     return RETURN_SUCCESS;
@@ -408,6 +405,7 @@ IntTp parser::resolveNodeID(hashmap_str_t &nodes, const std::string &name)
     /* First time encountering this node - Insert in map */
     size_t sz = nodes.size();
     nodes[name] = sz;
+
     return sz;
 }
 

@@ -77,7 +77,6 @@ class source_spec
 			return this->_tran_time;
 		}
 
-
     private:
         /* AC analysis */
         std::complex<double> _ac_val;

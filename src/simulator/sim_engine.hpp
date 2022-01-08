@@ -75,6 +75,10 @@ class simulator_engine
 		}
 
 		return_codes_e run(Circuit &circuit_manager);
+		void getPlotResults(Circuit &circuit_manager, std::vector<std::vector<double>> &res_nodes,
+		                    std::vector<std::vector<double>> &res_sources);
+		void getPlotResults(Circuit &circuit_manager, std::vector<std::vector<std::complex<double>>> &res_nodes,
+                            std::vector<std::vector<std::complex<double>>> &res_sources);
 	private:
 		/* Analysis supported */
 		return_codes_e OP_analysis(Circuit &circuit_manager);

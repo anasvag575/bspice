@@ -38,8 +38,6 @@ class Circuit
 			this->_sim_start = 1;
 			this->_sim_end = 1;
 
-			/* TODO - Resize */
-
 			/* For vectors call clean method to accelerate next circuit */
 			this->_res.clear();
 			this->_caps.clear();
