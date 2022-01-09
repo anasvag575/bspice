@@ -131,8 +131,8 @@ class MNA
 		void UpdateMNASystemDCVec(DensVecD &rh, double sweep_val);
 		void CreateMNASystemTRAN(SparMatD &mat);
 		void UpdateTRANVec(DensVecD &rh, double time);
-        void CreateMNASystemAC(SparMatD &mat, double freq);
-        void CreateMNASystemAC(DensVecD &rh);
+        void CreateMNASystemAC(SparMatCompD &mat, double freq);
+        void CreateMNASystemAC(DensVecCompD &rh);
 	private:
 
 		/* MNA stampers */
@@ -141,6 +141,13 @@ class MNA
 		void CapMNAStamp(tripletList_d &mat, capacitor_packed &cap, const analysis_t type);
 		void IcsMNAStamp(DensVecD &rh, ics_packed &source);
 		void IvsMNAStamp(tripletList_d &mat, DensVecD &rh, IntTp offset, ivs_packed &source);
+
+		void ResMNAStampAC(tripletList_cd &mat, resistor_packed &res);
+		void CoilMNAStampAC(tripletList_cd &mat, IntTp offset, coil_packed &coil, double freq);
+		void CapMNAStampAC(tripletList_cd &mat, capacitor_packed &cap, double freq);
+		void IvsMNAStampAC(tripletList_cd &mat, IntTp offset, ivs_packed &source);
+		void IvsMNAStampAC(DensVecCompD &rh, IntTp offset, ivs_packed &source);
+		void IcsMNAStampAC(DensVecCompD &rh, ics_packed &source);
 
 		/* Transient sources evaluators */
 		double EXPSourceEval(std::vector<double> &vvals, double time);

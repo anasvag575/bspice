@@ -216,6 +216,137 @@ void MNA::IvsMNAStamp(tripletList_d &mat, DensVecD &rh, IntTp offset, ivs_packed
 
 
 /*!
+    @brief      Inserts the MNA stamp of the resistor in triplet form
+    (i, j, val) inside the mat array. For AC analysis resistors have 1 or 4 stamps.
+    @param      mat    The triplet matrix to insert the stamp.
+    @param      res    The resistor.
+*/
+void MNA::ResMNAStampAC(tripletList_cd &mat, resistor_packed &res)
+{
+    auto conduct = 1/res.getVal();
+    auto pos = res.getPosNodeID(), neg = res.getNegNodeID();
+    std::complex<double> tmp(conduct, 0);
+
+    if(pos != -1) mat.push_back(triplet_eig_cd(pos, pos, tmp));
+    if(neg != -1) mat.push_back(triplet_eig_cd(neg, neg, tmp));
+
+    if((pos != -1) && (neg != -1))
+    {
+        mat.push_back(triplet_eig_cd(neg, pos, -tmp));
+        mat.push_back(triplet_eig_cd(pos, neg, -tmp));
+    }
+}
+
+/*!
+    @brief      Inserts the MNA stamp of the coil in triplet form
+    (i, j, val) inside the mat array. Since coils act like DC shorts
+    they need to be inserted in the sub-arrays for sources, hence the
+    offset. For DC analysis coils have 2 or 4 stamps.
+    @param      mat    The triplet matrix to insert the stamp.
+    @param      offset The offset of the stamp inside the array.
+    @param      coil   The coil.
+
+*/
+void MNA::CoilMNAStampAC(tripletList_cd &mat, IntTp offset, coil_packed &coil, double freq)
+{
+    auto pos = coil.getPosNodeID(), neg = coil.getNegNodeID();
+    auto coil_imag = 2 * M_PI *freq *coil.getVal();
+    std::complex<double> real_tmp(1, 0);
+    std::complex<double> imag(0, coil_imag);
+
+    if(pos != -1)
+    {
+        mat.push_back(triplet_eig_cd(offset, pos, real_tmp));
+        mat.push_back(triplet_eig_cd(pos, offset, real_tmp));
+    }
+    if(neg != -1)
+    {
+        mat.push_back(triplet_eig_cd(offset, neg, -real_tmp));
+        mat.push_back(triplet_eig_cd(neg, offset, -real_tmp));
+    }
+
+    mat.push_back(triplet_eig_cd(offset, offset, -imag));
+}
+
+/*!
+    @brief      Inserts the MNA stamp of the capacitor in triplet form
+    (i, j, val) inside the mat array. For DC analysis capacitors have 0 stamps.
+    @param      mat    The triplet matrix to insert the stamp.
+    @param      cap    The capacitor.
+*/
+void MNA::CapMNAStampAC(tripletList_cd &mat, capacitor_packed &cap, double freq)
+{
+    auto pos = cap.getPosNodeID(), neg = cap.getNegNodeID();
+    auto cap_imag = 2 * M_PI *freq *cap.getVal();
+    std::complex<double> tmp(0, cap_imag);
+
+    if(pos != -1) mat.push_back(triplet_eig_cd(pos, pos, tmp));
+    if(neg != -1) mat.push_back(triplet_eig_cd(neg, neg, tmp));
+
+    if((pos != -1) && (neg != -1))
+    {
+        mat.push_back(triplet_eig_cd(pos, neg, -tmp));
+        mat.push_back(triplet_eig_cd(neg, pos, -tmp));
+    }
+}
+
+/*!
+    @brief      Inserts the MNA stamp of the ICS in triplet form
+    (i, j, val) inside the mat array. For DC analysis ICS have 1 or 2 stamps.
+    @param      rh     The right hand side vector of the system.
+    @param      source The ICS.
+*/
+void MNA::IcsMNAStampAC(DensVecCompD &rh, ics_packed &source)
+{
+    auto pos = source.getPosNodeID(), neg = source.getNegNodeID();
+    auto val = source.getACVal();
+
+    if(pos != -1) rh[pos] -= val;
+    if(neg != -1) rh[neg] += val;
+}
+
+/*!
+    @brief      Inserts the MNA stamp of the IVS in triplet form
+    (i, j, val) inside the mat array. IVS need to be inserted
+    in the sub-arrays for sources, hence the offset.
+    @param      mat    The triplet matrix to insert the stamp.
+    @param      offset The offset of the stamp inside the array
+    @param      source The IVS.
+*/
+void MNA::IvsMNAStampAC(tripletList_cd &mat, IntTp offset, ivs_packed &source)
+{
+    auto pos = source.getPosNodeID(), neg = source.getNegNodeID();
+    std::complex<double> real_tmp(1, 0);
+
+    if(pos != -1)
+    {
+        mat.push_back(triplet_eig_cd(offset, pos, real_tmp));
+        mat.push_back(triplet_eig_cd(pos, offset, real_tmp));
+    }
+
+    if(neg != -1)
+    {
+        mat.push_back(triplet_eig_cd(offset, neg, -real_tmp));
+        mat.push_back(triplet_eig_cd(neg, offset, -real_tmp));
+    }
+}
+
+/*!
+    @brief      Inserts the MNA stamp of the IVS in triplet form
+    (i, j, val) inside the right hand side. IVS need to be inserted
+    in the sub-arrays for sources, hence the offset.
+    @param      rh     The right hand side vector of the system.
+    @param      offset The offset of the stamp inside the array
+    @param      source The IVS.
+*/
+void MNA::IvsMNAStampAC(DensVecCompD &rh, IntTp offset, ivs_packed &source)
+{
+    rh[offset] += source.getACVal();
+}
+
+
+
+/*!
 	@brief      Evaluates an EXPONENTIAL source at a given simulation time.
 	@param		vvals		The parameters of the exponential source.
 	@param		time		The simulation time.
@@ -533,22 +664,30 @@ void MNA::CreateMNASystemTRAN(SparMatD &mat)
     @param      mat         The AC system matrix to be generated.
     @param      freq        The frequency value the matrix has to be generated for.
 */
-void MNA::CreateMNASystemAC(SparMatD &mat, double freq)
+void MNA::CreateMNASystemAC(SparMatCompD &mat, double freq)
 {
     /* Define a temporal TripleMatrix for the creation of the final matrix */
-    tripletList_d triplet_mat;
+    tripletList_cd triplet_mat;
 
     /* Dimensions and indices */
     auto mat_sz = this->_system_dim;
     auto coil_start = this->_coil_offset;
+    auto ivs_start = this->_ivs_offset;
 
     /* 1) Iterate over all the passive elements */
-    for(auto &it : this->_caps) CapMNAStamp(triplet_mat, it, TRAN);
+    for(auto &it : this->_caps) CapMNAStampAC(triplet_mat, it, freq);
+    for(auto &it : this->_res) ResMNAStampAC(triplet_mat, it);
 
     for(auto &it : this->_coils)
     {
-        CoilMNAStamp(triplet_mat, coil_start, it, TRAN);
+        CoilMNAStampAC(triplet_mat, coil_start, it, freq);
         coil_start++;
+    }
+
+    for(auto &it : this->_ivs)
+    {
+        IvsMNAStampAC(triplet_mat, ivs_start, it);
+        ivs_start++;
     }
 
     /* 2) Compress the matrix into its final form */
@@ -561,29 +700,24 @@ void MNA::CreateMNASystemAC(SparMatD &mat, double freq)
     creating the right hand side vector.
     @param      rh         The AC system right hand side vector to be generated.
 */
-void MNA::CreateMNASystemAC(DensVecD &rh)
+void MNA::CreateMNASystemAC(DensVecCompD &rh)
 {
-    /* Define a temporal TripleMatrix for the creation of the final matrix */
-    tripletList_d triplet_mat;
-
     /* Dimensions and indices */
     auto mat_sz = this->_system_dim;
-    auto coil_start = this->_coil_offset;
+
+    /* Resize and initialize */
+    rh = DensVecD::Zero(mat_sz);
+    auto ivs_start = this->_ivs_offset;
 
     /* 1) Iterate over all the passive elements */
-    for(auto &it : this->_caps) CapMNAStamp(triplet_mat, it, TRAN);
+    for(auto &it : this->_ics) IcsMNAStampAC(rh, it);
 
-    for(auto &it : this->_coils)
+    for(auto &it : this->_ivs)
     {
-        CoilMNAStamp(triplet_mat, coil_start, it, TRAN);
-        coil_start++;
+        IvsMNAStampAC(rh, ivs_start, it);
+        ivs_start++;
     }
-
-    /* 2) Compress the matrix into its final form */
-    mat.resize(mat_sz, mat_sz);
-    mat.setFromTriplets(triplet_mat.begin(), triplet_mat.end());
 }
-
 
 
 /*!

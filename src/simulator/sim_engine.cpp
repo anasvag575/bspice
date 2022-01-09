@@ -158,17 +158,13 @@ return_codes_e simulator_engine::DC_analysis(void)
 */
 return_codes_e simulator_engine::TRAN_analysis(void)
 {
-    if(this->_ode_method == BACKWARDS_EULER)
+    switch(this->_ode_method)
     {
-        return EulerODESolve();
+        case BACKWARDS_EULER: return EulerODESolve();
+        case TRAPEZOIDAL: return TrapODESolve();
+        case GEAR2: return FAIL_SIMULATOR_FALLTHROUTH_ODE_OPTION; //TODO
+        default: return FAIL_SIMULATOR_FALLTHROUTH_ODE_OPTION; /* Will never reach */
     }
-    else if(this->_ode_method == TRAPEZOIDAL)
-    {
-        return TrapODESolve();
-    }
-
-    /* Will never reach, only for compiler warnings */
-    return FAIL_SIMULATOR_FALLTHROUTH_ODE_OPTION;
 }
 
 /*!
@@ -179,7 +175,61 @@ return_codes_e simulator_engine::AC_analysis(void)
 {
     using Eigen::Success; // Eigen success value
 
-	/* TODO - Implement */
+    direct_solver_c solver;
+    SparMatCompD mat;
+    DensVecCompD rh;
+
+    /* Set up the right hand side */
+    this->_mna_engine.CreateMNASystemAC(rh);
+
+    /* Simulation values */
+    auto mat_sz = this->_mna_engine.getSystemDim();
+    auto sim_sz = this->_mna_engine.getSimDim();
+    auto &sim_vector = this->_mna_engine.getSimVals();
+
+    /* Save all the results */
+    if(!this->_save_mem)
+    {
+        this->_results_cd.resize(mat_sz, sim_sz);
+
+        for(size_t i = 0; i < sim_vector.size(); i++)
+        {
+            /* Create the array for this frequency */
+            this->_mna_engine.CreateMNASystemAC(mat, sim_vector[i]);
+
+            /* Solver */
+            solver.compute(mat);
+
+            /* Checks */
+            if(solver.info() != Success) return FAIL_SIMULATOR_FACTORIZATION;
+
+            /* Return the result */
+            this->_results_cd.col(i) = solver.solve(rh);
+
+            if(solver.info() != Success) return FAIL_SIMULATOR_SOLVE;
+        }
+    }
+    else
+    {
+        for(size_t i = 0; i < sim_vector.size(); i++)
+        {
+            /* Create the array for this frequency */
+            this->_mna_engine.CreateMNASystemAC(mat, sim_vector[i]);
+
+            /* Solver */
+            solver.compute(mat);
+
+            /* Checks */
+            if(solver.info() != Success) return FAIL_SIMULATOR_FACTORIZATION;
+
+            /* Return the result */
+            DensVecCompD tmp = solver.solve(rh);
+            setPlotResultsCd(tmp);
+
+            if(solver.info() != Success) return FAIL_SIMULATOR_SOLVE;
+        }
+    }
+
 	return RETURN_SUCCESS;
 }
 
