@@ -14,8 +14,10 @@ class Circuit
 		*/
 		Circuit()
 		{
+		    this->_ode_method = BACKWARDS_EULER;
 			this->_scale = DEC_SCALE;
 			this->_type = OP;
+			this->_mem_save_mode = false;
 			this->_valid = false;
 			this->_sim_step = 0;
 			this->_sim_start = 0;
@@ -30,8 +32,10 @@ class Circuit
 		void clear(void)
 		{
 			/* Default */
+		    this->_ode_method = BACKWARDS_EULER;
 			this->_scale = DEC_SCALE;
 			this->_type = OP;
+			this->_mem_save_mode = false;
 			this->_valid = false;
 			this->_source = "";
 			this->_sim_step = 0;
@@ -196,8 +200,27 @@ class Circuit
         	return this->_scale;
         }
 
-        return_codes_e createCircuit(std::fstream &input_file);
+        /*!
+            @brief    Get the ODE method to be used for transient.
+            @return   The method.
+        */
+        ODE_meth_t getODEMethod(void)
+        {
+            return this->_ode_method;
+        }
+
+        /*!
+            @brief    Get the memory mode the simulation is goind to be run at.
+            @return   Memory save(true) otherwise store all results (false).
+        */
+        bool getMemMode(void)
+        {
+            return this->_mem_save_mode;
+        }
+
+        return_codes_e createCircuit(std::ifstream &input_file);
     private:
+        return_codes_e setCircuitOptions(std::vector<std::string> &tokens);
         return_codes_e createSPICECard(std::vector<std::string> &tokens, parser &match);
         return_codes_e verify(void);
 
@@ -219,12 +242,14 @@ class Circuit
         hashmap_str_t _element_names;
         hashmap_str_t _nodes;
 
-        /* SPICE CARDS - Analysis */
+        /* SPICE CARDS/OPTIONS - Analysis */
         double _sim_start;				/* The simulation start value */
         double _sim_end;				/* The simulation end value */
         double _sim_step;				/* The simulation step */
         as_scale_t _scale;				/* Scale of the analysis */
         analysis_t _type;				/* Analysis type */
+        ODE_meth_t _ode_method;         /* ODE method in case of transient */
+        bool _mem_save_mode;            /* Run analysis in memory save mode */
         std::string _source;			/* In case of DC analysis - Name of source */
 
         /* SPICE CARDS - Plot */

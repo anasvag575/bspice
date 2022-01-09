@@ -24,7 +24,7 @@ static return_codes_e bspice_single_run(int argc, char **argv)
 
     /* Step 1 - Open file */
     string input_file_name = argv[1];
-    fstream input_file(input_file_name, ios::in);
+    ifstream input_file(input_file_name);
 
     /* Failure - Error and return */
     if(!input_file)
@@ -46,7 +46,7 @@ static return_codes_e bspice_single_run(int argc, char **argv)
 
     /* Step 3 - Proceed to the simulator engine */
     simulator_engine sim_manager(circuit_manager);
-    errcode = sim_manager.run(circuit_manager);
+    errcode = sim_manager.run();
 
     if(errcode != RETURN_SUCCESS)
     {

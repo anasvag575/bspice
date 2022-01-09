@@ -22,6 +22,7 @@ typedef enum return_enum_codes
 	FAIL_PARSER_SOURCE_SPEC_ARGS_NUM,
 	FAIL_PARSER_SOURCE_SPEC_ARGS_FORMAT,
 	FAIL_PARSER_ANALYSIS_INVALID_ARGS,
+	FAIL_PARSER_UKNOWN_OPTION_OR_REPETITION,
 
 	/* Simulator engine opcodes - Used inside mna/sim_engine.cpp */
 	FAIL_SIMULATOR_RUN,
@@ -33,7 +34,10 @@ typedef enum return_enum_codes
 	FAIL_PLOTTER_CIRCUIT_INVALID,
 	FAIL_PLOTTER_RESULTS_INVALID,
 	FAIL_PLOTTER_NOTHING_TO_PLOT,
-	FAIL_PLOTTER_IO_OPERATIONS
+	FAIL_PLOTTER_IO_OPERATIONS,
+
+	/* Debug codes, invisible to the user */
+    FAIL_SIMULATOR_FALLTHROUTH_ODE_OPTION,          /* Somehow an uknown enum was passed to the sim_engine */
 } return_codes_e;
 
 /* A global table containing all the SPICE cards supported by the simulator */
@@ -62,6 +66,14 @@ typedef enum transient_sources
     PWL_SOURCE,
     PULSE_SOURCE,
 } tran_source_t;
+
+/* The different ODE solver methods */
+typedef enum ODE_methods
+{
+    BACKWARDS_EULER = 0,
+    TRAPEZOIDAL,
+    GEAR2,
+} ODE_meth_t;
 
 /* TODO - More C++ way of defining it */
 #define TRANSIENT_SOURCE_TYPENUM 5

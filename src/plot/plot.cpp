@@ -273,15 +273,13 @@ void GNU_plotter::plot(Circuit &circuit_manager, simulator_engine &simulator_man
     /* For TRAN we have only 1 value to print */
 	if(analysis_type != AC)
 	{
-	    /* Get the plot data */
-	    vector<vector<double>> res_nodes, res_sources;
-	    simulator_manager.getPlotResults(circuit_manager, res_nodes, res_sources);
-
         /* Send */
         if(plotsources.size())
         {
+            auto &res = simulator_manager.getSourceResults();
+
             this->next_plot();
-            sendPlotData(x_simvals, res_sources, analysis_scale == LOG_SCALE);
+            sendPlotData(x_simvals, res, analysis_scale == LOG_SCALE);
             setPlotOptions(analysis_type, analysis_scale, sweep_source, true, true);
             finalize(plotsources);
         }
@@ -289,30 +287,30 @@ void GNU_plotter::plot(Circuit &circuit_manager, simulator_engine &simulator_man
         /* Send */
         if(plotnodes.size())
         {
+            auto &res = simulator_manager.getNodesResults();
+
             this->next_plot();
-            sendPlotData(x_simvals, res_nodes, analysis_scale == LOG_SCALE);
+            sendPlotData(x_simvals, res, analysis_scale == LOG_SCALE);
             setPlotOptions(analysis_type, analysis_scale, sweep_source, false, true);
             finalize(plotnodes);
         }
 	}
 	else
 	{
-        /* Get the plot data */
-        vector<vector<complex<double>>> res_nodes, res_sources;
-        simulator_manager.getPlotResults(circuit_manager, res_nodes, res_sources);
-
         /* Send */
         if(plotsources.size())
         {
+            auto &res = simulator_manager.getSourceResultsCd();
+
             /* Magnitude */
             this->next_plot();
-            sendPlotData(x_simvals, res_sources, true, analysis_scale == LOG_SCALE);
+            sendPlotData(x_simvals, res, true, analysis_scale == LOG_SCALE);
             setPlotOptions(analysis_type, analysis_scale, sweep_source, true, true);
             finalize(plotsources);
 
             /* Phase */
             this->next_plot();
-            sendPlotData(x_simvals, res_sources, false, false);
+            sendPlotData(x_simvals, res, false, false);
             setPlotOptions(analysis_type, analysis_scale, sweep_source, true, false);
             finalize(plotsources);
         }
@@ -320,15 +318,17 @@ void GNU_plotter::plot(Circuit &circuit_manager, simulator_engine &simulator_man
         /* Send */
         if(plotnodes.size())
         {
+            auto &res = simulator_manager.getNodesResultsCd();
+
             /* Magnitude */
             this->next_plot();
-            sendPlotData(x_simvals, res_nodes, true, analysis_scale == LOG_SCALE);
+            sendPlotData(x_simvals, res, true, analysis_scale == LOG_SCALE);
             setPlotOptions(analysis_type, analysis_scale, sweep_source, true, true);
             finalize(plotsources);
 
             /* Phase */
             this->next_plot();
-            sendPlotData(x_simvals, res_nodes, false, false);
+            sendPlotData(x_simvals, res, false, false);
             setPlotOptions(analysis_type, analysis_scale, sweep_source, true, false);
             finalize(plotsources);
         }
@@ -348,10 +348,6 @@ void print_cout(Circuit &circuit_manager, simulator_engine &simulator_manager)
     auto &plotsources = circuit_manager.getPlotSources();
     auto &plotnodes = circuit_manager.getPlotNodes();
 
-    /* Get the plot data */
-    vector<vector<double>> res_nodes, res_sources;
-    simulator_manager.getPlotResults(circuit_manager, res_nodes, res_sources);
-
     cout << "***PLOT - RESULTS***\n";
 
     /* Send */
@@ -359,7 +355,8 @@ void print_cout(Circuit &circuit_manager, simulator_engine &simulator_manager)
     {
         cout << "Branch currents:\n";
 
-        auto &tmp = res_sources.front();
+        auto &res = simulator_manager.getSourceResults();
+        auto &tmp = res.front();
 
         for(size_t i = 0; i < tmp.size(); i++)
         {
@@ -372,7 +369,8 @@ void print_cout(Circuit &circuit_manager, simulator_engine &simulator_manager)
     {
         cout << "Node Voltages:\n";
 
-        auto &tmp = res_nodes.front();
+        auto &res = simulator_manager.getNodesResults();
+        auto &tmp = res.front();
 
         for(size_t i = 0; i < tmp.size(); i++)
         {

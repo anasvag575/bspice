@@ -2,12 +2,102 @@
 #include "mna.hpp"
 
 /*!
+    @brief      Initializes the MNA engine with the parameters
+    defined by the circuit input.
+    @param      circuit_manager     The circuit.
+*/
+MNA::MNA(Circuit &circuit_manager)
+{
+    /* Conversion for every element */
+    for(auto &it : circuit_manager.getCoils()) this->_coils.push_back({it});
+    for(auto &it : circuit_manager.getCapacitors()) this->_caps.push_back({it});
+    for(auto &it : circuit_manager.getResistors()) this->_res.push_back({it});
+    for(auto &it : circuit_manager.getICS()) this->_ics.push_back({it, it});
+    for(auto &it : circuit_manager.getIVS()) this->_ivs.push_back({it, it});
+
+    /* Set up system dimension */
+    auto nodes_dim = circuit_manager.getNodes().size();
+    this->_ivs_offset = nodes_dim;
+    this->_coil_offset = nodes_dim + this->_ivs.size();
+    this->_system_dim = this->_coil_offset + this->_coils.size();
+    this->_analysis_type = circuit_manager.getAnalysisType();
+    this->_scale = circuit_manager.getAnalysisScale();
+    this->_sim_store_start = 0; // TODO
+
+    /* Create the simulation vector */
+    double start = circuit_manager.getSimStart();
+    double end = circuit_manager.getSimEnd();
+    double steps = circuit_manager.getSimStep();
+    this->_sim_step = steps;
+
+    if(this->_analysis_type != OP)
+    {
+        /* Now create the simulation times/values vector */
+        if(this->_scale == DEC_SCALE)
+        {
+            /* For AC we generate based on step (since argument is [points]) */
+            if(this->_analysis_type == AC) linspaceVecGen(this->_sim_vals, start, end, static_cast<size_t>(steps));
+            else StepVecGen(this->_sim_vals, start, end, steps);
+        }
+        else
+        {
+            /* Generate logarithmically spaced vector */
+            logspaceVecGen(this->_sim_vals, start, end, static_cast<size_t>(steps));
+        }
+    }
+    else
+    {
+        this->_sim_vals.push_back(0.0);
+    }
+
+    /* Create the indices vector for nodes or IVS currents */
+    auto &node_names = circuit_manager.getPlotNodes();
+    auto &source_names = circuit_manager.getPlotSources();
+
+    /* Get the maps needed */
+    auto &nodesmap = circuit_manager.getNodes();
+    auto &elementsmap = circuit_manager.getElementNames();
+
+    for(auto &it : node_names)
+    {
+        /* Search the map - Always exists */
+        auto tmp = nodesmap.find(it);
+
+        /* For nodes idx is the unique node ID */
+        this->_nodes_idx.push_back(tmp->second);
+    }
+
+    for(auto &it : source_names)
+    {
+        /* Search the map - Always exists */
+        auto tmp = elementsmap.find(it);
+
+        /* For voltage sources, (IVSoffset + <idx in the IVS vector>) */
+        this->_sources_idx.push_back(tmp->second + this->_ivs_offset);
+    }
+
+    /* In case we have a DC analysis source */
+    if(this->_analysis_type == DC)
+    {
+        /* 2-level index to get the exact position of the source */
+        std::string &src_dut = circuit_manager.getDCSource();
+        auto &namesmap = circuit_manager.getElementNames();
+
+        /* Get idx to access the appropriate vector */
+        this->_sweep_source_idx = namesmap.find(src_dut)->second;
+
+        /* Voltage sweep needs an offset */
+        if(src_dut[0] == 'V') this->_sweep_source_idx += this->_ivs_offset;
+    }
+}
+
+/*!
 	@brief      Inserts the MNA stamp of the resistor in triplet form
 	(i, j, val) inside the mat array. For DC analysis resistors have 1 or 4 stamps.
 	@param      mat    The triplet matrix to insert the stamp.
 	@param 		res	   The resistor.
 */
-void MNA::ResMNAStamp(tripletList_d &mat, Resistor &res)
+void MNA::ResMNAStamp(tripletList_d &mat, resistor_packed &res)
 {
 	auto conduct = 1/res.getVal();
 	auto pos = res.getPosNodeID(), neg = res.getNegNodeID();
@@ -32,7 +122,7 @@ void MNA::ResMNAStamp(tripletList_d &mat, Resistor &res)
 	@param		coil   The coil.
 
 */
-void MNA::CoilMNAStamp(tripletList_d &mat, IntTp offset, Coil &coil, const analysis_t type)
+void MNA::CoilMNAStamp(tripletList_d &mat, IntTp offset, coil_packed &coil, const analysis_t type)
 {
     auto pos = coil.getPosNodeID(), neg = coil.getNegNodeID();
 
@@ -61,7 +151,7 @@ void MNA::CoilMNAStamp(tripletList_d &mat, IntTp offset, Coil &coil, const analy
     @param      mat    The triplet matrix to insert the stamp.
     @param		cap	   The capacitor.
 */
-void MNA::CapMNAStamp(tripletList_d &mat, Capacitor &cap, const analysis_t type)
+void MNA::CapMNAStamp(tripletList_d &mat, capacitor_packed &cap, const analysis_t type)
 {
 	if(type == TRAN)
 	{
@@ -85,7 +175,7 @@ void MNA::CapMNAStamp(tripletList_d &mat, Capacitor &cap, const analysis_t type)
 	@param      rh     The right hand side vector of the system.
     @param		source The ICS.
 */
-void MNA::IcsMNAStamp(DensVecD &rh, ics &source)
+void MNA::IcsMNAStamp(DensVecD &rh, ics_packed &source)
 {
     auto pos = source.getPosNodeID(), neg = source.getNegNodeID();
 	auto val = source.getVal();
@@ -104,7 +194,7 @@ void MNA::IcsMNAStamp(DensVecD &rh, ics &source)
     @param		offset The offset of the stamp inside the array
     @param		source The IVS.
 */
-void MNA::IvsMNAStamp(tripletList_d &mat, DensVecD &rh, IntTp offset, ivs &source)
+void MNA::IvsMNAStamp(tripletList_d &mat, DensVecD &rh, IntTp offset, ivs_packed &source)
 {
     auto pos = source.getPosNodeID(), neg = source.getNegNodeID();
 
@@ -224,18 +314,15 @@ double MNA::PWLSourceEval(std::vector<double> &tvals, std::vector<double> &vvals
 /*!
 	@brief      Updates the right hand size vector with the time dependent voltage/current
 	values during a TRAN analysis.
-	@param		circuit		The circuit that is analyzed.
 	@param		rh			The vector to be updated.
 	@param		time		The simulation time.
 */
-void MNA::UpdateTRANVec(Circuit &circuit_manager, DensVecD &rh, double time)
+void MNA::UpdateTRANVec(DensVecD &rh, double time)
 {
-	auto &ivs = circuit_manager.getIVS();
-	auto &ics = circuit_manager.getICS();
 	auto ivs_start = this->_ivs_offset;
 
 	/* Transient stamps for IVS */
-	for(auto &it : ivs)
+	for(auto &it : this->_ivs)
 	{
 		auto &vvals = it.getTranVals();
 
@@ -277,7 +364,7 @@ void MNA::UpdateTRANVec(Circuit &circuit_manager, DensVecD &rh, double time)
 	}
 
 	/* Transient stamps for ICS */
-	for(auto &it : ics)
+	for(auto &it : this->_ics)
 	{
 		auto pos = it.getPosNodeID();
 		auto neg = it.getNegNodeID();
@@ -330,63 +417,18 @@ void MNA::UpdateTRANVec(Circuit &circuit_manager, DensVecD &rh, double time)
 
 }
 
-/*!
-    @brief      Creates the index vectors for the requested nodes's voltage and
-    sources's current, inside the solution vectors.
-    The indices are in order of the plot nodes inside the circuit manager interface.
-    @param      circuit     The circuit that the results are requested for
-    @param      nodes_idx   The nodes indices, must be an empty vector
-    @param      nodes_idx   The sources indices, must be an empty vector
-*/
-void MNA::CreateIdxVecs(Circuit &circuit_manager, std::vector<IntTp> &nodes_idx, std::vector<IntTp> &sources_idx)
-{
-    /* Get all the sources and the nodes for plotting */
-    auto &node_names = circuit_manager.getPlotNodes();
-    auto &source_names = circuit_manager.getPlotSources();
-
-    /* Get the maps needed */
-    auto &nodesmap = circuit_manager.getNodes();
-    auto &elementsmap = circuit_manager.getElementNames();
-
-    for(auto &it : node_names)
-    {
-        /* Search the map - Always exists */
-        auto tmp = nodesmap.find(it);
-
-        /* For nodes idx is the unique node ID */
-        nodes_idx.push_back(tmp->second);
-    }
-
-    for(auto &it : source_names)
-    {
-        /* Search the map - Always exists */
-        auto tmp = elementsmap.find(it);
-
-        /* For voltage sources, (IVSoffset + <idx in the IVS vector>) */
-        sources_idx.push_back(tmp->second + this->_ivs_offset);
-    }
-}
-
 
 
 /*!
 	@brief      Creates the MNA system for the OP (Operating point) analysis,
 	creating the left hand side matrix and the right hand side vector.
-	@param		circuit		The circuit that is analyzed.
 	@param		mat			The OP system matrix to be generated.
 	@param		rh			The OP system right side vector to be generated.
 */
-void MNA::CreateMNASystemOP(Circuit &circuit_manager, SparMatD &mat, DensVecD &rh)
+void MNA::CreateMNASystemOP(SparMatD &mat, DensVecD &rh)
 {
 	/* Define a temporal TripleMatrix for the creation of the final matrix */
 	tripletList_d triplet_mat;
-
-	/* 1) Load all the elements */
-	auto &caps = circuit_manager.getCapacitors();
-	auto &coils = circuit_manager.getCoils();
-	auto &res = circuit_manager.getResistors();
-	auto &ics = circuit_manager.getICS();
-	auto &ivs = circuit_manager.getIVS();
 
 	/* Dimensions and indices */
 	auto mat_sz = this->_system_dim;
@@ -397,17 +439,17 @@ void MNA::CreateMNASystemOP(Circuit &circuit_manager, SparMatD &mat, DensVecD &r
 	rh = DensVecD::Zero(mat_sz);
 
 	/* 1) Iterate over all the passive elements */
-	for(auto &it : res) ResMNAStamp(triplet_mat, it);
-	for(auto &it : caps) CapMNAStamp(triplet_mat, it, OP);
-	for(auto &it : ics) IcsMNAStamp(rh, it);
+	for(auto &it : this->_res) ResMNAStamp(triplet_mat, it);
+	for(auto &it : this->_caps) CapMNAStamp(triplet_mat, it, OP);
+	for(auto &it : this->_ics) IcsMNAStamp(rh, it);
 
-	for(auto &it : ivs)
+	for(auto &it : this->_ivs)
 	{
 		IvsMNAStamp(triplet_mat, rh, ivs_start, it);
 		ivs_start++;
 	}
 
-	for(auto &it : coils)
+	for(auto &it : this->_coils)
 	{
 		CoilMNAStamp(triplet_mat, coil_start, it, OP);
 		coil_start++;
@@ -421,28 +463,18 @@ void MNA::CreateMNASystemOP(Circuit &circuit_manager, SparMatD &mat, DensVecD &r
 /*!
 	@brief      Creates the MNA system for the DC (direct current) analysis,
 	creating the left hand side matrix and the right hand side matrix.
-	@param		circuit		The circuit that is analyzed.
 	@param		mat			The DC system matrix to be generated.
 	@param		rh			The DC system right side matrix to be generated.
 */
-void MNA::CreateMNASystemDC(Circuit &circuit_manager, SparMatD &mat, DenseMatD &rhs)
+void MNA::CreateMNASystemDC(SparMatD &mat, DenseMatD &rhs)
 {
 	/* Use this to get the initial state of the RH */
 	DensVecD init_rh;
 	IntTp sim_dim = this->_sim_vals.size();
+	IntTp sweep_idx = this->_sweep_source_idx;
 
 	/* Fill the Matrix and the vector */
-	CreateMNASystemOP(circuit_manager, mat, init_rh);
-
-	/* 2-level index to get the exact position of the source */
-	std::string &src_dut = circuit_manager.getDCSource();
-	auto &namesmap = circuit_manager.getElementNames();
-
-	/* Get idx to access the appropriate vector */
-	auto ivs_idx = namesmap.find(src_dut)->second;
-
-	/* Voltage sweep needs an offset */
-	if(src_dut[0] == 'V') ivs_idx += this->_ivs_offset;
+	CreateMNASystemOP(mat, init_rh);
 
 	/* Copy the initial vector to the matrix */
 	rhs.resize(this->_system_dim, sim_dim);
@@ -451,33 +483,40 @@ void MNA::CreateMNASystemDC(Circuit &circuit_manager, SparMatD &mat, DenseMatD &
 	for(IntTp k = 0; k < sim_dim; k++)
 	{
 		rhs.col(k) = init_rh;
-		rhs(ivs_idx, k) = this->_sim_vals[k];
+		rhs(sweep_idx, k) = this->_sim_vals[k];
 	}
+}
+
+/*!
+    @brief      Updates the vector for the DC analysis step.
+    @param      rh          The DC system right side vector, OP initial results only.
+*/
+void MNA::UpdateMNASystemDCVec(DensVecD &rh, double sweep_val)
+{
+    IntTp sweep_idx = this->_sweep_source_idx;
+
+    /* Update only the sweep value */
+    rh[sweep_idx] = sweep_val;
 }
 
 /*!
 	@brief      Creates the MNA system for the TRAN (transient) analysis,
 	creating the left hand side matrix.
-	@param		circuit		The circuit that is analyzed.
 	@param		mat			The TRAN system matrix to be generated.
 */
-void MNA::CreateMNASystemTRAN(Circuit &circuit_manager, SparMatD &mat)
+void MNA::CreateMNASystemTRAN(SparMatD &mat)
 {
 	/* Define a temporal TripleMatrix for the creation of the final matrix */
 	tripletList_d triplet_mat;
-
-	/* 1) Load all the elements for the MNA matrix */
-	auto &caps = circuit_manager.getCapacitors();
-	auto &coils = circuit_manager.getCoils();
 
 	/* Dimensions and indices */
 	auto mat_sz = this->_system_dim;
 	auto coil_start = this->_coil_offset;
 
 	/* 1) Iterate over all the passive elements */
-	for(auto &it : caps) CapMNAStamp(triplet_mat, it, TRAN);
+	for(auto &it : this->_caps) CapMNAStamp(triplet_mat, it, TRAN);
 
-	for(auto &it : coils)
+	for(auto &it : this->_coils)
 	{
 		CoilMNAStamp(triplet_mat, coil_start, it, TRAN);
 		coil_start++;
@@ -488,10 +527,68 @@ void MNA::CreateMNASystemTRAN(Circuit &circuit_manager, SparMatD &mat)
 	mat.setFromTriplets(triplet_mat.begin(), triplet_mat.end());
 }
 
+/*!
+    @brief      Creates the MNA system for the AC (alternating current) analysis,
+    creating the left hand side matrix.
+    @param      mat         The AC system matrix to be generated.
+    @param      freq        The frequency value the matrix has to be generated for.
+*/
+void MNA::CreateMNASystemAC(SparMatD &mat, double freq)
+{
+    /* Define a temporal TripleMatrix for the creation of the final matrix */
+    tripletList_d triplet_mat;
+
+    /* Dimensions and indices */
+    auto mat_sz = this->_system_dim;
+    auto coil_start = this->_coil_offset;
+
+    /* 1) Iterate over all the passive elements */
+    for(auto &it : this->_caps) CapMNAStamp(triplet_mat, it, TRAN);
+
+    for(auto &it : this->_coils)
+    {
+        CoilMNAStamp(triplet_mat, coil_start, it, TRAN);
+        coil_start++;
+    }
+
+    /* 2) Compress the matrix into its final form */
+    mat.resize(mat_sz, mat_sz);
+    mat.setFromTriplets(triplet_mat.begin(), triplet_mat.end());
+}
+
+/*!
+    @brief      Creates the MNA system for the AC (alternating current) analysis,
+    creating the right hand side vector.
+    @param      rh         The AC system right hand side vector to be generated.
+*/
+void MNA::CreateMNASystemAC(DensVecD &rh)
+{
+    /* Define a temporal TripleMatrix for the creation of the final matrix */
+    tripletList_d triplet_mat;
+
+    /* Dimensions and indices */
+    auto mat_sz = this->_system_dim;
+    auto coil_start = this->_coil_offset;
+
+    /* 1) Iterate over all the passive elements */
+    for(auto &it : this->_caps) CapMNAStamp(triplet_mat, it, TRAN);
+
+    for(auto &it : this->_coils)
+    {
+        CoilMNAStamp(triplet_mat, coil_start, it, TRAN);
+        coil_start++;
+    }
+
+    /* 2) Compress the matrix into its final form */
+    mat.resize(mat_sz, mat_sz);
+    mat.setFromTriplets(triplet_mat.begin(), triplet_mat.end());
+}
+
+
 
 /*!
     @brief      Prints the triplet matrix given. Used only for debugging.
-    @param      circuit     The triplet matrix to be printed
+    @param      mat     The triplet matrix to be printed
 */
 void debug_triplet_mat(tripletList_d &mat)
 {

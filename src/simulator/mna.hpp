@@ -16,49 +16,11 @@ class MNA
 			_system_dim = 0;
 			_ivs_offset = 0;
 			_coil_offset = 0;
+			_sweep_source_idx = 0;
 			_sim_store_start = 0;
-		}
-
-		/*!
-			@brief      Initializes the MNA engine with the parameters
-			defined by the circuit input.
-			@param		circuit_manager		The circuit.
-		*/
-		MNA(Circuit &circuit_manager)
-		{
-			/* Set up the problem dimensions and elements offsets in the MNA arrays/vectors */
-			auto nodes_dim = circuit_manager.getNodes().size();
-			this->_ivs_offset = nodes_dim;
-			this->_coil_offset = nodes_dim + circuit_manager.getIVS().size();
-			this->_system_dim = this->_coil_offset + circuit_manager.getCoils().size();
-			this->_sim_store_start = 0; // TODO
-
-			/* Create the simulation vector */
-			auto sim_scale = circuit_manager.getAnalysisScale();
-			auto sim_type = circuit_manager.getAnalysisType();
-			double start = circuit_manager.getSimStart();
-			double end = circuit_manager.getSimEnd();
-			double steps = circuit_manager.getSimStep();
-
-			if(sim_type != OP)
-			{
-                /* Now create the simulation times/values vector */
-                if(sim_scale == DEC_SCALE)
-                {
-                    /* For AC we generate based on step (since argument is [points]) */
-                    if(sim_type == AC) linspaceVecGen(this->_sim_vals, start, end, static_cast<size_t>(steps));
-                    else StepVecGen(this->_sim_vals, start, end, steps);
-                }
-                else
-                {
-                    /* Generate logarithmically spaced vector */
-                    logspaceVecGen(this->_sim_vals, start, end, static_cast<size_t>(steps));
-                }
-			}
-			else
-			{
-			    this->_sim_vals.push_back(0.0);
-			}
+			_sim_step = 0;
+			_analysis_type = OP;
+			_scale = DEC_SCALE;
 		}
 
 		/*!
@@ -66,11 +28,24 @@ class MNA
 		*/
 		void clear(void)
 		{
-			this->_system_dim = 0;
-			this->_ivs_offset = 0;
-			this->_coil_offset = 0;
-			this->_sim_store_start = 0;
+            _system_dim = 0;
+            _ivs_offset = 0;
+            _coil_offset = 0;
+            _sweep_source_idx = 0;
+            _sim_store_start = 0;
+            _sim_step = 0;
+            _analysis_type = OP;
+            _scale = DEC_SCALE;
+
+            /* Clear vectors */
+            this->_res.clear();
+            this->_caps.clear();
+            this->_coils.clear();
+            this->_ics.clear();
+            this->_ivs.clear();
 			this->_sim_vals.clear();
+			this->_nodes_idx.clear();
+            this->_sources_idx.clear();
 		}
 
 		/*!
@@ -80,26 +55,6 @@ class MNA
 		IntTp getSystemDim(void)
 		{
 			return this->_system_dim;
-		}
-
-		/*!
-			@brief      Returns the starting offset of coils in the
-			MNA matrix/rh vector.
-			@return 	The offset.
-		*/
-		IntTp getCoilOffset(void)
-		{
-			return this->_coil_offset;
-		}
-
-		/*!
-			@brief      Returns the starting offset of IVS(s) in the
-			MNA matrix/rh vector.
-			@return 	The offset.
-		*/
-		IntTp getIVSOffset(void)
-		{
-			return this->_ivs_offset;
 		}
 
 		/*!
@@ -122,22 +77,70 @@ class MNA
 			return this->_sim_vals.size();
 		}
 
-		/* MNA and systems formation */
-		void CreateMNASystemOP(Circuit &circuit_manager, SparMatD &mat, DensVecD &rh);
-		void CreateMNASystemDC(Circuit &circuit_manager, SparMatD &mat, DenseMatD &rh);
-		void CreateMNASystemTRAN(Circuit &circuit_manager, SparMatD &mat);
-		void UpdateTRANVec(Circuit &circuit_manager, DensVecD &rh, double time);
+        /*!
+            @brief      Returns the simulation step.
+            @return     The simulation step.
+        */
+        double getSimStep(void)
+        {
+            return _sim_step;
+        }
 
-		/* Formation of plot matrices */
-		void CreateIdxVecs(Circuit &circuit_manager, std::vector<IntTp> &outnodes, std::vector<IntTp> &outsources);
+        /*!
+            @brief      Returns the type of analysis performed.
+            @return     The analysis type.
+        */
+		analysis_t getAnalysisType(void)
+		{
+		    return this->_analysis_type;
+		}
+
+        /*!
+            @brief      Returns the type of scale used.
+            @return     The scale.
+        */
+		as_scale_t getAnalysisScale(void)
+		{
+		    return this->_scale;
+		}
+
+        /*!
+            @brief      Returns the nodes indices vector, according to plot order.
+            @return     The indices vector.
+        */
+		std::vector<IntTp> &getNodesIdx(void)
+		{
+		    return this->_nodes_idx;
+		}
+
+        /*!
+            @brief      Returns the sources indices vector, according to plot order.
+            @return     The indices vector.
+        */
+        std::vector<IntTp> &getSourceIdx(void)
+        {
+            return this->_sources_idx;
+        }
+
+        /* Constructors */
+        MNA(Circuit &circuit_manager);
+
+        /* MNA and systems formation */
+        void CreateMNASystemOP(SparMatD &mat, DensVecD &rh);
+		void CreateMNASystemDC(SparMatD &mat, DenseMatD &rh);
+		void UpdateMNASystemDCVec(DensVecD &rh, double sweep_val);
+		void CreateMNASystemTRAN(SparMatD &mat);
+		void UpdateTRANVec(DensVecD &rh, double time);
+        void CreateMNASystemAC(SparMatD &mat, double freq);
+        void CreateMNASystemAC(DensVecD &rh);
 	private:
 
 		/* MNA stampers */
-		void ResMNAStamp(tripletList_d &mat, Resistor &res);
-		void CoilMNAStamp(tripletList_d &mat, IntTp offset, Coil &coil, const analysis_t type);
-		void CapMNAStamp(tripletList_d &mat, Capacitor &cap, const analysis_t type);
-		void IcsMNAStamp(DensVecD &rh, ics &source);
-		void IvsMNAStamp(tripletList_d &mat, DensVecD &rh, IntTp offset, ivs &source);
+		void ResMNAStamp(tripletList_d &mat, resistor_packed &res);
+		void CoilMNAStamp(tripletList_d &mat, IntTp offset, coil_packed &coil, const analysis_t type);
+		void CapMNAStamp(tripletList_d &mat, capacitor_packed &cap, const analysis_t type);
+		void IcsMNAStamp(DensVecD &rh, ics_packed &source);
+		void IvsMNAStamp(tripletList_d &mat, DensVecD &rh, IntTp offset, ivs_packed &source);
 
 		/* Transient sources evaluators */
 		double EXPSourceEval(std::vector<double> &vvals, double time);
@@ -153,9 +156,26 @@ class MNA
 		IntTp _ivs_offset;
 		IntTp _coil_offset;
 
-		/* Simulation info */
-		std::vector<double> _sim_vals;
-		IntTp _sim_store_start;
+		/* Elements */
+        std::vector<resistor_packed> _res;
+        std::vector<capacitor_packed> _caps;
+        std::vector<coil_packed> _coils;
+        std::vector<ics_packed> _ics;
+        std::vector<ivs_packed> _ivs;
+
+        /* Simulation vector */
+        std::vector<double> _sim_vals;
+        double _sim_step;
+
+        /* Indexing vectors, for results */
+        std::vector<IntTp> _sources_idx;
+        std::vector<IntTp> _nodes_idx;
+        IntTp _sweep_source_idx;
+
+        /* Simulation info */
+		analysis_t _analysis_type;
+		as_scale_t _scale;
+		IntTp _sim_store_start; //TODO
 };
 
 #endif // __MNA_H //

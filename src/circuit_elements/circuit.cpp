@@ -10,7 +10,7 @@
 	@param	  input_file	The file that contains the SPICE netlist.
     @return   The error code, in case of error, otherwise RETURN_SUCCESS.
 */
-return_codes_e Circuit::createCircuit(std::fstream &input_file)
+return_codes_e Circuit::createCircuit(std::ifstream &input_file)
 {
     using namespace std;
     using namespace chrono;
@@ -155,6 +155,8 @@ return_codes_e Circuit::createCircuit(std::fstream &input_file)
 		cout << "************************************\n";
 		cout << "Simulation Type: " << this->_type << "\n";
 		cout << "Scale: " << this->_scale << "\n";
+		cout << "Memory mode: " << this->_mem_save_mode << "\n";
+		cout << "ODE method: " << this->_ode_method << "\n";
 		cout << "Total nodes to plot: " << this->_plot_nodes.size() << "\n";
 		cout << "Total sources to plot: " << this->_plot_sources.size() << "\n";
 		cout << "************************************\n\n";
@@ -181,6 +183,10 @@ return_codes_e Circuit::createSPICECard(std::vector<std::string> &tokens, parser
 	if(spice_card == "PLOT" || spice_card == "PRINT")
 	{
 		return match.parsePLOTCard(tokens, this->_plot_nodes, this->_plot_sources);
+	}
+	else if(spice_card == "OPTIONS") /* Means we parse simulator/circuit options and set them directly */
+	{
+	    return setCircuitOptions(tokens);
 	}
 
 	/* Base parameters for analysis */
@@ -218,6 +224,53 @@ return_codes_e Circuit::createSPICECard(std::vector<std::string> &tokens, parser
 	this->_sim_end = stop;
 
     return errcode;
+}
+
+/*!
+    @brief    Internal routine, that parses the options given by an OPTIONS spice card.
+    Since there is no need for tokanization or special pattern matching, this is here
+    inside the circuit class.
+    @param  tokens  The tokens that contain the OPTIONS card.
+    @return   The error code, in case of error, otherwise RETURN_SUCCESS.
+*/
+return_codes_e Circuit::setCircuitOptions(std::vector<std::string> &tokens)
+{
+    auto it = tokens.begin() + 1;
+    bool mem_save_found = false;
+    bool integr_found = false;
+
+    /* Iteratively find every option card */
+    while(it != tokens.end())
+    {
+        if(*it == "MEM_SAVE" && !mem_save_found)
+        {
+            this->_mem_save_mode = true;
+            mem_save_found = true;
+        }
+        else if(*it == "GEAR2" && !integr_found)
+        {
+            this->_ode_method = GEAR2;
+            integr_found = true;
+        }
+        else if(*it == "EULER" && !integr_found)
+        {
+            this->_ode_method = BACKWARDS_EULER;
+            integr_found = true;
+        }
+        else if(*it == "TRAP" && !integr_found)
+        {
+            this->_ode_method = TRAPEZOIDAL;
+            integr_found = true;
+        }
+        else
+        {
+            return FAIL_PARSER_UKNOWN_OPTION_OR_REPETITION;
+        }
+
+        it++;
+    }
+
+    return RETURN_SUCCESS;
 }
 
 /*!
@@ -352,7 +405,7 @@ void Circuit::debug_circuit(void)
 	vector<ivs> tmp_ivs = this->_ivs;
 	vector<ics> tmp_ics = this->_ics;
 
-	/* Sort and print by order */
+	/* Sort by name */
 	sort(tmp_coils.begin(), tmp_coils.end());
 	sort(tmp_caps.begin(), tmp_caps.end());
 	sort(tmp_res.begin(), tmp_res.end());

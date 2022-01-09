@@ -6,6 +6,7 @@
 #include <iostream>
 #include "base_types.hpp"
 
+/* Complete representation */
 class node2_device
 {
     public:
@@ -143,6 +144,63 @@ class node2_device
         double _value;                                 		   /* Value in Element's SI units */
         std::array<std::string, 2> _node_names;  			   /* The node names */
         std::array<IntTp, 2> _nodes_ids;  					   /* The node IDs */
+};
+
+/* MNA packed structure */
+class node2_device_packed
+{
+    public:
+        /*!
+            @brief    Default constructor.
+        */
+        node2_device_packed()
+        {
+            this->_nodes_ids[0] = -1;
+            this->_nodes_ids[1] = -1;
+            this->_value = 0;
+        }
+
+        /*!
+            @brief      Default constructor, converts extended to packed.
+            @param  src The extended version of the device.
+        */
+        node2_device_packed(node2_device &src)
+        {
+            this->_nodes_ids[0] = src.getPosNodeID();
+            this->_nodes_ids[1] = src.getNegNodeID();
+            this->_value = src.getVal();
+        }
+
+        /*!
+            @brief    Get the device's value
+            @return   The value.
+        */
+        double getVal(void)
+        {
+            return _value;
+        }
+
+        /*!
+            @brief    Get the positive idx node of the device.
+            @return   The idx.
+        */
+        IntTp getPosNodeID(void)
+        {
+            return this->_nodes_ids[0];
+        }
+
+        /*!
+            @brief    Get the positive idx node of the device.
+            @return   The idx.
+        */
+        IntTp getNegNodeID(void)
+        {
+            return this->_nodes_ids[1];
+        }
+
+    private:
+        double _value;                                         /* Value in Element's SI units */
+        std::array<IntTp, 2> _nodes_ids;                       /* The node IDs */
 };
 
 #endif // __NODE2_DEV_HPP //

@@ -14,6 +14,8 @@ class simulator_engine
 		simulator_engine()
 		{
 			_run = false;
+			_save_mem = false;
+			_ode_method = BACKWARDS_EULER;
 		}
 
 		/*!
@@ -25,6 +27,8 @@ class simulator_engine
 		{
 			this->_mna_engine = MNA(circuit_manager);
 			_run = false;
+			_save_mem = circuit_manager.getMemMode();
+            _ode_method = circuit_manager.getODEMethod();
 		}
 
 		/*!
@@ -33,9 +37,15 @@ class simulator_engine
 		void clear(void)
 		{
 			_run = false;
+            _save_mem = false;
+            _ode_method = BACKWARDS_EULER;
 			this->_mna_engine.clear();
 			_results_d = DenseMatD::Zero(0,0);
 			_results_cd = DenseMatCompD::Zero(0,0);
+			for(auto &it : this->_res_nodes) it.clear();
+			for(auto &it : this->_res_nodes_cd) it.clear();
+			for(auto &it : this->_res_sources) it.clear();
+			for(auto &it : this->_res_sources_cd) it.clear();
 		}
 
 		/*!
@@ -48,24 +58,6 @@ class simulator_engine
 		}
 
 		/*!
-			@brief  Returns the simulation results for OP/DC/TRAN analysis
-			@return The simulation results
-		*/
-		DenseMatD &getResultsD(void)
-		{
-			return this->_results_d;
-		}
-
-		/*!
-			@brief  Returns the simulation results for AC analysis
-			@return The simulation results
-		*/
-		DenseMatCompD &getResultsCD(void)
-		{
-			return this->_results_cd;
-		}
-
-		/*!
 			@brief  Returns the simulation vector used for the analysis
 			@return The simulation vector (sweep-val)
 		*/
@@ -74,27 +66,79 @@ class simulator_engine
 			return this->_mna_engine.getSimVals();
 		}
 
-		return_codes_e run(Circuit &circuit_manager);
-		void getPlotResults(Circuit &circuit_manager, std::vector<std::vector<double>> &res_nodes,
-		                    std::vector<std::vector<double>> &res_sources);
-		void getPlotResults(Circuit &circuit_manager, std::vector<std::vector<std::complex<double>>> &res_nodes,
-                            std::vector<std::vector<std::complex<double>>> &res_sources);
+        /*!
+            @brief  Returns the results for the plot nodes
+            @return The results
+        */
+		std::vector<std::vector<double>> &getNodesResults(void)
+        {
+            return this->_res_nodes;
+        }
+
+        /*!
+            @brief  Returns the results for the plot source
+            @return The results
+        */
+        std::vector<std::vector<double>> &getSourceResults(void)
+        {
+            return this->_res_sources;
+        }
+
+        /*!
+            @brief  Returns the results for the plot nodes (AC analysis)
+            @return The results
+        */
+        std::vector<std::vector<std::complex<double>>> &getNodesResultsCd(void)
+        {
+            return this->_res_nodes_cd;
+        }
+
+        /*!
+            @brief  Returns the results for the plot source (AC analysis)
+            @return The results
+        */
+        std::vector<std::vector<std::complex<double>>> &getSourceResultsCd(void)
+        {
+            return this->_res_sources_cd;
+        }
+
+		return_codes_e run(void);
 	private:
 		/* Analysis supported */
-		return_codes_e OP_analysis(Circuit &circuit_manager);
-		return_codes_e DC_analysis(Circuit &circuit_manager);
-		return_codes_e TRAN_analysis(Circuit &circuit_manager);
-		return_codes_e AC_analysis(Circuit &circuit_manager);
+		return_codes_e OP_analysis(void);
+		return_codes_e DC_analysis(void);
+		return_codes_e TRAN_analysis(void);
+		return_codes_e AC_analysis(void);
+
+		/* Integration solvers */
+		return_codes_e TRANpresolve(SparMatD &tran_mat, SparMatD &op_mat, DensVecD &op_res);
+		return_codes_e EulerODESolve(void);
+        return_codes_e TrapODESolve(void);
+        return_codes_e Gear2ODESolve(void); // TODO
+
+        /* Handling of results */
+        void setPlotResults(void);
+        void setPlotResultsCd(void);
+        void setPlotResults(DensVecD &vec);
+        void setPlotResultsCd(DensVecCompD &vec);
 
 		/* Simulator sub-engines */
 		MNA _mna_engine;
 
-		/* Active results */
-		bool _run;
+		/* Simulator state/parameters */
+        bool _run;
+		bool _save_mem;
+		ODE_meth_t _ode_method;
 
-		/* Arrays containing the complete results */
-		DenseMatD	_results_d;
-		DenseMatCompD	_results_cd;
+		/* Vectors used to save the plot/save the results */
+		std::vector<std::vector<double>> _res_nodes;
+        std::vector<std::vector<double>> _res_sources;
+		std::vector<std::vector<std::complex<double>>> _res_nodes_cd;
+		std::vector<std::vector<std::complex<double>>> _res_sources_cd;
+
+        /* Arrays containing the complete results - Optional use */
+        DenseMatD   _results_d;
+        DenseMatCompD   _results_cd;
 };
 
 #endif // __SIM_ENGINE_H //
