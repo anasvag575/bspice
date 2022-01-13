@@ -93,7 +93,7 @@ MNA::MNA(Circuit &circuit_manager)
 
 /*!
 	@brief      Inserts the MNA stamp of the resistor in triplet form
-	(i, j, val) inside the mat array. For DC analysis resistors have 1 or 4 stamps.
+	(i, j, val) inside the mat array.
 	@param      mat    The triplet matrix to insert the stamp.
 	@param 		res	   The resistor.
 */
@@ -114,9 +114,7 @@ void MNA::ResMNAStamp(tripletList_d &mat, resistor_packed &res)
 
 /*!
 	@brief      Inserts the MNA stamp of the coil in triplet form
-	(i, j, val) inside the mat array. Since coils act like DC shorts
-	they need to be inserted in the sub-arrays for sources, hence the
-	offset. For DC analysis coils have 2 or 4 stamps.
+	(i, j, val) inside the mat array.
 	@param      mat    The triplet matrix to insert the stamp.
 	@param		offset The offset of the stamp inside the array.
 	@param		coil   The coil.
@@ -147,7 +145,7 @@ void MNA::CoilMNAStamp(tripletList_d &mat, IntTp offset, coil_packed &coil, cons
 
 /*!
     @brief      Inserts the MNA stamp of the capacitor in triplet form
-    (i, j, val) inside the mat array. For DC analysis capacitors have 0 stamps.
+    (i, j, val) inside the mat array.
     @param      mat    The triplet matrix to insert the stamp.
     @param		cap	   The capacitor.
 */
@@ -171,7 +169,7 @@ void MNA::CapMNAStamp(tripletList_d &mat, capacitor_packed &cap, const analysis_
 
 /*!
     @brief      Inserts the MNA stamp of the ICS in triplet form
-    (i, j, val) inside the mat array. For DC analysis ICS have 1 or 2 stamps.
+    (i, j, val) inside the mat array.
 	@param      rh     The right hand side vector of the system.
     @param		source The ICS.
 */
@@ -186,9 +184,7 @@ void MNA::IcsMNAStamp(DensVecD &rh, ics_packed &source)
 
 /*!
     @brief      Inserts the MNA stamp of the IVS in triplet form
-    (i, j, val) inside the mat array. IVS need to be inserted
-    in the sub-arrays for sources, hence the offset.
-    For DC analysis coils have 3 or 5 stamps.
+    (i, j, val) inside the mat array.
     @param      mat    The triplet matrix to insert the stamp.
     @param      rh     The right hand side vector of the system.
     @param		offset The offset of the stamp inside the array
@@ -217,11 +213,11 @@ void MNA::IvsMNAStamp(tripletList_d &mat, DensVecD &rh, IntTp offset, ivs_packed
 
 /*!
     @brief      Inserts the MNA stamp of the resistor in triplet form
-    (i, j, val) inside the mat array. For AC analysis resistors have 1 or 4 stamps.
+    (i, j, val) inside the mat array. For AC analysis only
     @param      mat    The triplet matrix to insert the stamp.
     @param      res    The resistor.
 */
-void MNA::ResMNAStampAC(tripletList_cd &mat, resistor_packed &res)
+void MNA::ResMNAStamp(tripletList_cd &mat, resistor_packed &res)
 {
     auto conduct = 1/res.getVal();
     auto pos = res.getPosNodeID(), neg = res.getNegNodeID();
@@ -239,15 +235,13 @@ void MNA::ResMNAStampAC(tripletList_cd &mat, resistor_packed &res)
 
 /*!
     @brief      Inserts the MNA stamp of the coil in triplet form
-    (i, j, val) inside the mat array. Since coils act like DC shorts
-    they need to be inserted in the sub-arrays for sources, hence the
-    offset. For DC analysis coils have 2 or 4 stamps.
+    (i, j, val) inside the mat array. Only for AC analysis.
     @param      mat    The triplet matrix to insert the stamp.
     @param      offset The offset of the stamp inside the array.
     @param      coil   The coil.
-
+    @param      freq   The frequency we generate the array at
 */
-void MNA::CoilMNAStampAC(tripletList_cd &mat, IntTp offset, coil_packed &coil, double freq)
+void MNA::CoilMNAStamp(tripletList_cd &mat, IntTp offset, coil_packed &coil, double freq)
 {
     auto pos = coil.getPosNodeID(), neg = coil.getNegNodeID();
     auto coil_imag = 2 * M_PI *freq *coil.getVal();
@@ -270,11 +264,12 @@ void MNA::CoilMNAStampAC(tripletList_cd &mat, IntTp offset, coil_packed &coil, d
 
 /*!
     @brief      Inserts the MNA stamp of the capacitor in triplet form
-    (i, j, val) inside the mat array. For DC analysis capacitors have 0 stamps.
+    (i, j, val) inside the mat array. For AC analysis only.
     @param      mat    The triplet matrix to insert the stamp.
     @param      cap    The capacitor.
+    @param      freq   The frequency we generate the array at
 */
-void MNA::CapMNAStampAC(tripletList_cd &mat, capacitor_packed &cap, double freq)
+void MNA::CapMNAStamp(tripletList_cd &mat, capacitor_packed &cap, double freq)
 {
     auto pos = cap.getPosNodeID(), neg = cap.getNegNodeID();
     auto cap_imag = 2 * M_PI *freq *cap.getVal();
@@ -292,11 +287,11 @@ void MNA::CapMNAStampAC(tripletList_cd &mat, capacitor_packed &cap, double freq)
 
 /*!
     @brief      Inserts the MNA stamp of the ICS in triplet form
-    (i, j, val) inside the mat array. For DC analysis ICS have 1 or 2 stamps.
+    (i, j, val) inside the right hand side vector. For AC analysis only.
     @param      rh     The right hand side vector of the system.
     @param      source The ICS.
 */
-void MNA::IcsMNAStampAC(DensVecCompD &rh, ics_packed &source)
+void MNA::IcsMNAStamp(DensVecCompD &rh, ics_packed &source)
 {
     auto pos = source.getPosNodeID(), neg = source.getNegNodeID();
     auto val = source.getACVal();
@@ -307,13 +302,12 @@ void MNA::IcsMNAStampAC(DensVecCompD &rh, ics_packed &source)
 
 /*!
     @brief      Inserts the MNA stamp of the IVS in triplet form
-    (i, j, val) inside the mat array. IVS need to be inserted
-    in the sub-arrays for sources, hence the offset.
+    (i, j, val) inside the mat array. For AC analysis only.
     @param      mat    The triplet matrix to insert the stamp.
     @param      offset The offset of the stamp inside the array
     @param      source The IVS.
 */
-void MNA::IvsMNAStampAC(tripletList_cd &mat, IntTp offset, ivs_packed &source)
+void MNA::IvsMNAStamp(tripletList_cd &mat, IntTp offset, ivs_packed &source)
 {
     auto pos = source.getPosNodeID(), neg = source.getNegNodeID();
     std::complex<double> real_tmp(1, 0);
@@ -333,13 +327,12 @@ void MNA::IvsMNAStampAC(tripletList_cd &mat, IntTp offset, ivs_packed &source)
 
 /*!
     @brief      Inserts the MNA stamp of the IVS in triplet form
-    (i, j, val) inside the right hand side. IVS need to be inserted
-    in the sub-arrays for sources, hence the offset.
+    (i, j, val) inside the right hand side vector. For AC analysis only.
     @param      rh     The right hand side vector of the system.
     @param      offset The offset of the stamp inside the array
     @param      source The IVS.
 */
-void MNA::IvsMNAStampAC(DensVecCompD &rh, IntTp offset, ivs_packed &source)
+void MNA::IvsMNAStamp(DensVecCompD &rh, IntTp offset, ivs_packed &source)
 {
     rh[offset] += source.getACVal();
 }
@@ -675,18 +668,18 @@ void MNA::CreateMNASystemAC(SparMatCompD &mat, double freq)
     auto ivs_start = this->_ivs_offset;
 
     /* 1) Iterate over all the passive elements */
-    for(auto &it : this->_caps) CapMNAStampAC(triplet_mat, it, freq);
-    for(auto &it : this->_res) ResMNAStampAC(triplet_mat, it);
+    for(auto &it : this->_caps) CapMNAStamp(triplet_mat, it, freq);
+    for(auto &it : this->_res) ResMNAStamp(triplet_mat, it);
 
     for(auto &it : this->_coils)
     {
-        CoilMNAStampAC(triplet_mat, coil_start, it, freq);
+        CoilMNAStamp(triplet_mat, coil_start, it, freq);
         coil_start++;
     }
 
     for(auto &it : this->_ivs)
     {
-        IvsMNAStampAC(triplet_mat, ivs_start, it);
+        IvsMNAStamp(triplet_mat, ivs_start, it);
         ivs_start++;
     }
 
@@ -710,14 +703,15 @@ void MNA::CreateMNASystemAC(DensVecCompD &rh)
     auto ivs_start = this->_ivs_offset;
 
     /* 1) Iterate over all the passive elements */
-    for(auto &it : this->_ics) IcsMNAStampAC(rh, it);
+    for(auto &it : this->_ics) IcsMNAStamp(rh, it);
 
     for(auto &it : this->_ivs)
     {
-        IvsMNAStampAC(rh, ivs_start, it);
+        IvsMNAStamp(rh, ivs_start, it);
         ivs_start++;
     }
 }
+
 
 
 /*!

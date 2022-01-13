@@ -135,7 +135,7 @@ return_codes_e parser::parseSourceSpec(std::vector<std::string> &tokens, source_
 
             /* Set the values */
             double ac_mag = resolveFloatNum(tokens[idx + 1]);
-            double ac_phase = resolveFloatNum(tokens[idx + 2]);
+            double ac_phase = M_PI/180 * resolveFloatNum(tokens[idx + 2]); // Also have to convert to radians
             spec.setACVal(ac_mag, ac_phase);
 
             /* Found our first source and incrementing our indices */

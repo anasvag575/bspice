@@ -115,7 +115,7 @@ void GNU_plotter::sendPlotData(std::vector<double> &xvals, std::vector<std::vect
 		/* Create the columns of data */
 		if(log) //TODO - Check log?
 		{
-		    for(size_t k = 0; k < tmp.size(); k++) this->_data_file << "\t" << -20 * log10(tmp[k]);
+		    for(size_t k = 0; k < tmp.size(); k++) this->_data_file << "\t" << 20 * log10(tmp[k]);
 		}
 		else
 		{
@@ -155,7 +155,7 @@ void GNU_plotter::sendPlotData(std::vector<double> &xvals, std::vector<std::vect
         {
             if(log)  //TODO - Check log?
             {
-                for(size_t k = 0; k < tmp.size(); k++) this->_data_file << "\t" << -20 * log10(abs(tmp[k]));
+                for(size_t k = 0; k < tmp.size(); k++) this->_data_file << "\t" << 20 * log10(abs(tmp[k]));
             }
             else
             {
@@ -304,7 +304,7 @@ void GNU_plotter::plot(Circuit &circuit_manager, simulator_engine &simulator_man
 
             /* Magnitude */
             this->next_plot();
-            sendPlotData(x_simvals, res, true, analysis_scale == LOG_SCALE);
+            sendPlotData(x_simvals, res, analysis_scale == LOG_SCALE, true);
             setPlotOptions(analysis_type, analysis_scale, sweep_source, true, true);
             finalize(plotsources);
 
@@ -322,15 +322,15 @@ void GNU_plotter::plot(Circuit &circuit_manager, simulator_engine &simulator_man
 
             /* Magnitude */
             this->next_plot();
-            sendPlotData(x_simvals, res, true, analysis_scale == LOG_SCALE);
-            setPlotOptions(analysis_type, analysis_scale, sweep_source, true, true);
-            finalize(plotsources);
+            sendPlotData(x_simvals, res, analysis_scale == LOG_SCALE, true);
+            setPlotOptions(analysis_type, analysis_scale, sweep_source, false, true);
+            finalize(plotnodes);
 
             /* Phase */
             this->next_plot();
             sendPlotData(x_simvals, res, false, false);
-            setPlotOptions(analysis_type, analysis_scale, sweep_source, true, false);
-            finalize(plotsources);
+            setPlotOptions(analysis_type, analysis_scale, sweep_source, false, false);
+            finalize(plotnodes);
         }
 	}
 }
@@ -399,7 +399,7 @@ return_codes_e plot(Circuit &circuit_manager, simulator_engine &simulator_manage
     /* Set precision */
     streamsize cout_stream_sz = cout.precision(numeric_limits<double>::digits10 + 2);
 
-    /* OP analysis need only printing of the values */
+    /* OP analysis needs only printing of the values */
     if(circuit_manager.getAnalysisType() != OP)
     {
         GNU_plotter plotter;
