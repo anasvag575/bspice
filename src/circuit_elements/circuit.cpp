@@ -10,16 +10,31 @@
 	@param	  input_file	The file that contains the SPICE netlist.
     @return   The error code, in case of error, otherwise RETURN_SUCCESS.
 */
-return_codes_e Circuit::createCircuit(std::ifstream &input_file)
+return_codes_e Circuit::create(std::string &input_file_name)
 {
-    using namespace std;
-    using namespace chrono;
+    using std::vector;
+    using std::string;
+    using std::ifstream;
+    using std::cout;
+    using std::chrono::high_resolution_clock;
+    using std::chrono::duration_cast;
+    using std::chrono::milliseconds;
+
+    /* Checks for file input */
+    ifstream input_file(input_file_name);
+    if(!input_file) return FAIL_LOADING_FILE;
+
+    /* Clear the current circuit */
+    this->clear();
 
     string line;                                    /* Current line*/
     size_t linenum = 0;                             /* Linenumber */
     return_codes_e errcode = RETURN_SUCCESS;        /* Error code */
     parser syntax_match;                            /* Instantiate parser engine */
     vector<string> tokens;							/* Tokens produced for each line */
+
+    /* Info */
+    cout << "\n[INFO]: Loading file...\n";
 
     /* Start of parsing - For statistics */
     auto begin_time = high_resolution_clock::now();
@@ -89,7 +104,7 @@ return_codes_e Circuit::createCircuit(std::ifstream &input_file)
             }
             case '.':
             {
-            	errcode = createSPICECard(tokens, syntax_match);
+            	errcode = createSPICECard(tokens, syntax_match, false);
             	cout << "[INFO]: - At line " << linenum << ": Found SPICE CARD\n";
 
             	break;
@@ -101,7 +116,7 @@ return_codes_e Circuit::createCircuit(std::ifstream &input_file)
             }
             default:
             {
-                errcode = FAIL_PARSER_UKNOWN_ELEMENT;
+                errcode = FAIL_PARSER_UNKNOWN_ELEMENT;
                 break;
             }
         }
@@ -109,7 +124,8 @@ return_codes_e Circuit::createCircuit(std::ifstream &input_file)
         /* Early out, along with type, when dealing with an error */
         if(errcode != RETURN_SUCCESS)
         {
-            cout << "[ERROR - " << errcode << "]: - At line " << linenum << ": " << line << "\n";
+            cout << "[ERROR - " << errcode << "]: At line " << linenum << ": " << line << "\n";
+            input_file.close();
             return errcode;
         }
     }
@@ -126,7 +142,7 @@ return_codes_e Circuit::createCircuit(std::ifstream &input_file)
     	IntTp ics_count[TRANSIENT_SOURCE_TYPENUM] = {0};
     	IntTp ivs_count[TRANSIENT_SOURCE_TYPENUM] = {0};
 
-    	cout << "\n************************************\n";
+    	cout << "************************************\n";
 		cout << "************CIRCUIT INFO************\n";
 		cout << "************************************\n";
 		cout << "Load time: " << duration_cast<milliseconds>(end_time-begin_time).count() << "ms\n";
@@ -162,6 +178,7 @@ return_codes_e Circuit::createCircuit(std::ifstream &input_file)
 		cout << "************************************\n\n";
     }
 
+    input_file.close();
     return errcode;
 }
 
@@ -169,19 +186,28 @@ return_codes_e Circuit::createCircuit(std::ifstream &input_file)
     @brief    Internal routine, that parses and forms a SPICE card given the syntax matcher
     and the tokens of the element.
   	@param 	tokens	The tokens that contain the SPICE card.
-  	@match	match	Syntax parser instantiation.
+  	@param	match	Syntax parser instantiation.
+  	@param  external The command is comming via external input (GUI).
     @return   The error code, in case of error, otherwise RETURN_SUCCESS.
 */
-return_codes_e Circuit::createSPICECard(std::vector<std::string> &tokens, parser &match)
+return_codes_e Circuit::createSPICECard(std::vector<std::string> &tokens, parser &match, bool external)
 {
 	using namespace std;
 
-	/* Copy the string from 1 position ahead of the '.' character */
-	string spice_card = tokens[0].substr(1);
+	/* Check whether we have '.' character */
+	string spice_card;
+	(tokens[0][0] == '.') ? spice_card = tokens[0].substr(1) : spice_card = tokens[0];
 
 	/* Special case identified before everything else */
 	if(spice_card == "PLOT" || spice_card == "PRINT")
 	{
+	    /* Reset the previous plot options */
+	    if(external)
+	    {
+	        this->_plot_nodes.clear();
+	        this->_plot_sources.clear();
+	    }
+
 		return match.parsePLOTCard(tokens, this->_plot_nodes, this->_plot_sources);
 	}
 	else if(spice_card == "OPTIONS") /* Means we parse simulator/circuit options and set them directly */
@@ -215,7 +241,7 @@ return_codes_e Circuit::createSPICECard(std::vector<std::string> &tokens, parser
 	}
 	else
 	{
-		return FAIL_PARSER_UKNOWN_SPICE_CARD;
+		return FAIL_PARSER_UNKNOWN_SPICE_CARD;
 	}
 
 	/* Set the simulation parameters */
@@ -295,9 +321,9 @@ return_codes_e Circuit::verify(void)
 
     	/* Does not exist in map */
     	if(name_it == namemap_end)
-    	{
+    	{// TODO - Transfer to error function outside
     		errcode = FAIL_PARSER_ELEMENT_NOT_EXISTS;
-    		cout << "[ERROR - " << errcode << "]: <" << this->_source << "> does not exist in the circuit (DC CARD)" << endl;
+    		cout << "[ERROR - " << errcode << "]: Element <" << this->_source << "> (DC CARD)" << endl;
     		return errcode;
     	}
     }
@@ -309,9 +335,9 @@ return_codes_e Circuit::verify(void)
 
 		/* Does not exist in map */
 		if(node_it == namemap_end)
-		{
+		{// TODO - Transfer to error function outside
 			errcode = FAIL_PARSER_ELEMENT_NOT_EXISTS;
-			cout << "[ERROR - " << errcode << "]: <" << *it << "> does not exist in the circuit (PLOT CARD)" << endl;
+			cout << "[ERROR - " << errcode << "]: Element <" << *it << "> (PLOT CARD)" << endl;
 			return errcode;
 		}
     }
@@ -323,9 +349,9 @@ return_codes_e Circuit::verify(void)
 
 		/* Does not exist in map */
 		if(node_it == nodemap_end)
-		{
+		{// TODO - Transfer to error function outside
 			errcode = FAIL_PARSER_ELEMENT_NOT_EXISTS;
-			cout << "[ERROR - " << errcode << "]: <" << *it << "> does not exist in the circuit (PLOT CARD)" << endl;
+			cout << "[ERROR - " << errcode << "]: Element <" << *it << "> (PLOT CARD)" << endl;
 			return errcode;
 		}
     }
@@ -336,6 +362,26 @@ return_codes_e Circuit::verify(void)
     return RETURN_SUCCESS;
 }
 
+/*!
+    @brief    Routine, that updates an already formed circuit via an external GUI command.
+    @param    command  The command to be implemented on the circuit.
+    @return   The error code, in case of error, otherwise RETURN_SUCCESS.
+*/
+return_codes_e Circuit::update(std::string &command)
+{
+    /* Create a parser engine and tokenize the command string */
+    parser match;
+    std::vector<std::string> tokens;
+
+    /* Empty card is not allowed in GUI commands */
+    if(!match.tokenizer(command, tokens)) return FAIL_PARSER_EMPTY_COMMAND_GUI;
+
+    /* Reformat the SPICE card */
+    return_codes_e err = createSPICECard(tokens, match, true);
+
+    /* Verify in case of plot card */
+    return (err != RETURN_SUCCESS) ? err : verify();
+}
 
 /*!
     @brief    Internal debug routine, that recreates the nodesmap, based on

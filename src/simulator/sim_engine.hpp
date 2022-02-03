@@ -13,40 +13,76 @@ class simulator_engine
 		*/
 		simulator_engine()
 		{
+		    _init = false;
 			_run = false;
 			_save_mem = false;
 			_ode_method = BACKWARDS_EULER;
 		}
 
-		/*!
-			@brief      Initializes the simulator engine with the parameters
-			defined by the circuit input.
-			@param		circuit_manager		The circuit.
-		*/
-		simulator_engine(Circuit &circuit_manager)
-		{
-			this->_mna_engine = MNA(circuit_manager);
-			_run = false;
-			_save_mem = circuit_manager.getMemMode();
+        /*!
+            @brief      Initializes the simulator engine with the parameters
+            defined by the circuit input.
+            @param      circuit_manager     The circuit.
+        */
+        simulator_engine(Circuit &circuit_manager)
+        {
+            this->_mna_engine = MNA(circuit_manager);
+            _init = true;
+            _run = false;
+            _save_mem = circuit_manager.getMemMode();
             _ode_method = circuit_manager.getODEMethod();
-		}
+        }
+
+        /*!
+            @brief      Re-initializes the simulator engine.
+            @param      circuit_manager     The circuit.
+        */
+        void update(Circuit &circuit_manager)
+        {
+            this->_mna_engine = MNA(circuit_manager);
+            _init = true;
+            _run = false;
+            _save_mem = circuit_manager.getMemMode();
+            _ode_method = circuit_manager.getODEMethod();
+            _results_d = DenseMatD::Zero(0,0);
+            _results_cd = DenseMatCompD::Zero(0,0);
+            this->_res_nodes.clear();
+            this->_res_nodes_cd.clear();
+            this->_res_sources.clear();
+            this->_res_sources_cd.clear();
+        }
 
 		/*!
 			@brief  Resets the state of the simulator engine.
 		*/
 		void clear(void)
 		{
+		    _init = false;
 			_run = false;
             _save_mem = false;
             _ode_method = BACKWARDS_EULER;
 			this->_mna_engine.clear();
 			_results_d = DenseMatD::Zero(0,0);
 			_results_cd = DenseMatCompD::Zero(0,0);
-			for(auto &it : this->_res_nodes) it.clear();
-			for(auto &it : this->_res_nodes_cd) it.clear();
-			for(auto &it : this->_res_sources) it.clear();
-			for(auto &it : this->_res_sources_cd) it.clear();
+			this->_res_nodes.clear();
+			this->_res_nodes_cd.clear();
+			this->_res_sources.clear();
+			this->_res_sources_cd.clear();
 		}
+
+        /*!
+            @brief  Clears the results contained in the simulator engine.
+        */
+        void clearRes(void)
+        {
+            this->_run = false;
+            _results_d = DenseMatD::Zero(0,0);
+            _results_cd = DenseMatCompD::Zero(0,0);
+            this->_res_nodes.clear();
+            this->_res_nodes_cd.clear();
+            this->_res_sources.clear();
+            this->_res_sources_cd.clear();
+        }
 
 		/*!
 			@brief  Returns whether the simulator is in a valid state (run valid).
@@ -54,7 +90,7 @@ class simulator_engine
 		*/
 		bool valid(void)
 		{
-			return this->_run;
+			return this->_run && this->_init;
 		}
 
 		/*!
@@ -102,6 +138,21 @@ class simulator_engine
             return this->_res_sources_cd;
         }
 
+        /*!
+            @brief  Returns the results for the plot source (AC analysis)
+            @return The results
+        */
+        void updatePlotResults(Circuit &circuit_manager)
+        {
+            /* Update */
+            this->_mna_engine.updatePlotIdx(circuit_manager);
+
+            auto analys_type = this->_mna_engine.getAnalysisType();
+
+            if(analys_type != AC) setPlotResults();
+            else setPlotResultsCd();
+        }
+
 		return_codes_e run(void);
 	private:
 		/* Analysis supported */
@@ -126,6 +177,7 @@ class simulator_engine
 		MNA _mna_engine;
 
 		/* Simulator state/parameters */
+		bool _init;
         bool _run;
 		bool _save_mem;
 		ODE_meth_t _ode_method;

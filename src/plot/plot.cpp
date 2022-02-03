@@ -20,7 +20,7 @@ public:
 
         /* TODO - Check that every opening went well */
         if(!this->_pipe)
-        {
+        {  // TODO - Handle
             throw std::runtime_error("[CRITICAL ERROR]: Could not open files related to GNUPLOT");
         }
     }
@@ -58,7 +58,7 @@ public:
         this->_data_file = std::ofstream(filename, std::ios::out);
 
         /* Throw */
-        if(!this->_data_file)
+        if(!this->_data_file) // TODO - Handle
             throw std::runtime_error("[CRITICAL ERROR]: Could not open files related to GNUPLOT");
     }
 
@@ -90,7 +90,7 @@ void GNU_plotter::finalize(std::vector<std::string> &plotnames)
         fprintf(this->_pipe, ",'' using 1:%ld title '%s' with lines", (i + 2), plotnames[i].c_str());
     }
 
-    /* Newline to finish and flush for synchronization */
+    /* Newline to finish command and flush for synchronization */
     fprintf(this->_pipe, "\n");
     fflush(this->_pipe);
 }
@@ -113,7 +113,7 @@ void GNU_plotter::sendPlotData(std::vector<double> &xvals, std::vector<std::vect
 		this->_data_file << xvals[i];
 
 		/* Create the columns of data */
-		if(log) //TODO - Check log?
+		if(log)
 		{
 		    for(size_t k = 0; k < tmp.size(); k++) this->_data_file << "\t" << 20 * log10(tmp[k]);
 		}
@@ -153,7 +153,7 @@ void GNU_plotter::sendPlotData(std::vector<double> &xvals, std::vector<std::vect
         /* Create the columns of data */
         if(mag)
         {
-            if(log)  //TODO - Check log?
+            if(log)
             {
                 for(size_t k = 0; k < tmp.size(); k++) this->_data_file << "\t" << 20 * log10(abs(tmp[k]));
             }

@@ -3,7 +3,8 @@
 
 /* Useful typedefs - For solver engines */
 #ifdef BSPICE_EIGEN_USE_KLU
-    #include "KLUSupport"   /* For Eigen KLU */
+    #include "KLUSupport"
+
     /* KLU direct solvers - Supports both int/long */
     typedef Eigen::KLU<SparMatD> direct_solver;
     typedef Eigen::KLU<SparMatCompD> direct_solver_c;
@@ -24,11 +25,19 @@ return_codes_e simulator_engine::run(void)
 	using std::chrono::duration_cast;
 	using std::chrono::milliseconds;    // Accuracy for report
 
+	/* Check that the simulator has been created */
+	if(!this->_init) return FAIL_SIMULATOR_EMPTY;
+
 	return_codes_e ret;
-	auto analys_type = this->_mna_engine.getAnalysisType();
+    auto analys_type = this->_mna_engine.getAnalysisType();
+
+	/* Clear the results */
+    this->clearRes();
 
 	/* Statistics */
 	auto begin = high_resolution_clock::now();
+
+	cout << "\n[INFO]: Starting simulation...\n";
 
 	/* Depending on analysis, call the appropriate sub-simulator */
 	switch(analys_type)
@@ -45,7 +54,9 @@ return_codes_e simulator_engine::run(void)
 
 	if(ret == RETURN_SUCCESS)
 	{
-	    cout << "\n************************************\n";
+        cout << "************************************\n";
+        cout << "**********SIMULATION INFO***********\n";
+        cout << "************************************\n";
 	    cout << "Total simulation time: " << duration_cast<milliseconds>(end-begin).count() << "ms\n";
 	    cout << "Total simulation points: " << this->_mna_engine.getSimDim() << "\n";
 	    cout << "System size: " << this->_mna_engine.getSystemDim() << "\n";
@@ -135,7 +146,7 @@ return_codes_e simulator_engine::DC_analysis(void)
         auto &sim_vec = this->_mna_engine.getSimVals();
 
         /* Solve */
-        for(auto it :sim_vec)
+        for(auto it : sim_vec)
         {
             /* Update the vector */
             this->_mna_engine.UpdateMNASystemDCVec(rh, it);
@@ -552,16 +563,16 @@ return_codes_e simulator_engine::Gear2ODESolve(void)
     return RETURN_SUCCESS;
 }
 
-
-
 /*!
     @brief      Sets the results of the simulation for any non-AC analysis.
 */
 void simulator_engine::setPlotResults(void)
 {
-    auto sim_size = this->_mna_engine.getSimDim();
+    this->_res_nodes.clear();
+    this->_res_sources.clear();
 
     /* Get the indices from the MNA engine */
+    auto sim_size = this->_mna_engine.getSimDim();
     auto &nodes_idx = this->_mna_engine.getNodesIdx();
     auto &sources_idx = this->_mna_engine.getSourceIdx();
 
@@ -593,19 +604,18 @@ void simulator_engine::setPlotResults(void)
 */
 void simulator_engine::setPlotResultsCd(void)
 {
-    using std::vector;
-    using std::complex;
-
-    auto sim_size = this->_mna_engine.getSimDim();
+    this->_res_nodes_cd.clear();
+    this->_res_sources_cd.clear();
 
     /* Get the indices from the MNA engine */
+    auto sim_size = this->_mna_engine.getSimDim();
     auto &nodes_idx = this->_mna_engine.getNodesIdx();
     auto &sources_idx = this->_mna_engine.getSourceIdx();
 
     /* We need the data in {t - col(x), col(x+1)} format */
     for(IntTp i = 0; i < sim_size; i++)
     {
-        vector<complex<double>> tmp_vec, tmp_vec2;
+        std::vector<std::complex<double>> tmp_vec, tmp_vec2;
 
         /* Create the vectors - nodes */
         for(auto it : nodes_idx)
@@ -651,13 +661,10 @@ void simulator_engine::setPlotResults(DensVecD &vec)
 */
 void simulator_engine::setPlotResultsCd(DensVecCompD &vec)
 {
-    using std::vector;
-    using std::complex;
-
     /* Get the indices from the MNA engine */
     auto &nodes_idx = this->_mna_engine.getNodesIdx();
     auto &sources_idx = this->_mna_engine.getSourceIdx();
-    vector<complex<double>> tmp_vec, tmp_vec2;
+    std::vector<std::complex<double>> tmp_vec, tmp_vec2;
 
     /* Create the vectors - nodes/sources */
     for(auto it : nodes_idx) tmp_vec.push_back(vec[it]);

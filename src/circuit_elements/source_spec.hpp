@@ -15,7 +15,7 @@ class source_spec
 		source_spec()
 		{
 			_type = CONSTANT_SOURCE;
-			_ac_val = 0;
+			_ac_val = std::complex<double>(1, 0);
 		}
 
 		/*!

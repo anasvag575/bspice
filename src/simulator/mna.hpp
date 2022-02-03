@@ -125,6 +125,9 @@ class MNA
         /* Constructors */
         MNA(Circuit &circuit_manager);
 
+        /* Update plot nodes/sources */
+        void updatePlotIdx(Circuit &circuit_manager);
+
         /* MNA and systems formation */
         void CreateMNASystemOP(SparMatD &mat, DensVecD &rh);
 		void CreateMNASystemDC(SparMatD &mat, DenseMatD &rh);

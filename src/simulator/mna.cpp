@@ -50,6 +50,33 @@ MNA::MNA(Circuit &circuit_manager)
         this->_sim_vals.push_back(0.0);
     }
 
+    /* Create the indices for plotting */
+    updatePlotIdx(circuit_manager);
+
+    /* In case we have a DC analysis source */
+    if(this->_analysis_type == DC)
+    {
+        /* 2-level index to get the exact position of the source */
+        std::string &src_dut = circuit_manager.getDCSource();
+        auto &namesmap = circuit_manager.getElementNames();
+
+        /* Get idx to access the appropriate vector */
+        this->_sweep_source_idx = namesmap.find(src_dut)->second;
+
+        /* Voltage sweep needs an offset */
+        if(src_dut[0] == 'V') this->_sweep_source_idx += this->_ivs_offset;
+    }
+}
+
+/*!
+    @brief      Update the plot nodes/sources indices.
+    @param      circuit_manager     The circuit.
+*/
+void MNA::updatePlotIdx(Circuit &circuit_manager)
+{
+    this->_nodes_idx.clear();
+    this->_sources_idx.clear();
+
     /* Create the indices vector for nodes or IVS currents */
     auto &node_names = circuit_manager.getPlotNodes();
     auto &source_names = circuit_manager.getPlotSources();
@@ -74,20 +101,6 @@ MNA::MNA(Circuit &circuit_manager)
 
         /* For voltage sources, (IVSoffset + <idx in the IVS vector>) */
         this->_sources_idx.push_back(tmp->second + this->_ivs_offset);
-    }
-
-    /* In case we have a DC analysis source */
-    if(this->_analysis_type == DC)
-    {
-        /* 2-level index to get the exact position of the source */
-        std::string &src_dut = circuit_manager.getDCSource();
-        auto &namesmap = circuit_manager.getElementNames();
-
-        /* Get idx to access the appropriate vector */
-        this->_sweep_source_idx = namesmap.find(src_dut)->second;
-
-        /* Voltage sweep needs an offset */
-        if(src_dut[0] == 'V') this->_sweep_source_idx += this->_ivs_offset;
     }
 }
 

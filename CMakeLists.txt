@@ -21,6 +21,20 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -g -march=native -O2 -Wall")
 #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
 #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DBSPICE_EIGEN_USE_STLMAPS")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DBSPICE_EIGEN_USE_KLU")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DBSPICE_GUI_ENABLED")
+
+#Output to the console some info
+message(STATUS "CMAKE_BUILD_TYPE: " ${CMAKE_BUILD_TYPE})
+message(STATUS "CMAKE_CXX_COMPILER: " ${CMAKE_CXX_COMPILER})
+message(STATUS "CMAKE_CXX_FLAGS: " ${CMAKE_CXX_FLAGS})
+message(STATUS "CMAKE_EXE_LINKER_FLAGS: " ${CMAKE_EXE_LINKER_FLAGS})
+
+# Dependency libs for the project
+# Suitesparse
+# wxWidgets libs
+find_package(OpenMP REQUIRED)
+find_package(wxWidgets COMPONENTS core base xrc REQUIRED)
+#find_package(suitesparse)
 
 # Include directories
 include_directories(${PROJECT_SOURCE_DIR}/src)
@@ -35,17 +49,8 @@ include_directories(${PROJECT_SOURCE_DIR}/src/lib/tsl)
 # For Suitesparse and Eigen
 include_directories(/usr/include/suitesparse/)
 
-#Output to the console some info
-message(STATUS "CMAKE_BUILD_TYPE: " ${CMAKE_BUILD_TYPE})
-message(STATUS "CMAKE_CXX_COMPILER: " ${CMAKE_CXX_COMPILER})
-message(STATUS "CMAKE_CXX_FLAGS: " ${CMAKE_CXX_FLAGS})
-message(STATUS "CMAKE_EXE_LINKER_FLAGS: " ${CMAKE_EXE_LINKER_FLAGS})
-
-# Dependency libs for the project
-# Suitesparse, Boost
-#set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
-find_package(OpenMP REQUIRED)
-#find_package(suitesparse)
+# Include the wxWidgets use file to initialize various settings.
+include(${wxWidgets_USE_FILE})
 
 # Source code
 add_library(circuit_lib src/circuit_elements/circuit.cpp src/util/parser.cpp)
@@ -62,5 +67,6 @@ target_link_libraries(bspice
 	simulator_lib 
 	OpenMP::OpenMP_CXX
 	klu
-	btf)
+	btf
+	${wxWidgets_LIBRARIES})
 
