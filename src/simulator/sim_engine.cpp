@@ -1,7 +1,7 @@
 #include <chrono>       /* For time */
 #include "sim_engine.hpp"
 
-/* Useful typedefs - For solver engines */
+/* For solver engines */
 #ifdef BSPICE_EIGEN_USE_KLU
     #include "KLUSupport"
 
@@ -30,9 +30,6 @@ return_codes_e simulator_engine::run(void)
 
 	return_codes_e ret;
     auto analys_type = this->_mna_engine.getAnalysisType();
-
-	/* Clear the results */
-    this->clearRes();
 
 	/* Statistics */
 	auto begin = high_resolution_clock::now();
@@ -568,9 +565,6 @@ return_codes_e simulator_engine::Gear2ODESolve(void)
 */
 void simulator_engine::setPlotResults(void)
 {
-    this->_res_nodes.clear();
-    this->_res_sources.clear();
-
     /* Get the indices from the MNA engine */
     auto sim_size = this->_mna_engine.getSimDim();
     auto &nodes_idx = this->_mna_engine.getNodesIdx();
@@ -604,9 +598,6 @@ void simulator_engine::setPlotResults(void)
 */
 void simulator_engine::setPlotResultsCd(void)
 {
-    this->_res_nodes_cd.clear();
-    this->_res_sources_cd.clear();
-
     /* Get the indices from the MNA engine */
     auto sim_size = this->_mna_engine.getSimDim();
     auto &nodes_idx = this->_mna_engine.getNodesIdx();

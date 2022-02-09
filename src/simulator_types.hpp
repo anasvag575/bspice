@@ -35,12 +35,6 @@ typedef enum return_enum_codes
 	FAIL_PLOTTER_NOTHING_TO_PLOT = 20,
 	FAIL_PLOTTER_IO_OPERATIONS = 21,
 
-	/* GUI connective opcodes */
-    FAIL_PARSER_EMPTY_COMMAND_GUI = 22,
-    FAIL_GUI_IS_NOT_AVAILABLE = 23,
-    FAIL_GUI_NO_CIRC_LOADED = 24,
-    FAIL_GUI_NO_SIM_LOADED = 25,
-
 	/* Debug codes, invisible to the user */
     FAIL_SIMULATOR_FALLTHROUTH_ODE_OPTION = 26,          /* Somehow an uknown enum was passed to the sim_engine */
 } return_codes_e;

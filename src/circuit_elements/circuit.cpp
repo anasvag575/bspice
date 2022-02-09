@@ -104,7 +104,7 @@ return_codes_e Circuit::create(std::string &input_file_name)
             }
             case '.':
             {
-            	errcode = createSPICECard(tokens, syntax_match, false);
+            	errcode = createSPICECard(tokens, syntax_match);
             	cout << "[INFO]: - At line " << linenum << ": Found SPICE CARD\n";
 
             	break;
@@ -187,10 +187,9 @@ return_codes_e Circuit::create(std::string &input_file_name)
     and the tokens of the element.
   	@param 	tokens	The tokens that contain the SPICE card.
   	@param	match	Syntax parser instantiation.
-  	@param  external The command is comming via external input (GUI).
     @return   The error code, in case of error, otherwise RETURN_SUCCESS.
 */
-return_codes_e Circuit::createSPICECard(std::vector<std::string> &tokens, parser &match, bool external)
+return_codes_e Circuit::createSPICECard(std::vector<std::string> &tokens, parser &match)
 {
 	using namespace std;
 
@@ -201,13 +200,6 @@ return_codes_e Circuit::createSPICECard(std::vector<std::string> &tokens, parser
 	/* Special case identified before everything else */
 	if(spice_card == "PLOT" || spice_card == "PRINT")
 	{
-	    /* Reset the previous plot options */
-	    if(external)
-	    {
-	        this->_plot_nodes.clear();
-	        this->_plot_sources.clear();
-	    }
-
 		return match.parsePLOTCard(tokens, this->_plot_nodes, this->_plot_sources);
 	}
 	else if(spice_card == "OPTIONS") /* Means we parse simulator/circuit options and set them directly */
@@ -362,26 +354,7 @@ return_codes_e Circuit::verify(void)
     return RETURN_SUCCESS;
 }
 
-/*!
-    @brief    Routine, that updates an already formed circuit via an external GUI command.
-    @param    command  The command to be implemented on the circuit.
-    @return   The error code, in case of error, otherwise RETURN_SUCCESS.
-*/
-return_codes_e Circuit::update(std::string &command)
-{
-    /* Create a parser engine and tokenize the command string */
-    parser match;
-    std::vector<std::string> tokens;
 
-    /* Empty card is not allowed in GUI commands */
-    if(!match.tokenizer(command, tokens)) return FAIL_PARSER_EMPTY_COMMAND_GUI;
-
-    /* Reformat the SPICE card */
-    return_codes_e err = createSPICECard(tokens, match, true);
-
-    /* Verify in case of plot card */
-    return (err != RETURN_SUCCESS) ? err : verify();
-}
 
 /*!
     @brief    Internal debug routine, that recreates the nodesmap, based on

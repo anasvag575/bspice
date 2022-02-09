@@ -219,10 +219,9 @@ class Circuit
         }
 
         return_codes_e create(std::string &input_file_name);
-        return_codes_e update(std::string &command);
     private:
         return_codes_e setCircuitOptions(std::vector<std::string> &tokens);
-        return_codes_e createSPICECard(std::vector<std::string> &tokens, parser &match, bool external);
+        return_codes_e createSPICECard(std::vector<std::string> &tokens, parser &match);
         return_codes_e verify(void);
 
         /* Debugging only functions */

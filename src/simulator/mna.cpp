@@ -226,7 +226,7 @@ void MNA::IvsMNAStamp(tripletList_d &mat, DensVecD &rh, IntTp offset, ivs_packed
 
 /*!
     @brief      Inserts the MNA stamp of the resistor in triplet form
-    (i, j, val) inside the mat array. For AC analysis only
+    (i, j, val) inside the mat array. For AC analysis only.
     @param      mat    The triplet matrix to insert the stamp.
     @param      res    The resistor.
 */
@@ -462,41 +462,19 @@ void MNA::UpdateTRANVec(DensVecD &rh, double time)
 	for(auto &it : this->_ivs)
 	{
 		auto &vvals = it.getTranVals();
+		double val;
 
 		switch(it.getType())
 		{
-			case CONSTANT_SOURCE:
-			{
-				rh[ivs_start] += it.getVal();
-				break;
-			}
-			case EXP_SOURCE:
-			{
-				rh[ivs_start] += EXPSourceEval(vvals, time);
-				break;
-			}
-			case SINE_SOURCE:
-			{
-				rh[ivs_start] += SINSourceEval(vvals, time);
-				break;
-			}
-			case PWL_SOURCE:
-			{
-				auto &tvals = it.getTranTimes();
-				rh[ivs_start] += PWLSourceEval(tvals, vvals, time);
-				break;
-			}
-			case PULSE_SOURCE:
-			{
-				rh[ivs_start] += PULSESourceEval(vvals, time);
-				break;
-			}
-			default:
-			{
-				std::cout << "ERROR MNA UPDATE TRAN:" << std::endl;
-			}
+			case CONSTANT_SOURCE: val = it.getVal(); break;
+			case EXP_SOURCE: val = EXPSourceEval(vvals, time); break;
+			case SINE_SOURCE: val = SINSourceEval(vvals, time); break;
+            case PWL_SOURCE: val = PWLSourceEval(it.getTranTimes(), vvals, time); break;
+			case PULSE_SOURCE: val = PULSESourceEval(vvals, time); break;
+			default: val = 0; // Will never reach here
 		}
 
+		rh[ivs_start] += val;
 		ivs_start++;
 	}
 
@@ -506,52 +484,21 @@ void MNA::UpdateTRANVec(DensVecD &rh, double time)
 		auto pos = it.getPosNodeID();
 		auto neg = it.getNegNodeID();
 		auto &vvals = it.getTranVals();
+		double val;
 
 		switch(it.getType())
 		{
-			case CONSTANT_SOURCE:
-			{
-				if(pos != -1) rh[pos] -= it.getVal();
-				if(neg != -1) rh[neg] += it.getVal();
-				break;
-			}
-			case EXP_SOURCE:
-			{
-				auto val = EXPSourceEval(vvals, time);
-				if(pos != -1) rh[pos] -= val;
-				if(neg != -1) rh[neg] += val;
-				break;
-			}
-			case SINE_SOURCE:
-			{
-				auto val = SINSourceEval(vvals, time);
-				if(pos != -1) rh[pos] -= val;
-				if(neg != -1) rh[neg] += val;
-				break;
-			}
-			case PWL_SOURCE:
-			{
-				auto &tvals = it.getTranTimes();
-				auto val = PWLSourceEval(tvals, vvals, time);
-				if(pos != -1) rh[pos] -= val;
-				if(neg != -1) rh[neg] += val;
-				break;
-			}
-			case PULSE_SOURCE:
-			{
-				auto val = PULSESourceEval(vvals, time);
-				if(pos != -1) rh[pos] -= val;
-				if(neg != -1) rh[neg] += val;
-
-				break;
-			}
-			default:
-			{
-				std::cout << "ERROR MNA UPDATE TRAN:" << std::endl;
-			}
+			case CONSTANT_SOURCE: val = it.getVal(); break;
+			case EXP_SOURCE: val = EXPSourceEval(vvals, time); break;
+			case SINE_SOURCE: val = SINSourceEval(vvals, time); break;
+			case PWL_SOURCE: val = PWLSourceEval(it.getTranTimes(), vvals, time); break;
+			case PULSE_SOURCE: val = PULSESourceEval(vvals, time); break;
+			default: val = 0; // Will never reach here
 		}
-	}
 
+        if(pos != -1) rh[pos] -= val;
+        if(neg != -1) rh[neg] += val;
+	}
 }
 
 
