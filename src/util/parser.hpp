@@ -6,6 +6,11 @@
 #include "circuit_elements.hpp"
 #include "simulator_types.hpp"
 
+/**
+    Class that defines a SPICE parser engine.
+    Provides a tokenizer, converters for strings to numbers and contaings
+    the basic parsing routines for all the SPICE elements and cards.
+ */
 class parser
 {
     public:
@@ -19,6 +24,12 @@ class parser
 										hashmap_str_t &nodes,
 									    size_t device_id,
 									    bool complete);
+
+        return_codes_e parse4NodeDevice(std::vector<std::string> &tokens,
+                                        node4_device &element,
+                                        hashmap_str_t &elements,
+                                        hashmap_str_t &nodes,
+                                        size_t device_id);
 
 		return_codes_e parseSourceSpec(std::vector<std::string> &tokens, source_spec &spec);
 

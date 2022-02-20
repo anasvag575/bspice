@@ -48,6 +48,8 @@ class Circuit
 			this->_coils.clear();
 			this->_ics.clear();
 			this->_ivs.clear();
+            this->_vccs.clear();
+            this->_vcvs.clear();
 			this->_plot_nodes.clear();
 			this->_plot_sources.clear();
 
@@ -108,6 +110,24 @@ class Circuit
         std::vector<ivs> &getIVS(void)
         {
             return _ivs;
+        }
+
+        /*!
+            @brief    Get the VCVS in the circuit.
+            @return   The VCVS vector.
+        */
+        std::vector<vcvs> &getVCVS(void)
+        {
+            return _vcvs;
+        }
+
+        /*!
+            @brief    Get the VCCS in the circuit.
+            @return   The VCCS vector.
+        */
+        std::vector<vccs> &getVCCS(void)
+        {
+            return _vccs;
         }
 
         /*!
@@ -237,6 +257,8 @@ class Circuit
         std::vector<Coil> _coils;
         std::vector<ics> _ics;
         std::vector<ivs> _ivs;
+        std::vector<vcvs> _vcvs;
+        std::vector<vccs> _vccs;
 
         /* Elements/Nodes maps */
         hashmap_str_t _element_names;

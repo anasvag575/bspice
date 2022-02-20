@@ -42,6 +42,7 @@ return_codes_e Circuit::create(std::string &input_file_name)
     while(getline(input_file, line))
     {
     	node2_device node2_base;
+    	node4_device node4_base;
     	source_spec source_spec_base;
     	size_t id;
 
@@ -56,7 +57,7 @@ return_codes_e Circuit::create(std::string &input_file_name)
 
         switch(c)
         {
-            case 'R':
+            case 'R': // Resistors
             {
                 id = this->_res.size();
                 errcode = syntax_match.parse2NodeDevice(tokens, node2_base, this->_element_names, this->_nodes, id, true);
@@ -64,7 +65,7 @@ return_codes_e Circuit::create(std::string &input_file_name)
 
                 break;
             }
-            case 'C':
+            case 'C': // Capacitors
             {
                 id = this->_caps.size();
                 errcode = syntax_match.parse2NodeDevice(tokens, node2_base, this->_element_names, this->_nodes, id, true);
@@ -72,7 +73,7 @@ return_codes_e Circuit::create(std::string &input_file_name)
 
                 break;
             }
-            case 'L':
+            case 'L': // Coils
             {
                 id = this->_coils.size();
                 errcode = syntax_match.parse2NodeDevice(tokens, node2_base, this->_element_names, this->_nodes, id, true);
@@ -80,7 +81,7 @@ return_codes_e Circuit::create(std::string &input_file_name)
 
                 break;
             }
-            case 'I':
+            case 'I': // Independent current sources
             {
                 id = this->_ics.size();
                 errcode = syntax_match.parse2NodeDevice(tokens, node2_base, this->_element_names, this->_nodes, id, false);
@@ -91,7 +92,7 @@ return_codes_e Circuit::create(std::string &input_file_name)
                 this->_ics.push_back({node2_base, source_spec_base}); // C++17 aggregation initialize
                 break;
             }
-            case 'V':
+            case 'V': // Independent voltage sources
             {
                 id = this->_ivs.size();
                 errcode = syntax_match.parse2NodeDevice(tokens, node2_base, this->_element_names, this->_nodes, id, false);
@@ -100,6 +101,22 @@ return_codes_e Circuit::create(std::string &input_file_name)
                 if(errcode == RETURN_SUCCESS) errcode = syntax_match.parseSourceSpec(tokens, source_spec_base);
 
                 this->_ivs.push_back({node2_base, source_spec_base}); // C++17 aggregation initialize
+                break;
+            }
+            case 'E': // Voltage controlled voltage sources
+            {
+                id = this->_vcvs.size();
+                errcode = syntax_match.parse4NodeDevice(tokens, node4_base, this->_element_names, this->_nodes, id);
+
+                this->_vcvs.push_back({node4_base}); // C++17 aggregation initialize
+                break;
+            }
+            case 'G': // Voltage controlled current sources
+            {
+                id = this->_vccs.size();
+                errcode = syntax_match.parse4NodeDevice(tokens, node4_base, this->_element_names, this->_nodes, id);
+
+                this->_vccs.push_back({node4_base}); // C++17 aggregation initialize
                 break;
             }
             case '.':
@@ -151,6 +168,8 @@ return_codes_e Circuit::create(std::string &input_file_name)
 		cout << "Resistors: " << this->_res.size() << "\n";
 		cout << "Caps: " << this->_caps.size() << "\n";
 		cout << "Coils: " << this->_coils.size() << "\n";
+        cout << "VCVS: " << this->_vcvs.size() << "\n";
+        cout << "VCCS: " << this->_vccs.size() << "\n";
 
 		cout << "ICS: " << this->_ics.size() << "\n";
 		for(auto &it : this->_ics) ics_count[it.getType()]++;

@@ -100,6 +100,53 @@ return_codes_e parser::parse2NodeDevice(std::vector<std::string> &tokens,
 }
 
 /*!
+    @brief      Routine parses the token stream and checks the input maps where it:
+                    - Verifies correct grammar and syntax of the tokens.
+                    - Verifies the uniqueness of the element.
+                    - Checks if new nodes are added to the circuit.
+    The values then are loaded in this element, therefore this routine serving as the main initializer
+    of this type of element. <4-node basic> is an element of this type (ETYPE = E/G):
+                            ##### ETYPE<name> <V+> <V-> <Vd+> <Vd-> <Value> #####
+    @param      tokens    The tokens that form the coil element.
+    @param      node4_device   Element reference.
+    @param      nodes       Map that contains all the nodes in the circuit along with their unique nodeNum.
+    @param      elements    Map that contains all the unique elements along with their ID in the circuit.
+    @param      id          Unique ID of this element.
+    @return     RETURN_SUCCESS or appropriate failure code.
+*/
+return_codes_e parser::parse4NodeDevice(std::vector<std::string> &tokens,
+                                               node4_device &element,
+                                               hashmap_str_t &elements,
+                                               hashmap_str_t &nodes,
+                                               size_t device_id)
+{
+    /* Check correct syntax */
+    if(!isValidFourNodeElement(tokens)) return FAIL_PARSER_INVALID_FORMAT;
+
+    /* Check uniqueness  */
+    if(elements.find(tokens[0]) != elements.end()) return FAIL_PARSER_ELEMENT_EXISTS;
+    elements[tokens[0]] = device_id;
+
+    /* No short circuits for any elements allowed */
+    if(tokens[1] == tokens[2] || tokens[3] == tokens[4]) return FAIL_PARSER_SHORTED_ELEMENT;
+
+    /* Create the device parameters */
+    auto posID = resolveNodeID(nodes, tokens[1]);
+    auto negID = resolveNodeID(nodes, tokens[2]);
+    auto dep_posID = resolveNodeID(nodes, tokens[3]);
+    auto dep_negID = resolveNodeID(nodes, tokens[4]);
+    auto val = resolveFloatNum(tokens[5]);
+
+    /* Set */
+    element.setName(tokens[0]);
+    element.setNodeNames(tokens[1], tokens[2], tokens[3], tokens[4]);
+    element.setNodeIDs(posID, negID, dep_posID, dep_negID);
+    element.setVal(val);
+
+    return RETURN_SUCCESS;
+}
+
+/*!
     @brief      Routine parses the token stream:
                     - Verifies correct grammar and syntax of the tokens.
                     - Checks for duplicate AC or TRAN_SPEC.
@@ -463,7 +510,7 @@ bool parser::isValidFourNodeElement(std::vector<std::string> &tokens)
     /* Verify */
     bool format = IsValidName(tokens[0]) && IsValidNode(tokens[1]) &&
                   IsValidNode(tokens[2]) && IsValidNode(tokens[3]) &&
-                  IsValidNode(tokens[4]) && IsValidFpValue(tokens[3]);
+                  IsValidNode(tokens[4]) && IsValidFpValue(tokens[5]);
 
     return format;
 }

@@ -4,7 +4,6 @@
 /* For the types used for the simulation */
 #include <Eigen>
 #include <vector>
-
 #include "base_types.hpp"
 
 /* Triplet - Intermediate to sparse */

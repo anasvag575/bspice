@@ -16,6 +16,7 @@ class MNA
 			_system_dim = 0;
 			_ivs_offset = 0;
 			_coil_offset = 0;
+			_vcvs_offset = 0;
 			_sweep_source_idx = 0;
 			_sim_store_start = 0;
 			_sim_step = 0;
@@ -31,6 +32,7 @@ class MNA
             _system_dim = 0;
             _ivs_offset = 0;
             _coil_offset = 0;
+            _vcvs_offset = 0;
             _sweep_source_idx = 0;
             _sim_store_start = 0;
             _sim_step = 0;
@@ -125,9 +127,6 @@ class MNA
         /* Constructors */
         MNA(Circuit &circuit_manager);
 
-        /* Update plot nodes/sources */
-        void updatePlotIdx(Circuit &circuit_manager);
-
         /* MNA and systems formation */
         void CreateMNASystemOP(SparMatD &mat, DensVecD &rh);
 		void CreateMNASystemDC(SparMatD &mat, DenseMatD &rh);
@@ -144,6 +143,8 @@ class MNA
 		void CapMNAStamp(tripletList_d &mat, capacitor_packed &cap, const analysis_t type);
 		void IcsMNAStamp(DensVecD &rh, ics_packed &source);
 		void IvsMNAStamp(tripletList_d &mat, DensVecD &rh, IntTp offset, ivs_packed &source);
+		void VcvsMNAStamp(tripletList_d &mat, IntTp offset, vcvs_packed &source);
+		void VccsMNAStamp(tripletList_d &mat, vccs_packed &source);
 
 		/* AC MNA stampers */
 		void ResMNAStamp(tripletList_cd &mat, resistor_packed &res);
@@ -152,12 +153,17 @@ class MNA
 		void IvsMNAStamp(tripletList_cd &mat, IntTp offset, ivs_packed &source);
 		void IvsMNAStamp(DensVecCompD &rh, IntTp offset, ivs_packed &source);
 		void IcsMNAStamp(DensVecCompD &rh, ics_packed &source);
+        void VcvsMNAStamp(tripletList_cd &mat, IntTp offset, vcvs_packed &source);
+        void VccsMNAStamp(tripletList_cd &mat, vccs_packed &source);
 
 		/* Transient sources evaluators */
 		double EXPSourceEval(std::vector<double> &vvals, double time);
 		double SINSourceEval(std::vector<double> &vvals, double time);
 		double PULSESourceEval(std::vector<double> &vvals, double time);
 		double PWLSourceEval(std::vector<double> &tvals, std::vector<double> &vvals, double time);
+
+        /* Update plot nodes/sources */
+        void updatePlotIdx(Circuit &circuit_manager);
 
 		/* Debug functionalities */
 		void debug_triplet_mat(tripletList_d &mat);
@@ -166,6 +172,7 @@ class MNA
 		IntTp _system_dim;
 		IntTp _ivs_offset;
 		IntTp _coil_offset;
+        IntTp _vcvs_offset;
 
 		/* Elements */
         std::vector<resistor_packed> _res;
@@ -173,6 +180,8 @@ class MNA
         std::vector<coil_packed> _coils;
         std::vector<ics_packed> _ics;
         std::vector<ivs_packed> _ivs;
+        std::vector<vcvs_packed> _vcvs;
+        std::vector<vccs_packed> _vccs;
 
         /* Simulation vector */
         std::vector<double> _sim_vals;

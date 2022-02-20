@@ -66,7 +66,7 @@ class node2_device
         }
 
         /*!
-            @brief    Get the positive idx node of the device.
+            @brief    Get the negative idx node of the device.
             @return   The idx.
         */
         IntTp getNegNodeID(void)
@@ -76,7 +76,7 @@ class node2_device
 
         /*!
             @brief    Get the positive node name of the device.
-            @return   The idx.
+            @return   The name.
         */
         const std::string &getPosNode(void)
         {
@@ -84,8 +84,8 @@ class node2_device
         }
 
         /*!
-            @brief    Get the positive node name of the device.
-            @return   The idx.
+            @brief    Get the negative node name of the device.
+            @return   The name.
         */
         const std::string &getNegNode(void)
         {
@@ -161,7 +161,7 @@ class node2_device_packed
         }
 
         /*!
-            @brief      Default constructor, converts extended to packed.
+            @brief      Constructor, converts extended to packed.
             @param  src The extended version of the device.
         */
         node2_device_packed(node2_device &src)
@@ -190,7 +190,7 @@ class node2_device_packed
         }
 
         /*!
-            @brief    Get the positive idx node of the device.
+            @brief    Get the negative idx node of the device.
             @return   The idx.
         */
         IntTp getNegNodeID(void)
