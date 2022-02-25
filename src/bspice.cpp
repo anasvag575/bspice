@@ -61,13 +61,11 @@ static std::string bspice_error_report(return_codes_e errcode)
 static return_codes_e bspice_single_run(int argc, char **argv)
 {
     return_codes_e errcode = RETURN_SUCCESS;
-    using namespace std;
-
-    string input_file_name(argv[1]);
+    std::string input_file_name(argv[1]);
 
     /* Step 2 - Instantiate a circuit, parse and then close the file */
-    Circuit circuit_manager;
-    errcode = circuit_manager.create(input_file_name);
+    Circuit circuit_manager(input_file_name);
+    errcode = circuit_manager.errcode();
     if(errcode != RETURN_SUCCESS) return errcode;
 
     /* Step 3 - Proceed to the simulator engine */
@@ -81,19 +79,15 @@ static return_codes_e bspice_single_run(int argc, char **argv)
 
 int main(int argc, char **argv)
 {
-    using std::cout;
-    using std::endl;
-    using std::string;
-
     /* Step 1 - Check for valid number of input arguments */
     if (argc != 2)
     {
-        cout << bspice_error_report(FAIL_ARG_NUM) << endl;
+        std::cout << bspice_error_report(FAIL_ARG_NUM) << std::endl;
         return FAIL_ARG_NUM;
     }
 
     /* Non-interactive */
     return_codes_e err = bspice_single_run(argc, argv);
-    if(err != RETURN_SUCCESS) cout << bspice_error_report(err) << endl;
+    if(err != RETURN_SUCCESS) std::cout << bspice_error_report(err) << std::endl;
     return err;
 }

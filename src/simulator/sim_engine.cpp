@@ -25,9 +25,6 @@ return_codes_e simulator_engine::run(void)
 	using std::chrono::duration_cast;
 	using std::chrono::milliseconds;    // Accuracy for report
 
-	/* Check that the simulator has been created */
-	if(!this->_init) return FAIL_SIMULATOR_EMPTY;
-
 	return_codes_e ret;
     auto analys_type = this->_mna_engine.getAnalysisType();
 
@@ -60,13 +57,6 @@ return_codes_e simulator_engine::run(void)
 	    cout << "************************************\n\n";
 
 	    this->_run = true;
-
-	    /* Set results in case we have not */
-	    if(!this->_save_mem)
-	    {
-            if(analys_type != AC) setPlotResults();
-            else setPlotResultsCd();
-	    }
 	}
 
 	return ret;
@@ -94,10 +84,16 @@ return_codes_e simulator_engine::OP_analysis(void)
 	/* Checks */
 	if(solver.info() != Success) return FAIL_SIMULATOR_FACTORIZATION;
 
-	/* Solve */
-	this->_results_d = solver.solve(rh);
+	/* 3) Solve */
+	DensVecD res = solver.solve(rh);
 
-	return (solver.info() != Success) ? FAIL_SIMULATOR_SOLVE : RETURN_SUCCESS;
+	/* Checks */
+	if(solver.info() != Success) return FAIL_SIMULATOR_SOLVE;
+
+	/* Set results */
+	setPlotResults(res);
+
+	return RETURN_SUCCESS;
 }
 
 /*!
@@ -110,54 +106,34 @@ return_codes_e simulator_engine::DC_analysis(void)
 
 	direct_solver solver;
 	SparMatD mat;
+    DensVecD rh, sol;
 
-	if(!this->_save_mem) // Store the complete results
-	{
-	    DenseMatD rhs;
+    /* The matrix has to be created once */
+    this->_mna_engine.CreateMNASystemOP(mat, rh);
 
-	    /* The matrix has to be created once */
-	    this->_mna_engine.CreateMNASystemDC(mat, rhs);
+    /* 2) Factorization/Symbolic analysis*/
+    solver.compute(mat);
 
-	    /* 2) Factorization/Symbolic analysis*/
-	    solver.compute(mat);
+    /* Checks */
+    if(solver.info() != Success) return FAIL_SIMULATOR_FACTORIZATION;
 
-	    /* Checks */
-	    if(solver.info() != Success) return FAIL_SIMULATOR_FACTORIZATION;
+    auto &sim_vec = this->_mna_engine.getSimVals();
 
-	    /* Solve */
-	    this->_results_d = solver.solve(rhs);
-	}
-	else
-	{
-	    DensVecD rh, sol;
-
-        /* The matrix has to be created once */
-        this->_mna_engine.CreateMNASystemOP(mat, rh);
-
-        /* 2) Factorization/Symbolic analysis*/
-        solver.compute(mat);
-
-        /* Checks */
-        if(solver.info() != Success) return FAIL_SIMULATOR_FACTORIZATION;
-
-        auto &sim_vec = this->_mna_engine.getSimVals();
+    /* Solve */
+    for(auto it : sim_vec)
+    {
+        /* Update the vector */
+        this->_mna_engine.UpdateMNASystemDCVec(rh, it);
 
         /* Solve */
-        for(auto it : sim_vec)
-        {
-            /* Update the vector */
-            this->_mna_engine.UpdateMNASystemDCVec(rh, it);
+        sol = solver.solve(rh);
+        setPlotResults(sol);
 
-            /* Solve */
-            sol = solver.solve(rh);
-            setPlotResults(sol);
+        /* Checks */
+        if(solver.info() != Success) return FAIL_SIMULATOR_SOLVE;
+    }
 
-            /* Checks */
-            if(solver.info() != Success) return FAIL_SIMULATOR_SOLVE;
-        }
-	}
-
-	return (solver.info() != Success) ? FAIL_SIMULATOR_SOLVE : RETURN_SUCCESS;
+	return RETURN_SUCCESS;
 }
 
 /*!
@@ -191,52 +167,26 @@ return_codes_e simulator_engine::AC_analysis(void)
     this->_mna_engine.CreateMNASystemAC(rh);
 
     /* Simulation values */
-    auto mat_sz = this->_mna_engine.getSystemDim();
-    auto sim_sz = this->_mna_engine.getSimDim();
     auto &sim_vector = this->_mna_engine.getSimVals();
 
-    /* Save all the results */
-    if(!this->_save_mem)
+    for(size_t i = 0; i < sim_vector.size(); i++)
     {
-        this->_results_cd.resize(mat_sz, sim_sz);
+        /* Create the array for this frequency */
+        this->_mna_engine.CreateMNASystemAC(mat, sim_vector[i]);
 
-        for(size_t i = 0; i < sim_vector.size(); i++)
-        {
-            /* Create the array for this frequency */
-            this->_mna_engine.CreateMNASystemAC(mat, sim_vector[i]);
+        /* Solver */
+        solver.compute(mat);
 
-            /* Solver */
-            solver.compute(mat);
+        /* Checks */
+        if(solver.info() != Success) return FAIL_SIMULATOR_FACTORIZATION;
 
-            /* Checks */
-            if(solver.info() != Success) return FAIL_SIMULATOR_FACTORIZATION;
+        /* Return the result */
+        DensVecCompD tmp = solver.solve(rh);
+        setPlotResultsCd(tmp);
 
-            /* Return the result */
-            this->_results_cd.col(i) = solver.solve(rh);
-
-            if(solver.info() != Success) return FAIL_SIMULATOR_SOLVE;
-        }
+        if(solver.info() != Success) return FAIL_SIMULATOR_SOLVE;
     }
-    else
-    {
-        for(size_t i = 0; i < sim_vector.size(); i++)
-        {
-            /* Create the array for this frequency */
-            this->_mna_engine.CreateMNASystemAC(mat, sim_vector[i]);
 
-            /* Solver */
-            solver.compute(mat);
-
-            /* Checks */
-            if(solver.info() != Success) return FAIL_SIMULATOR_FACTORIZATION;
-
-            /* Return the result */
-            DensVecCompD tmp = solver.solve(rh);
-            setPlotResultsCd(tmp);
-
-            if(solver.info() != Success) return FAIL_SIMULATOR_SOLVE;
-        }
-    }
 
 	return RETURN_SUCCESS;
 }
@@ -311,49 +261,23 @@ return_codes_e simulator_engine::EulerODESolve(void)
 
     /****** 3rd step Run for each simulation timepoint ******/
 
-    if(!this->_save_mem) // Store the complete results
+    /* Set initial t=0 */
+    DensVecD old = cur;
+    setPlotResults(old);
+
+    /* Solve A*x = C*e(t) + x(t0)*/
+    for(size_t i = 1; i < sim_vector.size(); i++) /* Skip t=0 timepoint (already computed from OP) */
     {
-        auto mat_sz = this->_mna_engine.getSystemDim();
-        auto sim_sz = this->_mna_engine.getSimDim();
+        /* Create the right hand side */
+        cur = tran_mat * old;   // C/h*x(tk-1) + e(tk)
+        this->_mna_engine.UpdateTRANVec(cur, sim_vector[i]);
 
-        /* Set t=0 */
-        this->_results_d.resize(mat_sz, sim_sz);
-        this->_results_d.col(0) = cur;
-
-        /* Solve A*x = C*e(t) + x(t0)*/
-        for(size_t i = 1; i < sim_vector.size(); i++) /* Skip t=0 timepoint (already computed from OP) */
-        {
-            /* Create the right hand side */
-            cur = tran_mat * this->_results_d.col(i - 1);   // C/h*x(tk-1) + e(tk)
-            this->_mna_engine.UpdateTRANVec(cur, sim_vector[i]);
-
-            /* Save results */
-            this->_results_d.col(i) = solver.solve(cur);
-
-            /* Checks */
-            if(solver.info() != Success) return FAIL_SIMULATOR_SOLVE;
-        }
-    }
-    else
-    {
-        /* Set initial t=0 */
-        DensVecD old = cur;
+        /* Save results */
+        old = solver.solve(cur);
         setPlotResults(old);
 
-        /* Solve A*x = C*e(t) + x(t0)*/
-        for(size_t i = 1; i < sim_vector.size(); i++) /* Skip t=0 timepoint (already computed from OP) */
-        {
-            /* Create the right hand side */
-            cur = tran_mat * old;   // C/h*x(tk-1) + e(tk)
-            this->_mna_engine.UpdateTRANVec(cur, sim_vector[i]);
-
-            /* Save results */
-            old = solver.solve(cur);
-            setPlotResults(old);
-
-            /* Checks */
-            if(solver.info() != Success) return FAIL_SIMULATOR_SOLVE;
-        }
+        /* Checks */
+        if(solver.info() != Success) return FAIL_SIMULATOR_SOLVE;
     }
 
     return RETURN_SUCCESS;
@@ -398,48 +322,22 @@ return_codes_e simulator_engine::TrapODESolve(void)
 
     /****** 3rd step Run for each simulation timepoint ******/
 
-    if(!this->_save_mem)
+    /* Set initial t=0 */
+    DensVecD old = cur;
+    setPlotResults(old);
+
+    /* Solve A*x = C*e(t) + x(t0)*/
+    for(size_t i = 1; i < sim_vector.size(); i++) /* Skip t=0 timepoint (already computed from OP) */
     {
-        /* Dimensions */
-        auto mat_sz = this->_mna_engine.getSystemDim();
-        auto sim_sz = this->_mna_engine.getSimDim();
+        cur = tran_mat * old;
+        this->_mna_engine.UpdateTRANVec(cur, sim_vector[i]);
+        this->_mna_engine.UpdateTRANVec(cur, sim_vector[i - 1]);
 
-        /* Set t=0 */
-        this->_results_d.resize(mat_sz, sim_sz);
-        this->_results_d.col(0) = cur;
+        /* Checks */
+        if(solver.info() != Success) return FAIL_SIMULATOR_SOLVE;
 
-        /* Solve A*x = C*e(t) + x(t0)*/
-        for(size_t i = 1; i < sim_vector.size(); i++) /* Skip t=0 timepoint (already computed from OP) */
-        {
-            cur = tran_mat * this->_results_d.col(i - 1);
-            this->_mna_engine.UpdateTRANVec(cur, sim_vector[i]);
-            this->_mna_engine.UpdateTRANVec(cur, sim_vector[i - 1]);
-
-            /* Checks */
-            if(solver.info() != Success) return FAIL_SIMULATOR_SOLVE;
-
-            this->_results_d.col(i) = solver.solve(cur);
-        }
-    }
-    else
-    {
-        /* Set initial t=0 */
-        DensVecD old = cur;
+        old = solver.solve(cur);
         setPlotResults(old);
-
-        /* Solve A*x = C*e(t) + x(t0)*/
-        for(size_t i = 1; i < sim_vector.size(); i++) /* Skip t=0 timepoint (already computed from OP) */
-        {
-            cur = tran_mat * old;
-            this->_mna_engine.UpdateTRANVec(cur, sim_vector[i]);
-            this->_mna_engine.UpdateTRANVec(cur, sim_vector[i - 1]);
-
-            /* Checks */
-            if(solver.info() != Success) return FAIL_SIMULATOR_SOLVE;
-
-            old = solver.solve(cur);
-            setPlotResults(old);
-        }
     }
 
     return RETURN_SUCCESS;
@@ -463,7 +361,6 @@ return_codes_e simulator_engine::Gear2ODESolve(void)
     /* Simulation needed parameters */
     auto &sim_vector = this->_mna_engine.getSimVals();
     double inverse_timestep = 1/this->_mna_engine.getSimStep();
-    auto sim_sz = this->_mna_engine.getSimDim();
 
     /* Perform 1 step of Euler to get the next needed timepoint and then start GEAR2 */
     tran_mat = inverse_timestep * tran_mat;
@@ -475,41 +372,19 @@ return_codes_e simulator_engine::Gear2ODESolve(void)
     /* Checks */
     if(solver.info() != Success) return FAIL_SIMULATOR_FACTORIZATION;
 
-    if(!this->_save_mem) // Store the complete results
-    {
-        auto mat_sz = this->_mna_engine.getSystemDim();
+    old = cur;
+    setPlotResults(old);
 
-        /* Set t=0 */
-        this->_results_d.resize(mat_sz, sim_sz);
-        this->_results_d.col(0) = cur;
+    /* Create the right hand side */
+    cur = tran_mat * old;   // C/h*x(tk-1) + e(tk)
+    this->_mna_engine.UpdateTRANVec(cur, sim_vector[1]);
 
-        /* Create the right hand side */
-        cur = tran_mat * this->_results_d.col(0);   // C/h*x(tk-1) + e(tk)
-        this->_mna_engine.UpdateTRANVec(cur, sim_vector[1]);
+    /* Save results */
+    cur = solver.solve(cur);
+    setPlotResults(cur);
 
-        /* Save results */
-        this->_results_d.col(1) = solver.solve(cur);
-
-        /* Checks */
-        if(solver.info() != Success) return FAIL_SIMULATOR_SOLVE;
-    }
-    else
-    {
-        old = cur;
-        setPlotResults(old);
-
-        /* Create the right hand side */
-        cur = tran_mat * old;   // C/h*x(tk-1) + e(tk)
-        this->_mna_engine.UpdateTRANVec(cur, sim_vector[1]);
-
-        /* Save results */
-        cur = solver.solve(cur);
-
-        setPlotResults(cur);
-
-        /* Checks */
-        if(solver.info() != Success) return FAIL_SIMULATOR_SOLVE;
-    }
+    /* Checks */
+    if(solver.info() != Success) return FAIL_SIMULATOR_SOLVE;
 
     /* Common steps - Set up matrices for every side */
     op_mat = op_mat + 3/2*tran_mat;
@@ -524,106 +399,23 @@ return_codes_e simulator_engine::Gear2ODESolve(void)
 
     /****** 3rd step Run for each simulation timepoint ******/
 
-    if(!this->_save_mem)
+    for(size_t i = 2; i < sim_vector.size(); i++) /* Skip t=0 timepoint (already computed from OP) */
     {
-        for(size_t i = 2; i < sim_vector.size(); i++) /* Skip t=0 timepoint (already computed from OP) */
-        {
-            cur = tmp_op_mat * this->_results_d.col(i - 2) + tran_mat * this->_results_d.col(i - 1);
-            this->_mna_engine.UpdateTRANVec(cur, sim_vector[i]);
+        nxt = tmp_op_mat * old + tran_mat * cur;
+        this->_mna_engine.UpdateTRANVec(nxt, sim_vector[i]);
 
-            /* Checks */
-            if(solver.info() != Success) return FAIL_SIMULATOR_SOLVE;
+        /* Checks */
+        if(solver.info() != Success) return FAIL_SIMULATOR_SOLVE;
 
-            this->_results_d.col(i) = solver.solve(cur);
-        }
+        nxt = solver.solve(nxt);
+        setPlotResults(nxt);
+
+        /* Copy vectors for next iteration */
+        old = cur;
+        cur = nxt;
     }
-    else
-    {
-        for(size_t i = 2; i < sim_vector.size(); i++) /* Skip t=0 timepoint (already computed from OP) */
-        {
-            nxt = tmp_op_mat * old + tran_mat * cur;
-            this->_mna_engine.UpdateTRANVec(nxt, sim_vector[i]);
-
-            /* Checks */
-            if(solver.info() != Success) return FAIL_SIMULATOR_SOLVE;
-
-            nxt = solver.solve(nxt);
-            setPlotResults(nxt);
-
-            /* Copy vectors for next iteration */
-            old = cur;
-            cur = nxt;
-        }
-    }
-
 
     return RETURN_SUCCESS;
-}
-
-/*!
-    @brief      Sets the results of the simulation for any non-AC analysis.
-*/
-void simulator_engine::setPlotResults(void)
-{
-    /* Get the indices from the MNA engine */
-    auto sim_size = this->_mna_engine.getSimDim();
-    auto &nodes_idx = this->_mna_engine.getNodesIdx();
-    auto &sources_idx = this->_mna_engine.getSourceIdx();
-
-    /* We need the data in {t - col(x), col(x+1)} format */
-    for(IntTp i = 0; i < sim_size; i++)
-    {
-        std::vector<double> tmp_vec, tmp_vec2;
-
-        /* Create the vectors - nodes */
-        for(auto it : nodes_idx)
-        {
-            tmp_vec.push_back(this->_results_d(it, i));
-        }
-
-        /* Create the vectors - sources */
-        for(auto it : sources_idx)
-        {
-            tmp_vec2.push_back(this->_results_d(it, i));
-        }
-
-        /* Out */
-        this->_res_nodes.push_back(tmp_vec);
-        this->_res_sources.push_back(tmp_vec2);
-    }
-}
-
-/*!
-    @brief      Sets the results of the simulation for the AC analysis.
-*/
-void simulator_engine::setPlotResultsCd(void)
-{
-    /* Get the indices from the MNA engine */
-    auto sim_size = this->_mna_engine.getSimDim();
-    auto &nodes_idx = this->_mna_engine.getNodesIdx();
-    auto &sources_idx = this->_mna_engine.getSourceIdx();
-
-    /* We need the data in {t - col(x), col(x+1)} format */
-    for(IntTp i = 0; i < sim_size; i++)
-    {
-        std::vector<std::complex<double>> tmp_vec, tmp_vec2;
-
-        /* Create the vectors - nodes */
-        for(auto it : nodes_idx)
-        {
-            tmp_vec.push_back(this->_results_cd(it, i));
-        }
-
-        /* Create the vectors - sources */
-        for(auto it : sources_idx)
-        {
-            tmp_vec2.push_back(this->_results_cd(it, i));
-        }
-
-        /* Out */
-        this->_res_nodes_cd.push_back(tmp_vec);
-        this->_res_sources_cd.push_back(tmp_vec2);
-    }
 }
 
 /*!

@@ -260,12 +260,12 @@ void GNU_plotter::plot(Circuit &circuit_manager, simulator_engine &simulator_man
 	using std::vector;
 	using std::complex;
 
-	auto &plotsources = circuit_manager.getPlotSources();
-	auto &plotnodes = circuit_manager.getPlotNodes();
+	auto &plotsources = circuit_manager.PlotSources();
+	auto &plotnodes = circuit_manager.PlotNodes();
 
-	auto analysis_type = circuit_manager.getAnalysisType();
-	auto analysis_scale = circuit_manager.getAnalysisScale();
-	auto sweep_source = circuit_manager.getDCSource();
+	auto analysis_type = circuit_manager.AnalysisType();
+	auto analysis_scale = circuit_manager.AnalysisScale();
+	auto sweep_source = circuit_manager.DCSource();
 
     /* Get the x-values */
     auto &x_simvals = simulator_manager.getSimulationVec();
@@ -345,8 +345,8 @@ void print_cout(Circuit &circuit_manager, simulator_engine &simulator_manager)
     using std::vector;
     using std::cout;
 
-    auto &plotsources = circuit_manager.getPlotSources();
-    auto &plotnodes = circuit_manager.getPlotNodes();
+    auto &plotsources = circuit_manager.PlotSources();
+    auto &plotnodes = circuit_manager.PlotNodes();
 
     cout << "***PLOT - RESULTS***\n";
 
@@ -393,14 +393,14 @@ return_codes_e plot(Circuit &circuit_manager, simulator_engine &simulator_manage
     /* Checks */
     if(!circuit_manager.valid()) return FAIL_PLOTTER_CIRCUIT_INVALID;
     if(!simulator_manager.valid()) return FAIL_PLOTTER_RESULTS_INVALID;
-    if(!circuit_manager.getPlotNodes().size() && !circuit_manager.getPlotSources().size())
+    if(!circuit_manager.PlotNodes().size() && !circuit_manager.PlotSources().size())
         return FAIL_PLOTTER_NOTHING_TO_PLOT;
 
     /* Set precision */
     streamsize cout_stream_sz = cout.precision(numeric_limits<double>::digits10 + 2);
 
     /* OP analysis needs only printing of the values */
-    if(circuit_manager.getAnalysisType() != OP)
+    if(circuit_manager.AnalysisType() != OP)
     {
         GNU_plotter plotter;
         plotter.plot(circuit_manager, simulator_manager);

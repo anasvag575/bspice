@@ -9,28 +9,28 @@
 MNA::MNA(Circuit &circuit_manager)
 {
     /* Conversion for every element */
-    for(auto &it : circuit_manager.getCoils()) this->_coils.push_back({it});
-    for(auto &it : circuit_manager.getCapacitors()) this->_caps.push_back({it});
-    for(auto &it : circuit_manager.getResistors()) this->_res.push_back({it});
-    for(auto &it : circuit_manager.getICS()) this->_ics.push_back({it, it});
-    for(auto &it : circuit_manager.getIVS()) this->_ivs.push_back({it, it});
-    for(auto &it : circuit_manager.getVCVS()) this->_vcvs.push_back({it});
-    for(auto &it : circuit_manager.getVCCS()) this->_vccs.push_back({it});
+    for(auto &it : circuit_manager.Coils()) this->_coils.push_back({it});
+    for(auto &it : circuit_manager.Capacitors()) this->_caps.push_back({it});
+    for(auto &it : circuit_manager.Resistors()) this->_res.push_back({it});
+    for(auto &it : circuit_manager.ICS()) this->_ics.push_back({it, it});
+    for(auto &it : circuit_manager.IVS()) this->_ivs.push_back({it, it});
+    for(auto &it : circuit_manager.VCVS()) this->_vcvs.push_back({it});
+    for(auto &it : circuit_manager.VCCS()) this->_vccs.push_back({it});
 
     /* Set up system dimension */
-    auto nodes_dim = circuit_manager.getNodes().size();
+    auto nodes_dim = circuit_manager.Nodes().size();
     this->_ivs_offset = nodes_dim;
     this->_coil_offset = nodes_dim + this->_ivs.size();
     this->_vcvs_offset = this->_coil_offset + this->_coils.size();
     this->_system_dim = this->_vcvs_offset + this->_vcvs.size();
-    this->_analysis_type = circuit_manager.getAnalysisType();
-    this->_scale = circuit_manager.getAnalysisScale();
+    this->_analysis_type = circuit_manager.AnalysisType();
+    this->_scale = circuit_manager.AnalysisScale();
     this->_sim_store_start = 0; // TODO
 
     /* Create the simulation vector */
-    double start = circuit_manager.getSimStart();
-    double end = circuit_manager.getSimEnd();
-    double steps = circuit_manager.getSimStep();
+    double start = circuit_manager.SimStart();
+    double end = circuit_manager.SimEnd();
+    double steps = circuit_manager.SimStep();
     this->_sim_step = steps;
 
     if(this->_analysis_type != OP)
@@ -60,8 +60,8 @@ MNA::MNA(Circuit &circuit_manager)
     if(this->_analysis_type == DC)
     {
         /* 2-level index to get the exact position of the source */
-        std::string &src_dut = circuit_manager.getDCSource();
-        auto &namesmap = circuit_manager.getElementNames();
+        std::string &src_dut = circuit_manager.DCSource();
+        auto &namesmap = circuit_manager.ElementNames();
 
         /* Get idx to access the appropriate vector */
         this->_sweep_source_idx = namesmap.find(src_dut)->second;
@@ -81,12 +81,12 @@ void MNA::updatePlotIdx(Circuit &circuit_manager)
     this->_sources_idx.clear();
 
     /* Create the indices vector for nodes or IVS currents */
-    auto &node_names = circuit_manager.getPlotNodes();
-    auto &source_names = circuit_manager.getPlotSources();
+    auto &node_names = circuit_manager.PlotNodes();
+    auto &source_names = circuit_manager.PlotSources();
 
     /* Get the maps needed */
-    auto &nodesmap = circuit_manager.getNodes();
-    auto &elementsmap = circuit_manager.getElementNames();
+    auto &nodesmap = circuit_manager.Nodes();
+    auto &elementsmap = circuit_manager.ElementNames();
 
     for(auto &it : node_names)
     {
@@ -300,7 +300,6 @@ void MNA::VccsMNAStamp(tripletList_d &mat, vccs_packed &source)
         }
     }
 }
-
 
 
 

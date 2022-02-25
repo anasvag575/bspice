@@ -2,49 +2,174 @@
 #include <algorithm>
 #include "circuit.hpp"
 
+/************ GETTERS / SETTERS ************/
+
+/*!
+    @brief    Get the resistors in the circuit.
+    @return   The resistors vector.
+*/
+std::vector<Resistor> &Circuit::Resistors(void) { return _res; }
+
+/*!
+    @brief    Get the capacitors in the circuit.
+    @return   The capacitors vector.
+*/
+std::vector<Capacitor> &Circuit::Capacitors(void) { return _caps; }
+
+/*!
+    @brief    Get the coils in the circuit.
+    @return   The coils vector.
+*/
+std::vector<Coil> &Circuit::Coils(void) { return _coils; }
+
+/*!
+    @brief    Get the ICS in the circuit.
+    @return   The ICS vector.
+*/
+std::vector<ics> &Circuit::ICS(void) { return _ics; }
+
+/*!
+    @brief    Get the IVS in the circuit.
+    @return   The IVS vector.
+*/
+std::vector<ivs> &Circuit::IVS(void) { return _ivs; }
+
+/*!
+    @brief    Get the VCVS in the circuit.
+    @return   The VCVS vector.
+*/
+std::vector<vcvs> &Circuit::VCVS(void) { return _vcvs; }
+
+/*!
+    @brief    Get the VCCS in the circuit.
+    @return   The VCCS vector.
+*/
+std::vector<vccs> &Circuit::VCCS(void) { return _vccs; }
+
+/*!
+    @brief    Get the nodes map (map contains the <NodeName, NodeNum> pairs).
+    @return   The map.
+*/
+hashmap_str_t &Circuit::Nodes(void) { return _nodes; }
+
+/*!
+    @brief    Get the elements map (map contains the <ElmementName, ElementID> pairs).
+    @return   The map.
+*/
+hashmap_str_t &Circuit::ElementNames(void) { return _element_names; }
+
+/*!
+    @brief    Get the nodes to be plotted in the circuit.
+    @return   The nodesNames vector.
+*/
+std::vector<std::string> &Circuit::PlotNodes(void) { return _plot_nodes; }
+
+/*!
+    @brief    Get the sources to be plotted in the circuit.
+    @return   The sources vector.
+*/
+std::vector<std::string> &Circuit::PlotSources(void) { return _plot_sources; }
+
+/*!
+    @brief    Get the simulation start value.
+    @return   The start.
+*/
+double Circuit::SimStart(void) { return _sim_start; }
+
+/*!
+    @brief    Get the simulation end value.
+    @return   The end.
+*/
+double Circuit::SimEnd(void) { return _sim_end; }
+
+/*!
+    @brief    Get the simulation step.
+    @return   The step.
+*/
+double Circuit::SimStep(void) { return this->_sim_step; }
+
+/*!
+    @brief    Get the DC source for analysis.
+    @return   The DC source name.
+*/
+std::string &Circuit::DCSource(void) { return _source; }
+
+/*!
+    @brief    Get the analysis type.
+    @return   The type enum.
+*/
+analysis_t Circuit::AnalysisType(void) { return this->_type; }
+
+/*!
+    @brief    Get the analysis scale.
+    @return   The scale enum.
+*/
+as_scale_t Circuit::AnalysisScale(void) { return this->_scale; }
+
+/*!
+    @brief    Get the ODE method to be used for transient.
+    @return   The method.
+*/
+ODE_meth_t Circuit::ODEMethod(void) { return this->_ode_method; }
+
+/*!
+    @brief    Check if the current circuit is valid.
+    @return   True or False.
+*/
+bool Circuit::valid(void) { return _errcode == RETURN_SUCCESS;}
+
+/*!
+    @brief    Returns the last error during parsing of the netlist.
+    @return   Error code.
+*/
+return_codes_e Circuit::errcode(void) { return _errcode; }
+
+/***************** METHODS *****************/
+
+
 /*!
     @brief    Routine, that creates a circuit representation of the specified netlist
     given by the input argument (input_file). The line is parsed line by line and
     forms the necessary elements (R, L, C, etc..) and SPICE cards (.DC, .TRAN, etc..)
     for the circuit.
-	@param	  input_file	The file that contains the SPICE netlist.
+    @param    input_file    The file that contains the SPICE netlist.
     @return   The error code, in case of error, otherwise RETURN_SUCCESS.
 */
-return_codes_e Circuit::create(std::string &input_file_name)
+Circuit::Circuit(std::string &input_file_name)
 {
-    using std::vector;
-    using std::string;
-    using std::ifstream;
-    using std::cout;
     using std::chrono::high_resolution_clock;
     using std::chrono::duration_cast;
     using std::chrono::milliseconds;
 
     /* Checks for file input */
-    ifstream input_file(input_file_name);
-    if(!input_file) return FAIL_LOADING_FILE;
+    std::ifstream input_file(input_file_name);
+    if(!input_file)
+    {
+        _errcode = FAIL_LOADING_FILE;
+        return;
+    }
 
-    /* Clear the current circuit */
-    this->clear();
-
-    string line;                                    /* Current line*/
+    std::string line;                               /* Current line*/
     size_t linenum = 0;                             /* Linenumber */
     return_codes_e errcode = RETURN_SUCCESS;        /* Error code */
     parser syntax_match;                            /* Instantiate parser engine */
-    vector<string> tokens;							/* Tokens produced for each line */
+    std::vector<std::string> tokens;                /* Tokens produced for each line */
 
     /* Info */
-    cout << "\n[INFO]: Loading file...\n";
+    std::cout << "\n[INFO]: Loading file...\n";
+
+    /* Default initialize class before continuing */
+    init();
 
     /* Start of parsing - For statistics */
     auto begin_time = high_resolution_clock::now();
 
     while(getline(input_file, line))
     {
-    	node2_device node2_base;
-    	node4_device node4_base;
-    	source_spec source_spec_base;
-    	size_t id;
+        node2_device node2_base;
+        node4_device node4_base;
+        source_spec source_spec_base;
+        size_t id;
 
         /* Keep the line number for debugging */
         linenum++;
@@ -121,10 +246,10 @@ return_codes_e Circuit::create(std::string &input_file_name)
             }
             case '.':
             {
-            	errcode = createSPICECard(tokens, syntax_match);
-            	cout << "[INFO]: - At line " << linenum << ": Found SPICE CARD\n";
+                errcode = createSPICECard(tokens, syntax_match);
+                std::cout << "[INFO]: - At line " << linenum << ": Found SPICE CARD\n";
 
-            	break;
+                break;
             }
             case '*':
             {
@@ -141,14 +266,17 @@ return_codes_e Circuit::create(std::string &input_file_name)
         /* Early out, along with type, when dealing with an error */
         if(errcode != RETURN_SUCCESS)
         {
-            cout << "[ERROR - " << errcode << "]: At line " << linenum << ": " << line << "\n";
+            std::cout << "[ERROR - " << errcode << "]: At line " << linenum << ": " << line << "\n";
             input_file.close();
-            return errcode;
+            this->_errcode = errcode;
+            return;
         }
     }
 
     /* Verify that circuit meets the criteria */
+    input_file.close();
     errcode = verify();
+    this->_errcode = errcode;
 
     /* Output information only in case of success */
     if(errcode == RETURN_SUCCESS)
@@ -156,49 +284,59 @@ return_codes_e Circuit::create(std::string &input_file_name)
         /* Measure the total time taken */
         auto end_time = high_resolution_clock::now();
 
-    	IntTp ics_count[TRANSIENT_SOURCE_TYPENUM] = {0};
-    	IntTp ivs_count[TRANSIENT_SOURCE_TYPENUM] = {0};
+        IntTp ics_count[TRANSIENT_SOURCE_TYPENUM] = {0};
+        IntTp ivs_count[TRANSIENT_SOURCE_TYPENUM] = {0};
 
-    	cout << "************************************\n";
-		cout << "************CIRCUIT INFO************\n";
-		cout << "************************************\n";
-		cout << "Load time: " << duration_cast<milliseconds>(end_time-begin_time).count() << "ms\n";
-		cout << "Total lines: " << linenum << "\n";
-		cout << "************************************\n";
-		cout << "Resistors: " << this->_res.size() << "\n";
-		cout << "Caps: " << this->_caps.size() << "\n";
-		cout << "Coils: " << this->_coils.size() << "\n";
-        cout << "VCVS: " << this->_vcvs.size() << "\n";
-        cout << "VCCS: " << this->_vccs.size() << "\n";
+        std::cout << "************************************\n";
+        std::cout << "************CIRCUIT INFO************\n";
+        std::cout << "************************************\n";
+        std::cout << "Load time: " << duration_cast<milliseconds>(end_time-begin_time).count() << "ms\n";
+        std::cout << "Total lines: " << linenum << "\n";
+        std::cout << "************************************\n";
+        std::cout << "Resistors: " << this->_res.size() << "\n";
+        std::cout << "Caps: " << this->_caps.size() << "\n";
+        std::cout << "Coils: " << this->_coils.size() << "\n";
+        std::cout << "VCVS: " << this->_vcvs.size() << "\n";
+        std::cout << "VCCS: " << this->_vccs.size() << "\n";
 
-		cout << "ICS: " << this->_ics.size() << "\n";
-		for(auto &it : this->_ics) ics_count[it.getType()]++;
-		cout << "\tConstant: " << ics_count[CONSTANT_SOURCE] << "\n";
-		cout << "\tExp: " << ics_count[EXP_SOURCE] << "\n";
-		cout << "\tSine: " << ics_count[SINE_SOURCE] << "\n";
-		cout << "\tPWL: " << ics_count[PWL_SOURCE] << "\n";
-		cout << "\tPulse: " << ics_count[PULSE_SOURCE] << "\n";
+        std::cout << "ICS: " << this->_ics.size() << "\n";
+        for(auto &it : this->_ics) ics_count[it.getType()]++;
+        std::cout << "\tConstant: " << ics_count[CONSTANT_SOURCE] << "\n";
+        std::cout << "\tExp: " << ics_count[EXP_SOURCE] << "\n";
+        std::cout << "\tSine: " << ics_count[SINE_SOURCE] << "\n";
+        std::cout << "\tPWL: " << ics_count[PWL_SOURCE] << "\n";
+        std::cout << "\tPulse: " << ics_count[PULSE_SOURCE] << "\n";
 
-		cout << "IVS: " << this->_ivs.size() << "\n";
-		for(auto &it : this->_ivs) ivs_count[it.getType()]++;
-		cout << "\tConstant: " << ivs_count[CONSTANT_SOURCE] << "\n";
-		cout << "\tExp: " << ivs_count[EXP_SOURCE] << "\n";
-		cout << "\tSine: " << ivs_count[SINE_SOURCE] << "\n";
-		cout << "\tPWL: " << ivs_count[PWL_SOURCE] << "\n";
-		cout << "\tPulse: " << ivs_count[PULSE_SOURCE] << "\n";
+        std::cout << "IVS: " << this->_ivs.size() << "\n";
+        for(auto &it : this->_ivs) ivs_count[it.getType()]++;
+        std::cout << "\tConstant: " << ivs_count[CONSTANT_SOURCE] << "\n";
+        std::cout << "\tExp: " << ivs_count[EXP_SOURCE] << "\n";
+        std::cout << "\tSine: " << ivs_count[SINE_SOURCE] << "\n";
+        std::cout << "\tPWL: " << ivs_count[PWL_SOURCE] << "\n";
+        std::cout << "\tPulse: " << ivs_count[PULSE_SOURCE] << "\n";
 
-		cout << "************************************\n";
-		cout << "Simulation Type: " << this->_type << "\n";
-		cout << "Scale: " << this->_scale << "\n";
-		cout << "Memory mode: " << this->_mem_save_mode << "\n";
-		cout << "ODE method: " << this->_ode_method << "\n";
-		cout << "Total nodes to plot: " << this->_plot_nodes.size() << "\n";
-		cout << "Total sources to plot: " << this->_plot_sources.size() << "\n";
-		cout << "************************************\n\n";
+        std::cout << "************************************\n";
+        std::cout << "Simulation Type: " << this->_type << "\n";
+        std::cout << "Scale: " << this->_scale << "\n";
+        std::cout << "ODE method: " << this->_ode_method << "\n";
+        std::cout << "Total nodes to plot: " << this->_plot_nodes.size() << "\n";
+        std::cout << "Total sources to plot: " << this->_plot_sources.size() << "\n";
+        std::cout << "************************************\n\n";
     }
+}
 
-    input_file.close();
-    return errcode;
+/*!
+    @brief Initializer routine for the class.
+*/
+void Circuit::init(void)
+{
+    this->_ode_method = BACKWARDS_EULER;
+    this->_scale = DEC_SCALE;
+    this->_type = OP;
+    this->_errcode = FAIL_LOADING_FILE;
+    this->_sim_step = 0;
+    this->_sim_start = 0;
+    this->_sim_end = 0;
 }
 
 /*!
@@ -210,10 +348,8 @@ return_codes_e Circuit::create(std::string &input_file_name)
 */
 return_codes_e Circuit::createSPICECard(std::vector<std::string> &tokens, parser &match)
 {
-	using namespace std;
-
 	/* Check whether we have '.' character */
-	string spice_card;
+	std::string spice_card;
 	(tokens[0][0] == '.') ? spice_card = tokens[0].substr(1) : spice_card = tokens[0];
 
 	/* Special case identified before everything else */
@@ -273,18 +409,12 @@ return_codes_e Circuit::createSPICECard(std::vector<std::string> &tokens, parser
 return_codes_e Circuit::setCircuitOptions(std::vector<std::string> &tokens)
 {
     auto it = tokens.begin() + 1;
-    bool mem_save_found = false;
     bool integr_found = false;
 
     /* Iteratively find every option card */
     while(it != tokens.end())
     {
-        if(*it == "MEM_SAVE" && !mem_save_found)
-        {
-            this->_mem_save_mode = true;
-            mem_save_found = true;
-        }
-        else if(*it == "GEAR2" && !integr_found)
+        if(*it == "GEAR2" && !integr_found)
         {
             this->_ode_method = GEAR2;
             integr_found = true;
@@ -319,8 +449,6 @@ return_codes_e Circuit::setCircuitOptions(std::vector<std::string> &tokens)
 */
 return_codes_e Circuit::verify(void)
 {
-	using namespace std;
-
 	return_codes_e errcode;
     auto namemap_end = this->_element_names.end();
     auto nodemap_end = this->_nodes.end();
@@ -334,7 +462,7 @@ return_codes_e Circuit::verify(void)
     	if(name_it == namemap_end)
     	{// TODO - Transfer to error function outside
     		errcode = FAIL_PARSER_ELEMENT_NOT_EXISTS;
-    		cout << "[ERROR - " << errcode << "]: Element <" << this->_source << "> (DC CARD)" << endl;
+    		std::cout << "[ERROR - " << errcode << "]: Element <" << this->_source << "> (DC CARD)" << std::endl;
     		return errcode;
     	}
     }
@@ -348,7 +476,7 @@ return_codes_e Circuit::verify(void)
 		if(node_it == namemap_end)
 		{// TODO - Transfer to error function outside
 			errcode = FAIL_PARSER_ELEMENT_NOT_EXISTS;
-			cout << "[ERROR - " << errcode << "]: Element <" << *it << "> (PLOT CARD)" << endl;
+			std::cout << "[ERROR - " << errcode << "]: Element <" << *it << "> (PLOT CARD)" << std::endl;
 			return errcode;
 		}
     }
@@ -362,17 +490,16 @@ return_codes_e Circuit::verify(void)
 		if(node_it == nodemap_end)
 		{// TODO - Transfer to error function outside
 			errcode = FAIL_PARSER_ELEMENT_NOT_EXISTS;
-			cout << "[ERROR - " << errcode << "]: Element <" << *it << "> (PLOT CARD)" << endl;
+			std::cout << "[ERROR - " << errcode << "]: Element <" << *it << "> (PLOT CARD)" << std::endl;
 			return errcode;
 		}
     }
 
-    /* Set valid flag */
-    this->_valid = true;
-
     return RETURN_SUCCESS;
 }
 
+
+/****************** DEBUG ******************/
 
 
 /*!

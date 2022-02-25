@@ -8,17 +8,6 @@ class simulator_engine
 {
 	public:
 
-		/*!
-			@brief    Default constructor.
-		*/
-		simulator_engine()
-		{
-		    _init = false;
-			_run = false;
-			_save_mem = false;
-			_ode_method = BACKWARDS_EULER;
-		}
-
         /*!
             @brief      Initializes the simulator engine with the parameters
             defined by the circuit input.
@@ -27,29 +16,9 @@ class simulator_engine
         simulator_engine(Circuit &circuit_manager)
         {
             this->_mna_engine = MNA(circuit_manager);
-            _init = true;
             _run = false;
-            _save_mem = circuit_manager.getMemMode();
-            _ode_method = circuit_manager.getODEMethod();
+            _ode_method = circuit_manager.ODEMethod();
         }
-
-		/*!
-			@brief  Resets the state of the simulator engine.
-		*/
-		void clear(void)
-		{
-		    _init = false;
-			_run = false;
-            _save_mem = false;
-            _ode_method = BACKWARDS_EULER;
-			this->_mna_engine.clear();
-			_results_d = DenseMatD::Zero(0,0);
-			_results_cd = DenseMatCompD::Zero(0,0);
-			this->_res_nodes.clear();
-			this->_res_nodes_cd.clear();
-			this->_res_sources.clear();
-			this->_res_sources_cd.clear();
-		}
 
 		/*!
 			@brief  Returns whether the simulator is in a valid state (run valid).
@@ -57,7 +26,7 @@ class simulator_engine
 		*/
 		bool valid(void)
 		{
-			return this->_run && this->_init;
+			return this->_run;
 		}
 
 		/*!
@@ -120,8 +89,6 @@ class simulator_engine
         return_codes_e Gear2ODESolve(void); // TODO
 
         /* Handling of results */
-        void setPlotResults(void);
-        void setPlotResultsCd(void);
         void setPlotResults(DensVecD &vec);
         void setPlotResultsCd(DensVecCompD &vec);
 
@@ -129,9 +96,7 @@ class simulator_engine
 		MNA _mna_engine;
 
 		/* Simulator state/parameters */
-		bool _init;
         bool _run;
-		bool _save_mem;
 		ODE_meth_t _ode_method;
 
 		/* Vectors used to save the plot/save the results */
@@ -139,10 +104,6 @@ class simulator_engine
         std::vector<std::vector<double>> _res_sources;
 		std::vector<std::vector<std::complex<double>>> _res_nodes_cd;
 		std::vector<std::vector<std::complex<double>>> _res_sources_cd;
-
-        /* Arrays containing the complete results - Optional use */
-        DenseMatD   _results_d;
-        DenseMatCompD   _results_cd;
 };
 
 #endif // __SIM_ENGINE_H //
