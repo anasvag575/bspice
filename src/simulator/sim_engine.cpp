@@ -52,7 +52,7 @@ return_codes_e simulator_engine::run(void)
         cout << "**********SIMULATION INFO***********\n";
         cout << "************************************\n";
 	    cout << "Total simulation time: " << duration_cast<milliseconds>(end-begin).count() << "ms\n";
-	    cout << "Total simulation points: " << this->_mna_engine.getSimDim() << "\n";
+//	    cout << "Total simulation points: " << this->_mna_engine.getSimDim() << "\n"; // TODO
 	    cout << "System size: " << this->_mna_engine.getSystemDim() << "\n";
 	    cout << "************************************\n\n";
 
@@ -417,6 +417,8 @@ return_codes_e simulator_engine::Gear2ODESolve(void)
 
     return RETURN_SUCCESS;
 }
+
+
 
 /*!
     @brief      Sets the results of the simulation for any non-AC analysis.

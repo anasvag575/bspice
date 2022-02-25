@@ -4,6 +4,7 @@
 
 /************ GETTERS / SETTERS ************/
 
+
 /*!
     @brief    Get the resistors in the circuit.
     @return   The resistors vector.
@@ -113,16 +114,17 @@ as_scale_t Circuit::AnalysisScale(void) { return this->_scale; }
 ODE_meth_t Circuit::ODEMethod(void) { return this->_ode_method; }
 
 /*!
+    @brief    Returns the last error during parsing of the netlist.
+    @return   Error code.
+*/
+return_codes_e Circuit::errcode(void) { return _errcode; }
+
+/*!
     @brief    Check if the current circuit is valid.
     @return   True or False.
 */
 bool Circuit::valid(void) { return _errcode == RETURN_SUCCESS;}
 
-/*!
-    @brief    Returns the last error during parsing of the netlist.
-    @return   Error code.
-*/
-return_codes_e Circuit::errcode(void) { return _errcode; }
 
 /***************** METHODS *****************/
 
@@ -137,10 +139,6 @@ return_codes_e Circuit::errcode(void) { return _errcode; }
 */
 Circuit::Circuit(std::string &input_file_name)
 {
-    using std::chrono::high_resolution_clock;
-    using std::chrono::duration_cast;
-    using std::chrono::milliseconds;
-
     /* Checks for file input */
     std::ifstream input_file(input_file_name);
     if(!input_file)
@@ -162,7 +160,7 @@ Circuit::Circuit(std::string &input_file_name)
     init();
 
     /* Start of parsing - For statistics */
-    auto begin_time = high_resolution_clock::now();
+    auto begin_time = std::chrono::high_resolution_clock::now();
 
     while(getline(input_file, line))
     {
@@ -246,7 +244,7 @@ Circuit::Circuit(std::string &input_file_name)
             }
             case '.':
             {
-                errcode = createSPICECard(tokens, syntax_match);
+                errcode = SPICECard(tokens, syntax_match);
                 std::cout << "[INFO]: - At line " << linenum << ": Found SPICE CARD\n";
 
                 break;
@@ -282,7 +280,7 @@ Circuit::Circuit(std::string &input_file_name)
     if(errcode == RETURN_SUCCESS)
     {
         /* Measure the total time taken */
-        auto end_time = high_resolution_clock::now();
+        auto end_time = std::chrono::high_resolution_clock::now();
 
         IntTp ics_count[TRANSIENT_SOURCE_TYPENUM] = {0};
         IntTp ivs_count[TRANSIENT_SOURCE_TYPENUM] = {0};
@@ -290,7 +288,7 @@ Circuit::Circuit(std::string &input_file_name)
         std::cout << "************************************\n";
         std::cout << "************CIRCUIT INFO************\n";
         std::cout << "************************************\n";
-        std::cout << "Load time: " << duration_cast<milliseconds>(end_time-begin_time).count() << "ms\n";
+        std::cout << "Load time: " << std::chrono::duration_cast<std::chrono::milliseconds>(end_time-begin_time).count() << "ms\n";
         std::cout << "Total lines: " << linenum << "\n";
         std::cout << "************************************\n";
         std::cout << "Resistors: " << this->_res.size() << "\n";
@@ -346,7 +344,7 @@ void Circuit::init(void)
   	@param	match	Syntax parser instantiation.
     @return   The error code, in case of error, otherwise RETURN_SUCCESS.
 */
-return_codes_e Circuit::createSPICECard(std::vector<std::string> &tokens, parser &match)
+return_codes_e Circuit::SPICECard(std::vector<std::string> &tokens, parser &match)
 {
 	/* Check whether we have '.' character */
 	std::string spice_card;
@@ -442,6 +440,7 @@ return_codes_e Circuit::setCircuitOptions(std::vector<std::string> &tokens)
 
 /*!
     @brief    Internal routine, that verifies the following for a given circuit:
+      - There is something to be plotted for the plotter (some plot card in the circuit)
   	  - Plot nodes for a plot card already exists in the circuit
   	  - DC analysis source already exists in the circuit (if any DC analysis is active)
   	  - Set the circuit dimension and the source offset in the MNA equivalent matrix.
@@ -452,6 +451,9 @@ return_codes_e Circuit::verify(void)
 	return_codes_e errcode;
     auto namemap_end = this->_element_names.end();
     auto nodemap_end = this->_nodes.end();
+
+    /* Check that there is something to plot for the simulation */
+    if(!this->_plot_nodes.size() && !this->_plot_sources.size()) return FAIL_PLOTTER_NOTHING_TO_PLOT;
 
     /* After parsing the file, in case of DC analysis verify that the simulated source exists */
     if(this->_type == DC)

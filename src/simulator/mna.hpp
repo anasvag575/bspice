@@ -25,32 +25,6 @@ class MNA
 		}
 
 		/*!
-			@brief  Resets the state of the MNA engine.
-		*/
-		void clear(void)
-		{
-            _system_dim = 0;
-            _ivs_offset = 0;
-            _coil_offset = 0;
-            _vcvs_offset = 0;
-            _sweep_source_idx = 0;
-            _sim_store_start = 0;
-            _sim_step = 0;
-            _analysis_type = OP;
-            _scale = DEC_SCALE;
-
-            /* Clear vectors */
-            this->_res.clear();
-            this->_caps.clear();
-            this->_coils.clear();
-            this->_ics.clear();
-            this->_ivs.clear();
-			this->_sim_vals.clear();
-			this->_nodes_idx.clear();
-            this->_sources_idx.clear();
-		}
-
-		/*!
 			@brief      Returns the MNA system dimension.
 			@return		The dimension.
 		*/
@@ -67,16 +41,6 @@ class MNA
 		std::vector<double> &getSimVals(void)
 		{
 			return this->_sim_vals;
-		}
-
-		/*!
-			@brief      Returns the number of simulation points for the
-			analysis.
-			@return		The number.
-		*/
-		IntTp getSimDim(void)
-		{
-			return this->_sim_vals.size();
 		}
 
         /*!

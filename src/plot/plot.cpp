@@ -390,12 +390,6 @@ return_codes_e plot(Circuit &circuit_manager, simulator_engine &simulator_manage
     using std::cout;
     using std::numeric_limits;
 
-    /* Checks */
-    if(!circuit_manager.valid()) return FAIL_PLOTTER_CIRCUIT_INVALID;
-    if(!simulator_manager.valid()) return FAIL_PLOTTER_RESULTS_INVALID;
-    if(!circuit_manager.PlotNodes().size() && !circuit_manager.PlotSources().size())
-        return FAIL_PLOTTER_NOTHING_TO_PLOT;
-
     /* Set precision */
     streamsize cout_stream_sz = cout.precision(numeric_limits<double>::digits10 + 2);
 

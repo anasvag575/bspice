@@ -8,6 +8,7 @@
 class Circuit
 {
     public:
+        /* Constructors */
 		Circuit();
 		Circuit(std::string &input_file_name);
 
@@ -20,25 +21,27 @@ class Circuit
         std::vector<vcvs> &VCVS(void);
         std::vector<vccs> &VCCS(void);
 
+        /* Elements/Nodes/Plot names */
         hashmap_str_t &Nodes(void);
         hashmap_str_t &ElementNames(void);
         std::vector<std::string> &PlotNodes(void);
         std::vector<std::string> &PlotSources(void);
+        std::string &DCSource(void);
 
+        /* Analysis specifics */
         double SimStart(void);
         double SimEnd(void);
         double SimStep(void);
-        std::string &DCSource(void);
         analysis_t AnalysisType(void);
         as_scale_t AnalysisScale(void);
         ODE_meth_t ODEMethod(void);
-        bool valid(void);
         return_codes_e errcode(void);
+        bool valid(void);
 
     private:
         void init(void);
         return_codes_e setCircuitOptions(std::vector<std::string> &tokens);
-        return_codes_e createSPICECard(std::vector<std::string> &tokens, parser &match);
+        return_codes_e SPICECard(std::vector<std::string> &tokens, parser &match);
         return_codes_e verify(void);
 
         /* Debugging only functions */
