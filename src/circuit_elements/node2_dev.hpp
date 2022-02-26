@@ -6,7 +6,9 @@
 #include <iostream>
 #include "base_types.hpp"
 
-/* Complete representation */
+/**
+ *  The complete device representation of node_2 devices (elements with 2 nodes associated with them).
+ */
 class node2_device
 {
     public:
@@ -24,83 +26,59 @@ class node2_device
             @brief    Get the device's name
             @return   The name.
         */
-        std::string &getName(void)
-        {
-            return this->_name;
-        }
-
-        /*!
-            @brief    Set the device's name
-            @param    The name.
-        */
-        void setName(std::string &name)
-        {
-            this->_name = name;
-        }
+		const std::string &Name(void) { return _name; }
 
         /*!
             @brief    Get the device's value
             @return   The value.
         */
-        double getVal(void)
-        {
-            return _value;
-        }
-
-        /*!
-            @brief    Set the value of the device
-            @return   The value.
-        */
-        void setVal(double val)
-        {
-        	this->_value = val;
-        }
+        const double Val(void) { return _value; }
 
         /*!
             @brief    Get the positive idx node of the device.
             @return   The idx.
         */
-        IntTp getPosNodeID(void)
-        {
-            return this->_nodes_ids[0];
-        }
+        const IntTp PosNodeID(void) { return _nodes_ids[0]; }
 
         /*!
             @brief    Get the negative idx node of the device.
             @return   The idx.
         */
-        IntTp getNegNodeID(void)
-        {
-            return this->_nodes_ids[1];
-        }
+        const IntTp NegNodeID(void) { return _nodes_ids[1]; }
 
         /*!
             @brief    Get the positive node name of the device.
             @return   The name.
         */
-        const std::string &getPosNode(void)
-        {
-            return this->_node_names[0];
-        }
+        const std::string &PosNode(void) { return _node_names[0]; }
 
         /*!
             @brief    Get the negative node name of the device.
             @return   The name.
         */
-        const std::string &getNegNode(void)
-        {
-            return this->_node_names[1];
-        }
+        const std::string &NegNode(void) { return _node_names[1]; }
+
+        /*!
+            @brief    Set the device's name
+            @param    The name.
+        */
+        void setName(const std::string &name) { _name = name; }
+
+        /*!
+            @brief    Set the value of the device
+            @return   The value.
+        */
+        void setVal(const double val) { _value = val; }
 
         /*!
             @brief   Set the nodes of the device.
             @param   pos    The positive node name.
             @param   neg    The negative node name.
         */
-        void setNodeNames(std::string &pos, std::string &neg)
+        void setNodeNames(const std::string &pos, const std::string &neg)
         {
-            this->_node_names[0] = pos;
-            this->_node_names[1] = neg;
+            _node_names[0] = pos;
+            _node_names[1] = neg;
         }
 
         /*!
@@ -108,10 +86,10 @@ class node2_device
             @param   pos    The positive node ID.
             @param   pos    The positive node ID.
         */
-        void setNodeIDs(IntTp pos, IntTp neg)
+        void setNodeIDs(const IntTp pos, const IntTp neg)
         {
-            this->_nodes_ids[0] = pos;
-            this->_nodes_ids[1] = neg;
+            _nodes_ids[0] = pos;
+            _nodes_ids[1] = neg;
         }
 
         /*!
@@ -134,19 +112,19 @@ class node2_device
             elements in a container.
             @return   Boolean with the results of the comparison.
         */
-        bool operator<(node2_device &b)
-        {
-            return this->_name < b._name;
-        }
+        bool operator<(node2_device &b) { return this->_name < b._name; }
 
     private:
-        std::string _name;									   /* Name of element */
-        double _value;                                 		   /* Value in Element's SI units */
-        std::array<std::string, 2> _node_names;  			   /* The node names */
-        std::array<IntTp, 2> _nodes_ids;  					   /* The node IDs */
+        std::string _name;									   //!< Name of element
+        double _value;                                 		   //!< Value in Element's SI units
+        std::array<std::string, 2> _node_names;  			   //!< The node names
+        std::array<IntTp, 2> _nodes_ids;  					   //!< The node IDs
 };
 
-/* MNA packed structure */
+/**
+ *  The packed device representation of node_2 devices (elements with 2 nodes associated with them).
+ *  Used during MNA construction.
+ */
 class node2_device_packed
 {
     public:
@@ -155,9 +133,9 @@ class node2_device_packed
         */
         node2_device_packed()
         {
-            this->_nodes_ids[0] = -1;
-            this->_nodes_ids[1] = -1;
-            this->_value = 0;
+            _nodes_ids[0] = -1;
+            _nodes_ids[1] = -1;
+            _value = 0;
         }
 
         /*!
@@ -166,41 +144,49 @@ class node2_device_packed
         */
         node2_device_packed(node2_device &src)
         {
-            this->_nodes_ids[0] = src.getPosNodeID();
-            this->_nodes_ids[1] = src.getNegNodeID();
-            this->_value = src.getVal();
+            _nodes_ids[0] = src.PosNodeID();
+            _nodes_ids[1] = src.NegNodeID();
+            _value = src.Val();
         }
 
         /*!
             @brief    Get the device's value
             @return   The value.
         */
-        double getVal(void)
-        {
-            return _value;
-        }
+        double Val(void) { return _value; }
 
         /*!
             @brief    Get the positive idx node of the device.
             @return   The idx.
         */
-        IntTp getPosNodeID(void)
-        {
-            return this->_nodes_ids[0];
-        }
+        IntTp PosNodeID(void) { return _nodes_ids[0]; }
 
         /*!
             @brief    Get the negative idx node of the device.
             @return   The idx.
         */
-        IntTp getNegNodeID(void)
+        IntTp NegNodeID(void) { return _nodes_ids[1]; }
+
+        /*!
+            @brief    Set the value of the device
+            @return   The value.
+        */
+        void setVal(double val) { _value = val; }
+
+        /*!
+            @brief   Set the node IDs of the device.
+            @param   pos    The positive node ID.
+            @param   pos    The positive node ID.
+        */
+        void setNodeIDs(IntTp pos, IntTp neg)
         {
-            return this->_nodes_ids[1];
+            _nodes_ids[0] = pos;
+            _nodes_ids[1] = neg;
         }
 
     private:
-        double _value;                                         /* Value in Element's SI units */
-        std::array<IntTp, 2> _nodes_ids;                       /* The node IDs */
+        double _value;                                         //!< Value in Element's (SI) units
+        std::array<IntTp, 2> _nodes_ids;                       //!< The node IDs
 };
 
 #endif // __NODE2_DEV_HPP //

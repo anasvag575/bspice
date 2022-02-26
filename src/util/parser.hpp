@@ -25,6 +25,12 @@ class parser
 									    size_t device_id,
 									    bool complete);
 
+        return_codes_e parse2SNodeDevice(std::vector<std::string> &tokens,
+                                        node2s_device &element,
+                                        hashmap_str_t &elements,
+                                        hashmap_str_t &nodes,
+                                        size_t device_id);
+
         return_codes_e parse4NodeDevice(std::vector<std::string> &tokens,
                                         node4_device &element,
                                         hashmap_str_t &elements,
@@ -53,6 +59,7 @@ class parser
 
         /* Methods for Spice Elements */
         bool isValidTwoNodeElement(std::vector<std::string> &tokens);
+        bool isValidTwoNodeEnhancedElement(std::vector<std::string> &tokens);
         bool isValidFourNodeElement(std::vector<std::string> &tokens);
         bool isValidCurrentControlElement(std::vector<std::string> &tokens);
 

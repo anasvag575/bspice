@@ -5,11 +5,13 @@
 #include <fstream>
 #include "parser.hpp"
 
+/**
+* A circuit class. The purpose of this class is to represent a spice netlist (circuit and commands).
+*/
 class Circuit
 {
     public:
         /* Constructors */
-		Circuit();
 		Circuit(std::string &input_file_name);
 
         /* Elements contained in the circuit */
@@ -20,6 +22,8 @@ class Circuit
         std::vector<ivs> &IVS(void);
         std::vector<vcvs> &VCVS(void);
         std::vector<vccs> &VCCS(void);
+        std::vector<ccvs> &CCVS(void);
+        std::vector<cccs> &CCCS(void);
 
         /* Elements/Nodes/Plot names */
         hashmap_str_t &Nodes(void);
@@ -46,6 +50,7 @@ class Circuit
 
         /* Debugging only functions */
         void debug_insert_nodes(node2_device &element);
+        void debug_insert_nodes(node4_device &element);
         void debug_circuit(void);
 
         /* Elements contained in the circuit */
@@ -54,8 +59,10 @@ class Circuit
         std::vector<Coil> _coils;       //!< Vector with all the coils in the SPICE netlist
         std::vector<ics> _ics;          //!< Vector with all the ICS in the SPICE netlist
         std::vector<ivs> _ivs;          //!< Vector with all the IVS in the SPICE netlist
-        std::vector<vcvs> _vcvs;        //!< Vector with all the VSVS in the SPICE netlist
+        std::vector<vcvs> _vcvs;        //!< Vector with all the VCVS in the SPICE netlist
         std::vector<vccs> _vccs;        //!< Vector with all the VCCS in the SPICE netlist
+        std::vector<ccvs> _ccvs;        //!< Vector with all the CCVS in the SPICE netlist
+        std::vector<cccs> _cccs;        //!< Vector with all the CCCS in the SPICE netlist
 
         /* Elements/Nodes maps */
         hashmap_str_t _element_names;   //!< Hashtable that contains all the element names in the SPICE netlist

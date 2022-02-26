@@ -48,6 +48,18 @@ std::vector<vcvs> &Circuit::VCVS(void) { return _vcvs; }
 std::vector<vccs> &Circuit::VCCS(void) { return _vccs; }
 
 /*!
+    @brief    Get the CCVS in the circuit.
+    @return   The CCVS vector.
+*/
+std::vector<ccvs> &Circuit::CCVS(void) { return _ccvs; }
+
+/*!
+    @brief    Get the CCCS in the circuit.
+    @return   The CCCS vector.
+*/
+std::vector<cccs> &Circuit::CCCS(void) { return _cccs; }
+
+/*!
     @brief    Get the nodes map (map contains the <NodeName, NodeNum> pairs).
     @return   The map.
 */
@@ -87,7 +99,7 @@ double Circuit::SimEnd(void) { return _sim_end; }
     @brief    Get the simulation step.
     @return   The step.
 */
-double Circuit::SimStep(void) { return this->_sim_step; }
+double Circuit::SimStep(void) { return _sim_step; }
 
 /*!
     @brief    Get the DC source for analysis.
@@ -99,19 +111,19 @@ std::string &Circuit::DCSource(void) { return _source; }
     @brief    Get the analysis type.
     @return   The type enum.
 */
-analysis_t Circuit::AnalysisType(void) { return this->_type; }
+analysis_t Circuit::AnalysisType(void) { return _type; }
 
 /*!
     @brief    Get the analysis scale.
     @return   The scale enum.
 */
-as_scale_t Circuit::AnalysisScale(void) { return this->_scale; }
+as_scale_t Circuit::AnalysisScale(void) { return _scale; }
 
 /*!
     @brief    Get the ODE method to be used for transient.
     @return   The method.
 */
-ODE_meth_t Circuit::ODEMethod(void) { return this->_ode_method; }
+ODE_meth_t Circuit::ODEMethod(void) { return _ode_method; }
 
 /*!
     @brief    Returns the last error during parsing of the netlist.
@@ -164,6 +176,7 @@ Circuit::Circuit(std::string &input_file_name)
 
     while(getline(input_file, line))
     {
+        node2s_device node2s_base;
         node2_device node2_base;
         node4_device node4_base;
         source_spec source_spec_base;
@@ -242,6 +255,22 @@ Circuit::Circuit(std::string &input_file_name)
                 this->_vccs.push_back({node4_base}); // C++17 aggregation initialize
                 break;
             }
+            case 'H': // Current controlled voltage sources
+            {
+                id = this->_ccvs.size();
+                errcode = syntax_match.parse2SNodeDevice(tokens, node2s_base, this->_element_names, this->_nodes, id);
+
+                this->_ccvs.push_back({node2s_base}); // C++17 aggregation initialize
+                break;
+            }
+            case 'F': // Current controlled current sources
+            {
+                id = this->_cccs.size();
+                errcode = syntax_match.parse2SNodeDevice(tokens, node2s_base, this->_element_names, this->_nodes, id);
+
+                this->_cccs.push_back({node2s_base}); // C++17 aggregation initialize
+                break;
+            }
             case '.':
             {
                 errcode = SPICECard(tokens, syntax_match);
@@ -296,6 +325,8 @@ Circuit::Circuit(std::string &input_file_name)
         std::cout << "Coils: " << this->_coils.size() << "\n";
         std::cout << "VCVS: " << this->_vcvs.size() << "\n";
         std::cout << "VCCS: " << this->_vccs.size() << "\n";
+        std::cout << "CCVS: " << this->_ccvs.size() << "\n";
+        std::cout << "CCCS: " << this->_cccs.size() << "\n";
 
         std::cout << "ICS: " << this->_ics.size() << "\n";
         for(auto &it : this->_ics) ics_count[it.getType()]++;
@@ -497,6 +528,40 @@ return_codes_e Circuit::verify(void)
 		}
     }
 
+    /* Verify that each CCVS depended source exists */
+    for(auto &it : this->_ccvs)
+    {
+        auto map_it = this->_element_names.find(it.SourceName());
+
+        /* Does not exist in map or wrong type of element */
+        if(map_it == namemap_end)// || it.SourceName()[0] != 'V')
+        {// TODO - Transfer to error function outside
+            errcode = FAIL_PARSER_ELEMENT_NOT_EXISTS;
+            std::cout << "[ERROR - " << errcode << "]: Element <" << it.SourceName() << "> (CCVS DEPENDENCY)" << std::endl;
+            return errcode;
+        }
+
+        /* Set the source ID */
+        it.SetSourceID(map_it->second);
+    }
+
+    /* Verify that each CCCS depended source exists */
+    for(auto &it : this->_cccs)
+    {
+        auto map_it = this->_element_names.find(it.SourceName());
+
+        /* Does not exist in map or wrong type of element */
+        if(map_it == namemap_end)// || it.SourceName()[0] != 'V')
+        {// TODO - Transfer to error function outside
+            errcode = FAIL_PARSER_ELEMENT_NOT_EXISTS;
+            std::cout << "[ERROR - " << errcode << "]: Element <" << it.SourceName() << "> (CCCS DEPENDENCY)" << std::endl;
+            return errcode;
+        }
+
+        /* Set the source ID */
+        it.SetSourceID(map_it->second);
+    }
+
     return RETURN_SUCCESS;
 }
 
@@ -511,10 +576,10 @@ return_codes_e Circuit::verify(void)
 */
 void Circuit::debug_insert_nodes(node2_device &element)
 {
-    auto &pos_name = element.getPosNode();
-    auto &neg_name = element.getNegNode();
-    auto new_posID = element.getPosNodeID();
-    auto new_negID = element.getNegNodeID();
+    auto &pos_name = element.PosNode();
+    auto &neg_name = element.NegNode();
+    auto new_posID = element.PosNodeID();
+    auto new_negID = element.NegNodeID();
 
     /* Ground node - Do not insert in map (-1) */
     if(pos_name != "0")
@@ -555,6 +620,95 @@ void Circuit::debug_insert_nodes(node2_device &element)
 }
 
 /*!
+    @brief    Internal debug routine, that recreates the nodesmap, based on
+    the ordering defined by debug_circuit(). Used only for debugging.
+    @param  element   The current element whose nodes we insert in the map
+*/
+void Circuit::debug_insert_nodes(node4_device &element)
+{
+    auto &pos_name = element.PosNode();
+    auto &neg_name = element.NegNode();
+    auto &DepPos_name = element.DepPosNode();
+    auto &DepNeg_name = element.DepNegNode();
+    auto new_posID = element.PosNodeID();
+    auto new_negID = element.NegNodeID();
+    auto new_DepPosID = element.DepPosNodeID();
+    auto new_DepNegID = element.DepNegNodeID();
+
+    /* Ground node - Do not insert in map (-1) */
+    if(pos_name != "0")
+    {
+        /* Normal node */
+        auto it = _nodes.find(pos_name);
+
+        if(it != _nodes.end())
+        {
+            new_posID = it->second;
+        }
+        else /* First time encountering this node */
+        {
+            new_posID = _nodes.size();
+            _nodes[pos_name] = new_posID; /* Also insert in map */
+        }
+    }
+
+    /* Ground node - Do not insert in map (-1) */
+    if(neg_name != "0")
+    {
+        /* Normal node */
+        auto it = _nodes.find(neg_name);
+
+        if(it != _nodes.end())
+        {
+            new_negID = it->second;
+        }
+        else
+        {
+            new_negID = _nodes.size();
+            _nodes[neg_name] = new_negID;
+        }
+    }
+
+    /* Ground node - Do not insert in map (-1) */
+    if(DepPos_name != "0")
+    {
+        /* Normal node */
+        auto it = _nodes.find(DepPos_name);
+
+        if(it != _nodes.end())
+        {
+            new_DepPosID = it->second;
+        }
+        else /* First time encountering this node */
+        {
+            new_DepPosID = _nodes.size();
+            _nodes[DepPos_name] = new_DepPosID; /* Also insert in map */
+        }
+    }
+
+    /* Ground node - Do not insert in map (-1) */
+    if(DepNeg_name != "0")
+    {
+        /* Normal node */
+        auto it = _nodes.find(DepNeg_name);
+
+        if(it != _nodes.end())
+        {
+            new_DepNegID = it->second;
+        }
+        else
+        {
+            new_DepNegID = _nodes.size();
+            _nodes[DepNeg_name] = new_DepNegID;
+        }
+    }
+
+    /* Update */
+    element.setNodeIDs(new_posID, new_negID);
+    element.setDepNodeIDs(new_DepPosID, new_DepNegID);
+}
+
+/*!
     @brief    Internal routine that reorders the elements in their containers,
     specified by the comparator and the recreate the elements and nodes maps.
     Used only for debugging.
@@ -563,7 +717,7 @@ void Circuit::debug_circuit(void)
 {
     /* Perform ordering of the elements in their containers by name and
      * then order the nodes unique numbering by inserting in this exact order:
-     * IVS - Coils - ICS - Res - Caps */
+     * IVS - Coils - ICS - Res - Caps - VCCS - VCVS */
 	using namespace std;
 
 	vector<Coil> tmp_coils = this->_coils;
@@ -571,6 +725,10 @@ void Circuit::debug_circuit(void)
 	vector<Resistor> tmp_res = this->_res;
 	vector<ivs> tmp_ivs = this->_ivs;
 	vector<ics> tmp_ics = this->_ics;
+    vector<vccs> tmp_vccs = this->_vccs;
+    vector<vcvs> tmp_vcvs = this->_vcvs;
+    vector<cccs> tmp_cccs = this->_cccs;
+    vector<ccvs> tmp_ccvs = this->_ccvs;
 
 	/* Sort by name */
 	sort(tmp_coils.begin(), tmp_coils.end());
@@ -578,15 +736,23 @@ void Circuit::debug_circuit(void)
 	sort(tmp_res.begin(), tmp_res.end());
 	sort(tmp_ivs.begin(), tmp_ivs.end());
 	sort(tmp_ics.begin(), tmp_ics.end());
+    sort(tmp_vccs.begin(), tmp_vccs.end());
+    sort(tmp_vcvs.begin(), tmp_vcvs.end());
+    sort(tmp_cccs.begin(), tmp_cccs.end());
+    sort(tmp_ccvs.begin(), tmp_ccvs.end());
 
 	/* Reset both maps */
 	this->_element_names.clear();
 	auto &elementmap = this->_element_names;
-	for(size_t i = 0; i < tmp_ivs.size(); i++) elementmap[tmp_ivs[i].getName()] = i;
-	for(size_t i = 0; i < tmp_coils.size(); i++) elementmap[tmp_coils[i].getName()] = i;
-	for(size_t i = 0; i < tmp_ics.size(); i++) elementmap[tmp_ics[i].getName()] = i;
-	for(size_t i = 0; i < tmp_res.size(); i++) elementmap[tmp_res[i].getName()] = i;
-	for(size_t i = 0; i < tmp_caps.size(); i++) elementmap[tmp_caps[i].getName()] = i;
+	for(size_t i = 0; i < tmp_ivs.size(); i++) elementmap[tmp_ivs[i].Name()] = i;
+	for(size_t i = 0; i < tmp_coils.size(); i++) elementmap[tmp_coils[i].Name()] = i;
+	for(size_t i = 0; i < tmp_ics.size(); i++) elementmap[tmp_ics[i].Name()] = i;
+	for(size_t i = 0; i < tmp_res.size(); i++) elementmap[tmp_res[i].Name()] = i;
+	for(size_t i = 0; i < tmp_caps.size(); i++) elementmap[tmp_caps[i].Name()] = i;
+    for(size_t i = 0; i < tmp_vccs.size(); i++) elementmap[tmp_vccs[i].Name()] = i;
+    for(size_t i = 0; i < tmp_vcvs.size(); i++) elementmap[tmp_vcvs[i].Name()] = i;
+    for(size_t i = 0; i < tmp_cccs.size(); i++) elementmap[tmp_cccs[i].Name()] = i;
+    for(size_t i = 0; i < tmp_ccvs.size(); i++) elementmap[tmp_ccvs[i].Name()] = i;
 
     /* Recreate the nodesmap */
 	this->_nodes.clear();
@@ -595,6 +761,10 @@ void Circuit::debug_circuit(void)
     for(auto &it : tmp_ics) debug_insert_nodes(it);
     for(auto &it : tmp_res) debug_insert_nodes(it);
     for(auto &it : tmp_caps) debug_insert_nodes(it);
+    for(auto &it : tmp_vccs) debug_insert_nodes(it);
+    for(auto &it : tmp_vcvs) debug_insert_nodes(it);
+    for(auto &it : tmp_cccs) debug_insert_nodes(it);
+    for(auto &it : tmp_ccvs) debug_insert_nodes(it);
 
 	/* Output */
     this->_coils = tmp_coils;
@@ -602,6 +772,10 @@ void Circuit::debug_circuit(void)
     this->_res = tmp_res;
     this->_ivs = tmp_ivs;
     this->_ics = tmp_ics;
+    this->_vccs = tmp_vccs;
+    this->_vcvs = tmp_vcvs;
+    this->_cccs = tmp_cccs;
+    this->_ccvs = tmp_ccvs;
 
 	cout.precision(12);
 	cout << std::fixed;
@@ -610,4 +784,8 @@ void Circuit::debug_circuit(void)
 	for(auto &it : tmp_ics) cout << it;
 	for(auto &it : tmp_res) cout << it;
 	for(auto &it : tmp_caps) cout << it;
+    for(auto &it : tmp_vccs) cout << it;
+    for(auto &it : tmp_vcvs) cout << it;
+    for(auto &it : tmp_cccs) cout << it;
+    for(auto &it : tmp_ccvs) cout << it;
 }

@@ -5,6 +5,7 @@
 #include "matrix_types.hpp"
 #include "math_util.hpp"
 
+
 class MNA
 {
 	public:
@@ -17,6 +18,7 @@ class MNA
 			_ivs_offset = 0;
 			_coil_offset = 0;
 			_vcvs_offset = 0;
+			_ccvs_offset = 0;
 			_sweep_source_idx = 0;
 			_sim_store_start = 0;
 			_sim_step = 0;
@@ -28,65 +30,44 @@ class MNA
 			@brief      Returns the MNA system dimension.
 			@return		The dimension.
 		*/
-		IntTp getSystemDim(void)
-		{
-			return this->_system_dim;
-		}
+		IntTp getSystemDim(void) { return _system_dim; }
 
 		/*!
 			@brief      Returns the vectors containing the simulation
 			values.
 			@return 	The vector.
 		*/
-		std::vector<double> &getSimVals(void)
-		{
-			return this->_sim_vals;
-		}
+		std::vector<double> &getSimVals(void) { return this->_sim_vals; }
 
         /*!
             @brief      Returns the simulation step.
             @return     The simulation step.
         */
-        double getSimStep(void)
-        {
-            return _sim_step;
-        }
+        double getSimStep(void) { return _sim_step; }
 
         /*!
             @brief      Returns the type of analysis performed.
             @return     The analysis type.
         */
-		analysis_t getAnalysisType(void)
-		{
-		    return this->_analysis_type;
-		}
+		analysis_t getAnalysisType(void) { return this->_analysis_type; }
 
         /*!
             @brief      Returns the type of scale used.
             @return     The scale.
         */
-		as_scale_t getAnalysisScale(void)
-		{
-		    return this->_scale;
-		}
+		as_scale_t getAnalysisScale(void) { return this->_scale; }
 
         /*!
             @brief      Returns the nodes indices vector, according to plot order.
             @return     The indices vector.
         */
-		std::vector<IntTp> &getNodesIdx(void)
-		{
-		    return this->_nodes_idx;
-		}
+		std::vector<IntTp> &getNodesIdx(void) { return this->_nodes_idx; }
 
         /*!
             @brief      Returns the sources indices vector, according to plot order.
             @return     The indices vector.
         */
-        std::vector<IntTp> &getSourceIdx(void)
-        {
-            return this->_sources_idx;
-        }
+        std::vector<IntTp> &getSourceIdx(void) { return this->_sources_idx; }
 
         /* Constructors */
         MNA(Circuit &circuit_manager);
@@ -109,6 +90,8 @@ class MNA
 		void IvsMNAStamp(tripletList_d &mat, DensVecD &rh, IntTp offset, ivs_packed &source);
 		void VcvsMNAStamp(tripletList_d &mat, IntTp offset, vcvs_packed &source);
 		void VccsMNAStamp(tripletList_d &mat, vccs_packed &source);
+		void CcvsMNAStamp(tripletList_d &mat, IntTp offset, ccvs_packed &source);
+		void CccsMNAStamp(tripletList_d &mat, cccs_packed &source);
 
 		/* AC MNA stampers */
 		void ResMNAStamp(tripletList_cd &mat, resistor_packed &res);
@@ -119,6 +102,8 @@ class MNA
 		void IcsMNAStamp(DensVecCompD &rh, ics_packed &source);
         void VcvsMNAStamp(tripletList_cd &mat, IntTp offset, vcvs_packed &source);
         void VccsMNAStamp(tripletList_cd &mat, vccs_packed &source);
+        void CcvsMNAStamp(tripletList_cd &mat, IntTp offset, ccvs_packed &source);
+        void CccsMNAStamp(tripletList_cd &mat, cccs_packed &source);
 
 		/* Transient sources evaluators */
 		double EXPSourceEval(std::vector<double> &vvals, double time);
@@ -137,6 +122,7 @@ class MNA
 		IntTp _ivs_offset;
 		IntTp _coil_offset;
         IntTp _vcvs_offset;
+        IntTp _ccvs_offset;
 
 		/* Elements */
         std::vector<resistor_packed> _res;
@@ -146,6 +132,8 @@ class MNA
         std::vector<ivs_packed> _ivs;
         std::vector<vcvs_packed> _vcvs;
         std::vector<vccs_packed> _vccs;
+        std::vector<ccvs_packed> _ccvs;
+        std::vector<cccs_packed> _cccs;
 
         /* Simulation vector */
         std::vector<double> _sim_vals;

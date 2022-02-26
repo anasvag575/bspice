@@ -16,13 +16,21 @@ MNA::MNA(Circuit &circuit_manager)
     for(auto &it : circuit_manager.IVS()) this->_ivs.push_back({it, it});
     for(auto &it : circuit_manager.VCVS()) this->_vcvs.push_back({it});
     for(auto &it : circuit_manager.VCCS()) this->_vccs.push_back({it});
+    for(auto &it : circuit_manager.CCVS()) this->_ccvs.push_back({it});
+    for(auto &it : circuit_manager.CCCS()) this->_cccs.push_back({it});
 
     /* Set up system dimension */
     auto nodes_dim = circuit_manager.Nodes().size();
+
+    // SOS! This is the organization of the voltage like elements in the matrix
     this->_ivs_offset = nodes_dim;
     this->_coil_offset = nodes_dim + this->_ivs.size();
     this->_vcvs_offset = this->_coil_offset + this->_coils.size();
-    this->_system_dim = this->_vcvs_offset + this->_vcvs.size();
+    this->_ccvs_offset = this->_vcvs_offset + this->_vcvs.size();
+    this->_system_dim = this->_ccvs_offset + this->_ccvs.size();
+    // SOS!
+
+
     this->_analysis_type = circuit_manager.AnalysisType();
     this->_scale = circuit_manager.AnalysisScale();
     this->_sim_store_start = 0; // TODO
@@ -115,8 +123,8 @@ void MNA::updatePlotIdx(Circuit &circuit_manager)
 */
 void MNA::ResMNAStamp(tripletList_d &mat, resistor_packed &res)
 {
-	auto conduct = 1/res.getVal();
-	auto pos = res.getPosNodeID(), neg = res.getNegNodeID();
+	auto conduct = 1/res.Val();
+	auto pos = res.PosNodeID(), neg = res.NegNodeID();
 
 	if(pos != -1) mat.push_back(triplet_eig_d(pos, pos, conduct));
 	if(neg != -1) mat.push_back(triplet_eig_d(neg, neg, conduct));
@@ -138,7 +146,7 @@ void MNA::ResMNAStamp(tripletList_d &mat, resistor_packed &res)
 */
 void MNA::CoilMNAStamp(tripletList_d &mat, IntTp offset, coil_packed &coil, const analysis_t type)
 {
-    auto pos = coil.getPosNodeID(), neg = coil.getNegNodeID();
+    auto pos = coil.PosNodeID(), neg = coil.NegNodeID();
 
 	if(type == OP)
 	{
@@ -155,7 +163,7 @@ void MNA::CoilMNAStamp(tripletList_d &mat, IntTp offset, coil_packed &coil, cons
 	}
 	else if(type == TRAN)
 	{
-		mat.push_back(triplet_eig_d(offset, offset, -coil.getVal()));
+		mat.push_back(triplet_eig_d(offset, offset, -coil.Val()));
 	}
 }
 
@@ -169,8 +177,8 @@ void MNA::CapMNAStamp(tripletList_d &mat, capacitor_packed &cap, const analysis_
 {
 	if(type == TRAN)
 	{
-	    auto pos = cap.getPosNodeID(), neg = cap.getNegNodeID();
-		auto capacitance = cap.getVal();
+	    auto pos = cap.PosNodeID(), neg = cap.NegNodeID();
+		auto capacitance = cap.Val();
 
 		if(pos != -1) mat.push_back(triplet_eig_d(pos, pos, capacitance));
 		if(neg != -1) mat.push_back(triplet_eig_d(neg, neg, capacitance));
@@ -191,8 +199,8 @@ void MNA::CapMNAStamp(tripletList_d &mat, capacitor_packed &cap, const analysis_
 */
 void MNA::IcsMNAStamp(DensVecD &rh, ics_packed &source)
 {
-    auto pos = source.getPosNodeID(), neg = source.getNegNodeID();
-	auto val = source.getVal();
+    auto pos = source.PosNodeID(), neg = source.NegNodeID();
+	auto val = source.Val();
 
 	if(pos != -1) rh[pos] -= val;
 	if(neg != -1) rh[neg] += val;
@@ -208,7 +216,7 @@ void MNA::IcsMNAStamp(DensVecD &rh, ics_packed &source)
 */
 void MNA::IvsMNAStamp(tripletList_d &mat, DensVecD &rh, IntTp offset, ivs_packed &source)
 {
-    auto pos = source.getPosNodeID(), neg = source.getNegNodeID();
+    auto pos = source.PosNodeID(), neg = source.NegNodeID();
 
 	if(pos != -1)
 	{
@@ -222,7 +230,7 @@ void MNA::IvsMNAStamp(tripletList_d &mat, DensVecD &rh, IntTp offset, ivs_packed
 		mat.push_back(triplet_eig_d(neg, offset, -1));
 	}
 
-	rh[offset] += source.getVal();
+	rh[offset] += source.Val();
 }
 
 /*!
@@ -234,9 +242,9 @@ void MNA::IvsMNAStamp(tripletList_d &mat, DensVecD &rh, IntTp offset, ivs_packed
 */
 void MNA::VcvsMNAStamp(tripletList_d &mat, IntTp offset, vcvs_packed &source)
 {
-    auto pos = source.getPosNodeID(), neg = source.getNegNodeID();
-    auto dep_pos = source.getDepPosNodeID(), dep_neg = source.getDepNegNodeID();
-    auto val = source.getVal();
+    auto pos = source.PosNodeID(), neg = source.NegNodeID();
+    auto dep_pos = source.DepPosNodeID(), dep_neg = source.DepNegNodeID();
+    auto val = source.Val();
 
     if(pos != -1)
     {
@@ -270,9 +278,9 @@ void MNA::VcvsMNAStamp(tripletList_d &mat, IntTp offset, vcvs_packed &source)
 */
 void MNA::VccsMNAStamp(tripletList_d &mat, vccs_packed &source)
 {
-    auto pos = source.getPosNodeID(), neg = source.getNegNodeID();
-    auto dep_pos = source.getDepPosNodeID(), dep_neg = source.getDepNegNodeID();
-    auto val = source.getVal();
+    auto pos = source.PosNodeID(), neg = source.NegNodeID();
+    auto dep_pos = source.DepPosNodeID(), dep_neg = source.DepNegNodeID();
+    auto val = source.Val();
 
     if(pos != -1)
     {
@@ -301,6 +309,58 @@ void MNA::VccsMNAStamp(tripletList_d &mat, vccs_packed &source)
     }
 }
 
+/*!
+    @brief      Inserts the MNA stamp of the CCVS in triplet form
+    (i, j, val) inside the mat array.
+    @param      mat    The triplet matrix to insert the stamp.
+    @param      offset The offset of the stamp inside the array
+    @param      source The CCVS.
+*/
+void MNA::CcvsMNAStamp(tripletList_d &mat, IntTp offset, ccvs_packed &source)
+{
+    auto pos = source.PosNodeID(), neg = source.NegNodeID();
+    auto source_idx = source.SourceID() + this->_ivs_offset;
+    auto val = source.Val();
+
+    if(pos != -1)
+    {
+        mat.push_back(triplet_eig_d(offset, pos, 1));
+        mat.push_back(triplet_eig_d(pos, offset, 1));
+    }
+
+    if(neg != -1)
+    {
+        mat.push_back(triplet_eig_d(offset, neg, -1));
+        mat.push_back(triplet_eig_d(neg, offset, -1));
+    }
+
+    mat.push_back(triplet_eig_d(offset, source_idx, -val));
+}
+
+/*!
+    @brief      Inserts the MNA stamp of the CCCS in triplet form
+    (i, j, val) inside the mat array.
+    @param      mat    The triplet matrix to insert the stamp.
+    @param      source The CCCS.
+*/
+void MNA::CccsMNAStamp(tripletList_d &mat, cccs_packed &source)
+{
+    auto pos = source.PosNodeID(), neg = source.NegNodeID();
+    auto source_idx = source.SourceID() + this->_ivs_offset;
+    auto val = source.Val();
+
+    if(pos != -1)
+    {
+        mat.push_back(triplet_eig_d(pos, source_idx, val));
+    }
+
+    if(neg != -1)
+    {
+        mat.push_back(triplet_eig_d(neg, source_idx, -val));
+    }
+}
+
+
 
 
 /*!
@@ -311,8 +371,8 @@ void MNA::VccsMNAStamp(tripletList_d &mat, vccs_packed &source)
 */
 void MNA::ResMNAStamp(tripletList_cd &mat, resistor_packed &res)
 {
-    auto conduct = 1/res.getVal();
-    auto pos = res.getPosNodeID(), neg = res.getNegNodeID();
+    auto conduct = 1/res.Val();
+    auto pos = res.PosNodeID(), neg = res.NegNodeID();
     std::complex<double> tmp(conduct, 0);
 
     if(pos != -1) mat.push_back(triplet_eig_cd(pos, pos, tmp));
@@ -335,8 +395,8 @@ void MNA::ResMNAStamp(tripletList_cd &mat, resistor_packed &res)
 */
 void MNA::CoilMNAStamp(tripletList_cd &mat, IntTp offset, coil_packed &coil, double freq)
 {
-    auto pos = coil.getPosNodeID(), neg = coil.getNegNodeID();
-    auto coil_imag = 2 * M_PI *freq *coil.getVal();
+    auto pos = coil.PosNodeID(), neg = coil.NegNodeID();
+    auto coil_imag = 2 * M_PI *freq *coil.Val();
     std::complex<double> real_tmp(1, 0);
     std::complex<double> imag(0, coil_imag);
 
@@ -363,8 +423,8 @@ void MNA::CoilMNAStamp(tripletList_cd &mat, IntTp offset, coil_packed &coil, dou
 */
 void MNA::CapMNAStamp(tripletList_cd &mat, capacitor_packed &cap, double freq)
 {
-    auto pos = cap.getPosNodeID(), neg = cap.getNegNodeID();
-    auto cap_imag = 2 * M_PI *freq *cap.getVal();
+    auto pos = cap.PosNodeID(), neg = cap.NegNodeID();
+    auto cap_imag = 2 * M_PI *freq *cap.Val();
     std::complex<double> tmp(0, cap_imag);
 
     if(pos != -1) mat.push_back(triplet_eig_cd(pos, pos, tmp));
@@ -385,7 +445,7 @@ void MNA::CapMNAStamp(tripletList_cd &mat, capacitor_packed &cap, double freq)
 */
 void MNA::IcsMNAStamp(DensVecCompD &rh, ics_packed &source)
 {
-    auto pos = source.getPosNodeID(), neg = source.getNegNodeID();
+    auto pos = source.PosNodeID(), neg = source.NegNodeID();
     auto val = source.getACVal();
 
     if(pos != -1) rh[pos] -= val;
@@ -401,7 +461,7 @@ void MNA::IcsMNAStamp(DensVecCompD &rh, ics_packed &source)
 */
 void MNA::IvsMNAStamp(tripletList_cd &mat, IntTp offset, ivs_packed &source)
 {
-    auto pos = source.getPosNodeID(), neg = source.getNegNodeID();
+    auto pos = source.PosNodeID(), neg = source.NegNodeID();
     std::complex<double> real_tmp(1, 0);
 
     if(pos != -1)
@@ -438,9 +498,9 @@ void MNA::IvsMNAStamp(DensVecCompD &rh, IntTp offset, ivs_packed &source)
 */
 void MNA::VcvsMNAStamp(tripletList_cd &mat, IntTp offset, vcvs_packed &source)
 {
-    auto pos = source.getPosNodeID(), neg = source.getNegNodeID();
-    auto dep_pos = source.getDepPosNodeID(), dep_neg = source.getDepNegNodeID();
-    std::complex<double> val(source.getVal(), 0);
+    auto pos = source.PosNodeID(), neg = source.NegNodeID();
+    auto dep_pos = source.DepPosNodeID(), dep_neg = source.DepNegNodeID();
+    std::complex<double> val(source.Val(), 0);
     std::complex<double> real_tmp(1, 0);
 
     if(pos != -1)
@@ -475,9 +535,9 @@ void MNA::VcvsMNAStamp(tripletList_cd &mat, IntTp offset, vcvs_packed &source)
 */
 void MNA::VccsMNAStamp(tripletList_cd &mat, vccs_packed &source)
 {
-    auto pos = source.getPosNodeID(), neg = source.getNegNodeID();
-    auto dep_pos = source.getDepPosNodeID(), dep_neg = source.getDepNegNodeID();
-    std::complex<double> val(source.getVal(), 0);
+    auto pos = source.PosNodeID(), neg = source.NegNodeID();
+    auto dep_pos = source.DepPosNodeID(), dep_neg = source.DepNegNodeID();
+    std::complex<double> val(source.Val(), 0);
 
     if(pos != -1)
     {
@@ -505,6 +565,59 @@ void MNA::VccsMNAStamp(tripletList_cd &mat, vccs_packed &source)
         }
     }
 }
+
+/*!
+    @brief      Inserts the MNA stamp of the CCVS in triplet form
+    (i, j, val) inside the mat array. For AC analysis only.
+    @param      mat    The triplet matrix to insert the stamp.
+    @param      offset The offset of the stamp inside the array
+    @param      source The CCVS.
+*/
+void MNA::CcvsMNAStamp(tripletList_cd &mat, IntTp offset, ccvs_packed &source)
+{
+    auto pos = source.PosNodeID(), neg = source.NegNodeID();
+    auto source_idx = source.SourceID() + this->_ivs_offset;
+    std::complex<double> val(source.Val(), 0);
+    std::complex<double> real_tmp(1, 0);
+
+    if(pos != -1)
+    {
+        mat.push_back(triplet_eig_cd(offset, pos, real_tmp));
+        mat.push_back(triplet_eig_cd(pos, offset, real_tmp));
+    }
+
+    if(neg != -1)
+    {
+        mat.push_back(triplet_eig_cd(offset, neg, -real_tmp));
+        mat.push_back(triplet_eig_cd(neg, offset, -real_tmp));
+    }
+
+    mat.push_back(triplet_eig_cd(offset, source_idx, -val));
+}
+
+/*!
+    @brief      Inserts the MNA stamp of the CCCS in triplet form
+    (i, j, val) inside the mat array. For AC analysis only.
+    @param      mat    The triplet matrix to insert the stamp.
+    @param      source The CCCS.
+*/
+void MNA::CccsMNAStamp(tripletList_cd &mat, cccs_packed &source)
+{
+    auto pos = source.PosNodeID(), neg = source.NegNodeID();
+    auto source_idx = source.SourceID() + this->_ivs_offset;
+    std::complex<double> val(source.Val(), 0);
+
+    if(pos != -1)
+    {
+        mat.push_back(triplet_eig_cd(pos, source_idx, val));
+    }
+
+    if(neg != -1)
+    {
+        mat.push_back(triplet_eig_cd(neg, source_idx, -val));
+    }
+}
+
 
 
 
@@ -622,7 +735,7 @@ void MNA::UpdateTRANVec(DensVecD &rh, double time)
 
 		switch(it.getType())
 		{
-			case CONSTANT_SOURCE: val = it.getVal(); break;
+			case CONSTANT_SOURCE: val = it.Val(); break;
 			case EXP_SOURCE: val = EXPSourceEval(vvals, time); break;
 			case SINE_SOURCE: val = SINSourceEval(vvals, time); break;
             case PWL_SOURCE: val = PWLSourceEval(it.getTranTimes(), vvals, time); break;
@@ -637,14 +750,14 @@ void MNA::UpdateTRANVec(DensVecD &rh, double time)
 	/* Transient stamps for ICS */
 	for(auto &it : this->_ics)
 	{
-		auto pos = it.getPosNodeID();
-		auto neg = it.getNegNodeID();
+		auto pos = it.PosNodeID();
+		auto neg = it.NegNodeID();
 		auto &vvals = it.getTranVals();
 		double val;
 
 		switch(it.getType())
 		{
-			case CONSTANT_SOURCE: val = it.getVal(); break;
+			case CONSTANT_SOURCE: val = it.Val(); break;
 			case EXP_SOURCE: val = EXPSourceEval(vvals, time); break;
 			case SINE_SOURCE: val = SINSourceEval(vvals, time); break;
 			case PWL_SOURCE: val = PWLSourceEval(it.getTranTimes(), vvals, time); break;
@@ -656,6 +769,7 @@ void MNA::UpdateTRANVec(DensVecD &rh, double time)
         if(neg != -1) rh[neg] += val;
 	}
 }
+
 
 
 
@@ -675,6 +789,7 @@ void MNA::CreateMNASystemOP(SparMatD &mat, DensVecD &rh)
 	auto ivs_start = this->_ivs_offset;
 	auto coil_start = this->_coil_offset;
 	auto vcvs_start = this->_vcvs_offset;
+	auto ccvs_start = this->_ccvs_offset;
 
 	/* Resize for the insertions below */
 	rh = DensVecD::Zero(mat_sz);
@@ -684,6 +799,7 @@ void MNA::CreateMNASystemOP(SparMatD &mat, DensVecD &rh)
 	for(auto &it : this->_caps) CapMNAStamp(triplet_mat, it, OP);
 	for(auto &it : this->_ics) IcsMNAStamp(rh, it);
 	for(auto &it : this->_vccs) VccsMNAStamp(triplet_mat, it);
+	for(auto &it : this->_cccs) CccsMNAStamp(triplet_mat, it);
 
 	for(auto &it : this->_ivs)
 	{
@@ -701,6 +817,12 @@ void MNA::CreateMNASystemOP(SparMatD &mat, DensVecD &rh)
     {
         VcvsMNAStamp(triplet_mat, vcvs_start, it);
         vcvs_start++;
+    }
+
+    for(auto &it : this->_ccvs)
+    {
+        CcvsMNAStamp(triplet_mat, ccvs_start, it);
+        ccvs_start++;
     }
 
 	/* 2) Compress the matrix into its final form */
@@ -791,11 +913,13 @@ void MNA::CreateMNASystemAC(SparMatCompD &mat, double freq)
     auto coil_start = this->_coil_offset;
     auto ivs_start = this->_ivs_offset;
     auto vcvs_start = this->_vcvs_offset;
+    auto ccvs_start = this->_ccvs_offset;
 
     /* 1) Iterate over all the passive elements */
     for(auto &it : this->_caps) CapMNAStamp(triplet_mat, it, freq);
     for(auto &it : this->_res) ResMNAStamp(triplet_mat, it);
     for(auto &it : this->_vccs) VccsMNAStamp(triplet_mat, it);
+    for(auto &it : this->_cccs) CccsMNAStamp(triplet_mat, it);
 
     for(auto &it : this->_coils)
     {
@@ -813,6 +937,12 @@ void MNA::CreateMNASystemAC(SparMatCompD &mat, double freq)
     {
         VcvsMNAStamp(triplet_mat, vcvs_start, it);
         vcvs_start++;
+    }
+
+    for(auto &it : this->_ccvs)
+    {
+        CcvsMNAStamp(triplet_mat, ccvs_start, it);
+        ccvs_start++;
     }
 
     /* 2) Compress the matrix into its final form */
@@ -843,6 +973,7 @@ void MNA::CreateMNASystemAC(DensVecCompD &rh)
         ivs_start++;
     }
 }
+
 
 
 
