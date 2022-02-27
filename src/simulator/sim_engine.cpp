@@ -14,11 +14,63 @@
     typedef Eigen::SparseLU<SparMatCompD, Eigen::COLAMDOrdering<IntTp>> direct_solver_c;
 #endif
 
+
+
+/*!
+    @brief  Returns whether the simulator is in a valid state (run valid).
+    @return True, in case of active results, otherwise false.
+*/
+bool simulator::valid(void) { return _run; }
+
+/*!
+    @brief  Returns the simulation vector used for the analysis
+    @return The simulation vector (sweep-val)
+*/
+const std::vector<double> &simulator::SimulationVec(void) { return _mna_engine.SimVals();  }
+
+/*!
+    @brief  Returns the results for the plot nodes
+    @return The results
+*/
+const std::vector<std::vector<double>> &simulator::NodesResults(void) { return _res_nodes; }
+
+/*!
+    @brief  Returns the results for the plot source
+    @return The results
+*/
+const std::vector<std::vector<double>> &simulator::SourceResults(void) { return _res_sources; }
+
+/*!
+    @brief  Returns the results for the plot nodes (AC analysis)
+    @return The results
+*/
+const std::vector<std::vector<std::complex<double>>> &simulator::NodesResultsCd(void) { return _res_nodes_cd; }
+
+/*!
+    @brief  Returns the results for the plot source (AC analysis)
+    @return The results
+*/
+const std::vector<std::vector<std::complex<double>>> &simulator::SourceResultsCd(void) { return _res_sources_cd; }
+
+
+
+/*!
+    @brief      Initializes the simulator engine with the parameters
+    defined by the circuit input.
+    @param      circuit_manager     The circuit.
+*/
+simulator::simulator(circuit &circuit_manager)
+{
+    this->_mna_engine = MNA(circuit_manager);
+    _run = false;
+    _ode_method = circuit_manager.ODEMethod();
+}
+
 /*!
 	@brief      Performs a simulation run based on the initialization performed.
 	@return		Error code in case of error, otherwise RETURN_SUCCESS.
 */
-return_codes_e simulator_engine::run(void)
+return_codes_e simulator::run(void)
 {
 	using std::cout;
 	using std::chrono::high_resolution_clock;
@@ -26,7 +78,7 @@ return_codes_e simulator_engine::run(void)
 	using std::chrono::milliseconds;    // Accuracy for report
 
 	return_codes_e ret;
-    auto analys_type = this->_mna_engine.getAnalysisType();
+    auto analys_type = this->_mna_engine.AnalysisType();
 
 	/* Statistics */
 	auto begin = high_resolution_clock::now();
@@ -53,7 +105,7 @@ return_codes_e simulator_engine::run(void)
         cout << "************************************\n";
 	    cout << "Total simulation time: " << duration_cast<milliseconds>(end-begin).count() << "ms\n";
 //	    cout << "Total simulation points: " << this->_mna_engine.getSimDim() << "\n"; // TODO
-	    cout << "System size: " << this->_mna_engine.getSystemDim() << "\n";
+	    cout << "System size: " << this->_mna_engine.SystemDim() << "\n";
 	    cout << "************************************\n\n";
 
 	    this->_run = true;
@@ -66,7 +118,7 @@ return_codes_e simulator_engine::run(void)
 	@brief      Performs an operating point (OP) simulation.
 	@return		Error code in case of error, otherwise RETURN_SUCCESS.
 */
-return_codes_e simulator_engine::OP_analysis(void)
+return_codes_e simulator::OP_analysis(void)
 {
     using Eigen::Success; // Eigen success value
 
@@ -100,7 +152,7 @@ return_codes_e simulator_engine::OP_analysis(void)
 	@brief      Performs a direct current (DC) simulation.
 	@return		Error code in case of error, otherwise RETURN_SUCCESS.
 */
-return_codes_e simulator_engine::DC_analysis(void)
+return_codes_e simulator::DC_analysis(void)
 {
     using Eigen::Success; // Eigen success value
 
@@ -117,7 +169,7 @@ return_codes_e simulator_engine::DC_analysis(void)
     /* Checks */
     if(solver.info() != Success) return FAIL_SIMULATOR_FACTORIZATION;
 
-    auto &sim_vec = this->_mna_engine.getSimVals();
+    auto &sim_vec = this->_mna_engine.SimVals();
 
     /* Solve */
     for(auto it : sim_vec)
@@ -140,7 +192,7 @@ return_codes_e simulator_engine::DC_analysis(void)
 	@brief      Performs a transient (TRAN) simulation.
 	@return		Error code in case of error, otherwise RETURN_SUCCESS.
 */
-return_codes_e simulator_engine::TRAN_analysis(void)
+return_codes_e simulator::TRAN_analysis(void)
 {
     switch(this->_ode_method)
     {
@@ -155,7 +207,7 @@ return_codes_e simulator_engine::TRAN_analysis(void)
 	@brief      Performs an alternating current (AC) simulation.
 	@return		Error code in case of error, otherwise RETURN_SUCCESS.
 */
-return_codes_e simulator_engine::AC_analysis(void)
+return_codes_e simulator::AC_analysis(void)
 {
     using Eigen::Success; // Eigen success value
 
@@ -167,7 +219,7 @@ return_codes_e simulator_engine::AC_analysis(void)
     this->_mna_engine.CreateMNASystemAC(rh);
 
     /* Simulation values */
-    auto &sim_vector = this->_mna_engine.getSimVals();
+    auto &sim_vector = this->_mna_engine.SimVals();
 
     for(size_t i = 0; i < sim_vector.size(); i++)
     {
@@ -200,7 +252,7 @@ return_codes_e simulator_engine::AC_analysis(void)
     @param      op_res      The OP result vector (x(t)=0 for TRAN).
     @return     Error code in case of error, otherwise RETURN_SUCCESS.
 */
-return_codes_e simulator_engine::TRANpresolve(SparMatD &tran_mat, SparMatD &op_mat, DensVecD &op_res)
+return_codes_e simulator::TRANpresolve(SparMatD &tran_mat, SparMatD &op_mat, DensVecD &op_res)
 {
     using Eigen::Success; // Eigen success value
 
@@ -234,7 +286,7 @@ return_codes_e simulator_engine::TRANpresolve(SparMatD &tran_mat, SparMatD &op_m
     @brief      Performs a transient (TRAN) simulation using the Euler method.
     @return     Error code in case of error, otherwise RETURN_SUCCESS.
 */
-return_codes_e simulator_engine::EulerODESolve(void)
+return_codes_e simulator::EulerODESolve(void)
 {
     using Eigen::Success; // Eigen success value
 
@@ -247,8 +299,8 @@ return_codes_e simulator_engine::EulerODESolve(void)
     if(err_tmp != RETURN_SUCCESS) return err_tmp;
 
     /****** 2nd step compute the final transient array ******/
-    auto &sim_vector = this->_mna_engine.getSimVals();
-    double inverse_timestep = 1/this->_mna_engine.getSimStep();
+    auto &sim_vector = this->_mna_engine.SimVals();
+    double inverse_timestep = 1/this->_mna_engine.SimStep();
 
     tran_mat = inverse_timestep * tran_mat;
     op_mat = op_mat + tran_mat; // A = G + 1/h * C
@@ -287,7 +339,7 @@ return_codes_e simulator_engine::EulerODESolve(void)
     @brief      Performs a transient (TRAN) simulation using the Trapezoidal method.
     @return     Error code in case of error, otherwise RETURN_SUCCESS.
 */
-return_codes_e simulator_engine::TrapODESolve(void)
+return_codes_e simulator::TrapODESolve(void)
 {
     using Eigen::Success; // Eigen success value
 
@@ -301,8 +353,8 @@ return_codes_e simulator_engine::TrapODESolve(void)
 
     /****** 2nd step compute the final transient array ******/
 
-    auto &sim_vector = this->_mna_engine.getSimVals();
-    double inverse_timestep = 1/this->_mna_engine.getSimStep();
+    auto &sim_vector = this->_mna_engine.SimVals();
+    double inverse_timestep = 1/this->_mna_engine.SimStep();
 
     /****** 2nd step compute the final transient array ******/
     SparMatD tmp = op_mat;
@@ -344,7 +396,7 @@ return_codes_e simulator_engine::TrapODESolve(void)
 }
 
 //TODO - Page 147 of SPECTRE design and stuff paper, does not work seems unstable
-return_codes_e simulator_engine::Gear2ODESolve(void)
+return_codes_e simulator::Gear2ODESolve(void)
 {
     using Eigen::Success; // Eigen success value
 
@@ -359,8 +411,8 @@ return_codes_e simulator_engine::Gear2ODESolve(void)
     /****** 2nd step compute the final transient array ******/
 
     /* Simulation needed parameters */
-    auto &sim_vector = this->_mna_engine.getSimVals();
-    double inverse_timestep = 1/this->_mna_engine.getSimStep();
+    auto &sim_vector = this->_mna_engine.SimVals();
+    double inverse_timestep = 1/this->_mna_engine.SimStep();
 
     /* Perform 1 step of Euler to get the next needed timepoint and then start GEAR2 */
     tran_mat = inverse_timestep * tran_mat;
@@ -424,11 +476,11 @@ return_codes_e simulator_engine::Gear2ODESolve(void)
     @brief      Sets the results of the simulation for any non-AC analysis.
     @param      vec   Vector containing the results of the current simulation point
 */
-void simulator_engine::setPlotResults(DensVecD &vec)
+void simulator::setPlotResults(DensVecD &vec)
 {
     /* Get the indices from the MNA engine */
-    auto &nodes_idx = this->_mna_engine.getNodesIdx();
-    auto &sources_idx = this->_mna_engine.getSourceIdx();
+    auto &nodes_idx = this->_mna_engine.NodesIdx();
+    auto &sources_idx = this->_mna_engine.SourceIdx();
     std::vector<double> tmp_vec, tmp_vec2;
 
     /* Create the vectors - nodes/sources */
@@ -444,11 +496,11 @@ void simulator_engine::setPlotResults(DensVecD &vec)
     @brief      Sets the results of the simulation for the AC analysis.
     @param      vec   Vector containing the results of the current simulation point
 */
-void simulator_engine::setPlotResultsCd(DensVecCompD &vec)
+void simulator::setPlotResultsCd(DensVecCompD &vec)
 {
     /* Get the indices from the MNA engine */
-    auto &nodes_idx = this->_mna_engine.getNodesIdx();
-    auto &sources_idx = this->_mna_engine.getSourceIdx();
+    auto &nodes_idx = this->_mna_engine.NodesIdx();
+    auto &sources_idx = this->_mna_engine.SourceIdx();
     std::vector<std::complex<double>> tmp_vec, tmp_vec2;
 
     /* Create the vectors - nodes/sources */

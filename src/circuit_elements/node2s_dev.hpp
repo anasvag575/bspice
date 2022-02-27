@@ -1,16 +1,13 @@
 #ifndef __NODE2S_DEV_HPP
 #define __NODE2S_DEV_HPP
 
-#include "node2_dev.hpp" /* Where to inherit from */
+#include "node2_dev.hpp"  /* Base class */
 #include <string>
 #include <array>
 #include <iostream>
 #include "base_types.hpp"
 
-/**
- *  The complete device representation of node_2s devices (elements with 2 nodes associated with them
- *  and a depended source).
- */
+//! The complete device representation of node_2 devices (elements with 2 nodes associated with them and a depended source).
 class node2s_device : public node2_device
 {
     public:
@@ -66,11 +63,7 @@ class node2s_device : public node2_device
         IntTp _source_id;           //!< The depended source ID
 };
 
-/**
- *  The packed device representation of node_2s devices (elements with 2 nodes associated with them
- *  and a depended source).
- *  Used during MNA construction.
- */
+//! The packed device (MNA)representation of node_2 devices (elements with 2 nodes associated with them and a depended source).
 class node2s_device_packed : public node2_device_packed
 {
     public:

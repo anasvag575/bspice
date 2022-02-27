@@ -1,8 +1,7 @@
 #ifndef __SIMULATOR_TYPES_H
 #define __SIMULATOR_TYPES_H
 
-/* A global table containing all the error codes used in the program
- * They are divided by their sub-classes in the comments below */
+//! An enum containing all the error codes used in the program.
 typedef enum return_enum_codes
 {
     /* General opcodes - Used inside the bspice.cpp */
@@ -39,7 +38,7 @@ typedef enum return_enum_codes
     FAIL_SIMULATOR_FALLTHROUTH_ODE_OPTION = 26,          /* Somehow an uknown enum was passed to the sim_engine */
 } return_codes_e;
 
-/* A global table containing all the SPICE cards supported by the simulator */
+//! An enum containing all the SPICE cards supported by the simulator.
 typedef enum analysis_types
 {
     OP = 0,
@@ -49,14 +48,14 @@ typedef enum analysis_types
     PLOT,
 } analysis_t;
 
-/* The scales used for analysis */
+//! The scales used for analysis.
 typedef enum analysis_scale_types
 {
     DEC_SCALE = 0,
     LOG_SCALE,
 } as_scale_t;
 
-/* The different transient sources */
+//! The different transient sources.
 typedef enum transient_sources
 {
     CONSTANT_SOURCE = 0,
@@ -66,7 +65,7 @@ typedef enum transient_sources
     PULSE_SOURCE,
 } tran_source_t;
 
-/* The different ODE solver methods */
+//! The different ODE solver methods.
 typedef enum ODE_methods
 {
     BACKWARDS_EULER = 0,

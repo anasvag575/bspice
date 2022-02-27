@@ -1,18 +1,21 @@
 #ifndef __BASE_TYPES_H
 #define __BASE_TYPES_H
 
-/* Integer type used in indices */
+//! Integer size used inside BSPICE.
 typedef int IntTp;
+
+//! Floating point accuracy used inside BSPICE.
 typedef double FpTp;
 
 #ifdef BSPICE_EIGEN_USE_STLMAPS
-    /* STL - Chain hashtable implementation */
     #include <unordered_map>
+
+    //! STL - Chain hashtable implementation.
     typedef std::unordered_map<std::string, IntTp> hashmap_str_t;
 #else
-
-    /* Custom hashtable implementation, very good for <String - Integer> */
     #include "robin_map.h"
+
+    //! Custom hashtable implementation, very good for <String - Integer>.
     typedef tsl::robin_map<std::string, IntTp> hashmap_str_t;
 #endif
 

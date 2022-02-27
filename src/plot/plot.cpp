@@ -6,81 +6,86 @@
 #include <unistd.h>
 #include "plot.hpp"
 
+//! Class that sets up a connection with GNUPLOT for plotting.
 class GNU_plotter
 {
 
-public:
-    /*!
-        @brief    Default constructor, creates the GNUPLOT pipe.
-    */
-    GNU_plotter()
-    {
-        this->_plot_num = 0;
-        this->_pipe = popen("gnuplot -persistent", "w");
+    public:
+        GNU_plotter();
+        ~GNU_plotter();
+        void plot(circuit &circuit_manager, simulator &simulator_manager);
 
-        /* TODO - Check that every opening went well */
-        if(!this->_pipe)
-        {  // TODO - Handle
-            throw std::runtime_error("[CRITICAL ERROR]: Could not open files related to GNUPLOT");
-        }
-    }
+    private:
+        FILE *_pipe;                            //! File handler for the GNUPLOT sub-process pipe.
+        std::ofstream _data_file;               //! The active output data file.
+        std::vector<std::string> _file_names;   //! The vector of all the file names used.
 
-    /*!
-        @brief    Default destructor, closes GNUPLOT pipe and removes the files created.
-    */
-    ~GNU_plotter()
-    {
-        /* Close gnuplot */
-        fprintf(this->_pipe, "pause -5\n\n quit\n");
-        pclose(this->_pipe);
-
-        /* Close and remove files */
-        if(this->_data_file)  this->_data_file.close();
-        for(auto &it : this->_file_names) remove(it.c_str());
-    }
-
-    /*!
-        @brief    Creates the next plot window.
-    */
-    void next_plot()
-    {
-        /* Close previous file */
-        if(this->_data_file) this->_data_file.close();
-
-        /* Ascending number */
-        std::string filename = ".gnuplotdata" + std::to_string(this->_plot_num) +  ".plt";
-        this->_file_names.push_back(filename);
-
-        this->_plot_num++;
-        fprintf(this->_pipe, "set term qt %d\n", this->_plot_num);
-
-        /* Create the new file */
-        this->_data_file = std::ofstream(filename, std::ios::out);
-
-        /* Throw */
-        if(!this->_data_file) // TODO - Handle
-            throw std::runtime_error("[CRITICAL ERROR]: Could not open files related to GNUPLOT");
-    }
-
-    /* File handler to the GNUPLOT sub-process pipe */
-    FILE *_pipe;
-    IntTp _plot_num;
-    std::ofstream _data_file;
-    std::vector<std::string> _file_names;
-
-    /* Ploter function */
-    void plot(Circuit &circuit_manager, simulator_engine &simulator_manager);
-    void setPlotOptions(analysis_t type, as_scale_t scale, std::string &sweep, bool source, bool mag);
-    void sendPlotData(std::vector<double> &xvals, std::vector<std::vector<double>> &yvals, bool log);
-    void sendPlotData(std::vector<double> &xvals, std::vector<std::vector<std::complex<double>>> &yvals, bool mag, bool log);
-    void finalize(std::vector<std::string> &plotnames);
+        void next_plot(void);
+        void setPlotOptions(analysis_t type, as_scale_t scale, std::string &sweep, bool source, bool mag);
+        void sendPlotData(const std::vector<double> &xvals,
+                          const std::vector<std::vector<double>> &yvals,
+                          bool log);
+        void sendPlotData(const std::vector<double> &xvals,
+                          const std::vector<std::vector<std::complex<double>>> &yvals,
+                          bool mag, bool log);
+        void finalize(const std::vector<std::string> &plotnames);
 };
+
+/*!
+    @brief    Default constructor, creates the GNUPLOT pipe.
+*/
+GNU_plotter::GNU_plotter()
+{
+    _pipe = popen("gnuplot -persistent", "w");
+
+    /* TODO - Check that every opening went well */
+    if(!this->_pipe)
+    {  // TODO - Handle
+        throw std::runtime_error("[CRITICAL ERROR]: Could not open files related to GNUPLOT");
+    }
+}
+
+/*!
+    @brief    Default destructor, closes GNUPLOT pipe and removes the files created.
+*/
+GNU_plotter::~GNU_plotter()
+{
+    /* Close gnuplot */
+    fprintf(this->_pipe, "pause -5\n\n quit\n");
+    pclose(this->_pipe);
+
+    /* Close and remove files */
+    if(this->_data_file)  this->_data_file.close();
+    for(auto &it : this->_file_names) remove(it.c_str());
+}
+
+/*!
+    @brief    Creates the next plot window.
+*/
+void GNU_plotter::next_plot()
+{
+    /* Close previous file */
+    if(this->_data_file) this->_data_file.close();
+
+    /* Ascending number */
+    std::string filename = ".gnuplotdata" + std::to_string(_file_names.size()) +  ".plt";
+    _file_names.push_back(filename);
+
+    fprintf(this->_pipe, "set term qt %ld\n", _file_names.size() - 1);
+
+    /* Create the new file */
+    _data_file = std::ofstream(filename, std::ios::out);
+
+    /* Throw */
+    if(!this->_data_file) // TODO - Handle
+        throw std::runtime_error("[CRITICAL ERROR]: Could not open files related to GNUPLOT");
+}
 
 /*!
     @brief      Sends the final plot command to GNUPLOT to display the graph.
     @param      plotnames     The legend names for the staff to plot.
 */
-void GNU_plotter::finalize(std::vector<std::string> &plotnames)
+void GNU_plotter::finalize(const std::vector<std::string> &plotnames)
 {
     /* Send the final commands to plot the vectors */
     fprintf(this->_pipe, "plot '%s' using 1:2 title '%s' with lines", this->_file_names.back().c_str(), plotnames.front().c_str());
@@ -100,7 +105,7 @@ void GNU_plotter::finalize(std::vector<std::string> &plotnames)
     @param      xvals     The x values vector, simulation vector.
     @param      yvals     The y values vector(s), result(s) vector.
 */
-void GNU_plotter::sendPlotData(std::vector<double> &xvals, std::vector<std::vector<double>> &yvals, bool log)
+void GNU_plotter::sendPlotData(const std::vector<double> &xvals, const std::vector<std::vector<double>> &yvals, bool log)
 {
 	using std::vector;
 	using std::endl;
@@ -136,7 +141,7 @@ void GNU_plotter::sendPlotData(std::vector<double> &xvals, std::vector<std::vect
     @param      yvals     The y values vector(s), result(s) vector.
     @param      mag       Whether to send magnitude data or phase
 */
-void GNU_plotter::sendPlotData(std::vector<double> &xvals, std::vector<std::vector<std::complex<double>>> &yvals, bool log, bool mag)
+void GNU_plotter::sendPlotData(const std::vector<double> &xvals, const std::vector<std::vector<std::complex<double>>> &yvals, bool log, bool mag)
 {
     using std::vector;
     using std::abs;
@@ -252,10 +257,9 @@ void GNU_plotter::setPlotOptions(analysis_t type, as_scale_t scale, std::string 
 /*!
     @brief      Sends the data that will be plotted on the current window.
     @param      circuit_manager     The simulated circuit.
-    @param      source     Whether, we plot a source(true) or a node.
-    @param      mag        Whether, we plot magnitude(true) or phase (only for AC).
+    @param      simulator_manager   The simulator engine.
 */
-void GNU_plotter::plot(Circuit &circuit_manager, simulator_engine &simulator_manager)
+void GNU_plotter::plot(circuit &circuit_manager, simulator &simulator_manager)
 {
 	using std::vector;
 	using std::complex;
@@ -268,7 +272,7 @@ void GNU_plotter::plot(Circuit &circuit_manager, simulator_engine &simulator_man
 	auto sweep_source = circuit_manager.DCSource();
 
     /* Get the x-values */
-    auto &x_simvals = simulator_manager.getSimulationVec();
+    auto &x_simvals = simulator_manager.SimulationVec();
 
     /* For TRAN we have only 1 value to print */
 	if(analysis_type != AC)
@@ -276,7 +280,7 @@ void GNU_plotter::plot(Circuit &circuit_manager, simulator_engine &simulator_man
         /* Send */
         if(plotsources.size())
         {
-            auto &res = simulator_manager.getSourceResults();
+            auto &res = simulator_manager.SourceResults();
 
             this->next_plot();
             sendPlotData(x_simvals, res, analysis_scale == LOG_SCALE);
@@ -287,7 +291,7 @@ void GNU_plotter::plot(Circuit &circuit_manager, simulator_engine &simulator_man
         /* Send */
         if(plotnodes.size())
         {
-            auto &res = simulator_manager.getNodesResults();
+            auto &res = simulator_manager.NodesResults();
 
             this->next_plot();
             sendPlotData(x_simvals, res, analysis_scale == LOG_SCALE);
@@ -300,7 +304,7 @@ void GNU_plotter::plot(Circuit &circuit_manager, simulator_engine &simulator_man
         /* Send */
         if(plotsources.size())
         {
-            auto &res = simulator_manager.getSourceResultsCd();
+            auto &res = simulator_manager.SourceResultsCd();
 
             /* Magnitude */
             this->next_plot();
@@ -318,7 +322,7 @@ void GNU_plotter::plot(Circuit &circuit_manager, simulator_engine &simulator_man
         /* Send */
         if(plotnodes.size())
         {
-            auto &res = simulator_manager.getNodesResultsCd();
+            auto &res = simulator_manager.NodesResultsCd();
 
             /* Magnitude */
             this->next_plot();
@@ -338,9 +342,9 @@ void GNU_plotter::plot(Circuit &circuit_manager, simulator_engine &simulator_man
 /*!
     @brief      Prints the data (PRINT or PLOT cards) to standard output, only for OP analysis.
     @param      circuit_manager     The simulated circuit.
-    @param      simulator_manager   The simulator engines, containing the results of the simulation.
+    @param      simulator_manager   The simulator engine.
 */
-void print_cout(Circuit &circuit_manager, simulator_engine &simulator_manager)
+void print_cout(circuit &circuit_manager, simulator &simulator_manager)
 {
     using std::vector;
     using std::cout;
@@ -355,7 +359,7 @@ void print_cout(Circuit &circuit_manager, simulator_engine &simulator_manager)
     {
         cout << "Branch currents:\n";
 
-        auto &res = simulator_manager.getSourceResults();
+        auto &res = simulator_manager.SourceResults();
         auto &tmp = res.front();
 
         for(size_t i = 0; i < tmp.size(); i++)
@@ -369,7 +373,7 @@ void print_cout(Circuit &circuit_manager, simulator_engine &simulator_manager)
     {
         cout << "Node Voltages:\n";
 
-        auto &res = simulator_manager.getNodesResults();
+        auto &res = simulator_manager.NodesResults();
         auto &tmp = res.front();
 
         for(size_t i = 0; i < tmp.size(); i++)
@@ -384,7 +388,7 @@ void print_cout(Circuit &circuit_manager, simulator_engine &simulator_manager)
     @param      circuit_manager     The simulated circuit.
     @param      simulator_manager   The simulator engines, containing the results of the simulation.
 */
-return_codes_e plot(Circuit &circuit_manager, simulator_engine &simulator_manager)
+return_codes_e plot(circuit &circuit_manager, simulator &simulator_manager)
 {
     using std::streamsize;
     using std::cout;

@@ -75,4 +75,4 @@ class parser
         const std::regex _alphanumeric_with_underscores = std::regex("[[:alnum:]_]+", std::regex_constants::icase);
 };
 
-#endif // __SYNTAX_PARSER_H //
+#endif // __PARSER_H //

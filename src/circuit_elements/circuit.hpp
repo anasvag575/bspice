@@ -5,32 +5,30 @@
 #include <fstream>
 #include "parser.hpp"
 
-/**
-* A circuit class. The purpose of this class is to represent a spice netlist (circuit and commands).
-*/
-class Circuit
+//! A circuit class. The purpose of this class is to represent a spice netlist.
+class circuit
 {
     public:
         /* Constructors */
-		Circuit(std::string &input_file_name);
+		circuit(const std::string &input_file_name);
 
         /* Elements contained in the circuit */
-        std::vector<Resistor> &Resistors(void);
-        std::vector<Capacitor> &Capacitors(void);
-        std::vector<Coil> &Coils(void);
-        std::vector<ics> &ICS(void);
-        std::vector<ivs> &IVS(void);
-        std::vector<vcvs> &VCVS(void);
-        std::vector<vccs> &VCCS(void);
-        std::vector<ccvs> &CCVS(void);
-        std::vector<cccs> &CCCS(void);
+        const std::vector<resistor> &Resistors(void);
+        const std::vector<capacitor> &Capacitors(void);
+        const std::vector<coil> &Coils(void);
+        const std::vector<ics> &ICS(void);
+        const std::vector<ivs> &IVS(void);
+        const std::vector<vcvs> &VCVS(void);
+        const std::vector<vccs> &VCCS(void);
+        const std::vector<ccvs> &CCVS(void);
+        const std::vector<cccs> &CCCS(void);
 
         /* Elements/Nodes/Plot names */
-        hashmap_str_t &Nodes(void);
-        hashmap_str_t &ElementNames(void);
-        std::vector<std::string> &PlotNodes(void);
-        std::vector<std::string> &PlotSources(void);
-        std::string &DCSource(void);
+        const hashmap_str_t &Nodes(void);
+        const hashmap_str_t &ElementNames(void);
+        const std::vector<std::string> &PlotNodes(void);
+        const std::vector<std::string> &PlotSources(void);
+        const std::string &DCSource(void);
 
         /* Analysis specifics */
         double SimStart(void);
@@ -54,33 +52,33 @@ class Circuit
         void debug_circuit(void);
 
         /* Elements contained in the circuit */
-        std::vector<Resistor> _res;     //!< Vector with all the resistors in the SPICE netlist
-        std::vector<Capacitor> _caps;   //!< Vector with all the capacitors in the SPICE netlist
-        std::vector<Coil> _coils;       //!< Vector with all the coils in the SPICE netlist
-        std::vector<ics> _ics;          //!< Vector with all the ICS in the SPICE netlist
-        std::vector<ivs> _ivs;          //!< Vector with all the IVS in the SPICE netlist
-        std::vector<vcvs> _vcvs;        //!< Vector with all the VCVS in the SPICE netlist
-        std::vector<vccs> _vccs;        //!< Vector with all the VCCS in the SPICE netlist
-        std::vector<ccvs> _ccvs;        //!< Vector with all the CCVS in the SPICE netlist
-        std::vector<cccs> _cccs;        //!< Vector with all the CCCS in the SPICE netlist
+        std::vector<resistor> _res;     //!< Vector with all the resistors in the SPICE netlist.
+        std::vector<capacitor> _caps;   //!< Vector with all the capacitors in the SPICE netlist.
+        std::vector<coil> _coils;       //!< Vector with all the coils in the SPICE netlist.
+        std::vector<ics> _ics;          //!< Vector with all the ICS in the SPICE netlist.
+        std::vector<ivs> _ivs;          //!< Vector with all the IVS in the SPICE netlist.
+        std::vector<vcvs> _vcvs;        //!< Vector with all the VCVS in the SPICE netlist.
+        std::vector<vccs> _vccs;        //!< Vector with all the VCCS in the SPICE netlist.
+        std::vector<ccvs> _ccvs;        //!< Vector with all the CCVS in the SPICE netlist.
+        std::vector<cccs> _cccs;        //!< Vector with all the CCCS in the SPICE netlist.
 
         /* Elements/Nodes maps */
-        hashmap_str_t _element_names;   //!< Hashtable that contains all the element names in the SPICE netlist
-        hashmap_str_t _nodes;           //!< Hashtable that contains all the nodes' names in the SPICE netlist
+        hashmap_str_t _element_names;   //!< Hashtable that contains all the element names in the SPICE netlist.
+        hashmap_str_t _nodes;           //!< Hashtable that contains all the nodes' names in the SPICE netlist.
 
         /* SPICE CARDS/OPTIONS - Analysis */
-        double _sim_start;				//!< The simulation start value
-        double _sim_end;				//!< The simulation end value
-        double _sim_step;				//!< The simulation step
-        as_scale_t _scale;				//!< Scale of the analysis
-        analysis_t _type;				//!< Analysis type
-        ODE_meth_t _ode_method;         //!< ODE method in case of transient
-        std::string _source;			//!< In case of DC analysis - Name of source
-        return_codes_e _errcode;        //!< Flag containing the last errorcode regarding the circuit
+        double _sim_start;				//!< The simulation start value.
+        double _sim_end;				//!< The simulation end value.
+        double _sim_step;				//!< The simulation step.
+        as_scale_t _scale;				//!< Scale of the analysis.
+        analysis_t _type;				//!< Analysis type.
+        ODE_meth_t _ode_method;         //!< ODE method in case of transient.
+        std::string _source;			//!< In case of DC analysis - Name of source.
+        return_codes_e _errcode;        //!< Flag containing the last errorcode regarding the circuit.
 
         /* SPICE CARDS - Plot */
-        std::vector<std::string> _plot_nodes;       //!< The nodes names to be plotted after simulation
-        std::vector<std::string> _plot_sources;     //!< The sources names to be plotted after simulation
+        std::vector<std::string> _plot_nodes;       //!< The nodes names to be plotted after simulation.
+        std::vector<std::string> _plot_sources;     //!< The sources names to be plotted after simulation.
 };
 
 #endif // __CIRCUIT_H //

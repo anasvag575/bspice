@@ -1,15 +1,13 @@
 #ifndef __NODE4_DEV_HPP
 #define __NODE4_DEV_HPP
 
-#include "node2_dev.hpp" /* Where to inherit from */
+#include "node2_dev.hpp" /* Base class */
 #include <string>
 #include <array>
 #include <iostream>
 #include "base_types.hpp"
 
-/**
- *  The complete device representation of node_4 devices (elements with 4 nodes associated with them).
- */
+//! The complete device representation of node_4 devices (elements with 4 nodes associated with them).
 class node4_device : public node2_device
 {
     public:
@@ -38,18 +36,18 @@ class node4_device : public node2_device
             @brief    Get the depended positive node name of the device.
             @return   The name.
         */
-        std::string &DepPosNode(void) { return _dep_node_names[0]; }
+        const std::string &DepPosNode(void) { return _dep_node_names[0]; }
 
         /*!
             @brief    Get the depended negative node name of the device.
             @return   The name.
         */
-        std::string &DepNegNode(void) { return _dep_node_names[1]; }
+        const std::string &DepNegNode(void) { return _dep_node_names[1]; }
 
         /*!
             @brief   Set the depended nodes names of the device.
-            @param   dep_pos    The depended positive node name.
-            @param   dep_neg    The depended negative node name.
+            @param   pos_dep    The depended positive node name.
+            @param   neg_dep    The depended negative node name.
         */
         void setDepNodeNames(const std::string &pos_dep, const std::string &neg_dep)
         {
@@ -88,10 +86,7 @@ class node4_device : public node2_device
         std::array<IntTp, 2> _dep_nodes_ids;                   //!< The depended node IDs
 };
 
-/**
- *  The packed device representation of node_4 devices (elements with 4 nodes associated with them).
- *  Used during MNA construction.
- */
+//! The packed device (MNA)representation of node_4 devices (elements with 4 nodes associated with them).
 class node4_device_packed : public node2_device_packed
 {
     public:

@@ -64,12 +64,12 @@ static return_codes_e bspice_single_run(int argc, char **argv)
     std::string input_file_name(argv[1]);
 
     /* Step 2 - Instantiate a circuit, parse and then close the file */
-    Circuit circuit_manager(input_file_name);
+    circuit circuit_manager(input_file_name);
     errcode = circuit_manager.errcode();
     if(errcode != RETURN_SUCCESS) return errcode;
 
     /* Step 3 - Proceed to the simulator engine */
-    simulator_engine sim_manager(circuit_manager);
+    simulator sim_manager(circuit_manager);
     errcode = sim_manager.run();
     if(errcode != RETURN_SUCCESS) return errcode;
 
@@ -77,6 +77,12 @@ static return_codes_e bspice_single_run(int argc, char **argv)
     return plot(circuit_manager, sim_manager);
 }
 
+/*!
+    @brief      The program entry point.
+    @param      argc The command line process's number of arguments
+    @param      argv The command line process's arguments vector
+    @return     Error code in case of error, otherwise RETURN_SUCESS.
+*/
 int main(int argc, char **argv)
 {
     /* Step 1 - Check for valid number of input arguments */

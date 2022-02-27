@@ -4,76 +4,23 @@
 #include "mna.hpp"
 #include "simulator_types.hpp"
 
-class simulator_engine
+//! A simulator class. The purpose of this class is to represent the simulation engine.
+class simulator
 {
 	public:
 
-        /*!
-            @brief      Initializes the simulator engine with the parameters
-            defined by the circuit input.
-            @param      circuit_manager     The circuit.
-        */
-        simulator_engine(Circuit &circuit_manager)
-        {
-            this->_mna_engine = MNA(circuit_manager);
-            _run = false;
-            _ode_method = circuit_manager.ODEMethod();
-        }
+        /* Constructors */
+        simulator(circuit &circuit_manager);
 
-		/*!
-			@brief  Returns whether the simulator is in a valid state (run valid).
-			@return True, in case of active results, otherwise false.
-		*/
-		bool valid(void)
-		{
-			return this->_run;
-		}
+        /* Getters */
+		bool valid(void);
+		const std::vector<double> &SimulationVec(void);
+		const std::vector<std::vector<double>> &NodesResults(void);
+		const std::vector<std::vector<double>> &SourceResults(void);
+		const std::vector<std::vector<std::complex<double>>> &NodesResultsCd(void);
+		const std::vector<std::vector<std::complex<double>>> &SourceResultsCd(void);
 
-		/*!
-			@brief  Returns the simulation vector used for the analysis
-			@return The simulation vector (sweep-val)
-		*/
-		std::vector<double> &getSimulationVec(void)
-		{
-			return this->_mna_engine.getSimVals();
-		}
-
-        /*!
-            @brief  Returns the results for the plot nodes
-            @return The results
-        */
-		std::vector<std::vector<double>> &getNodesResults(void)
-        {
-            return this->_res_nodes;
-        }
-
-        /*!
-            @brief  Returns the results for the plot source
-            @return The results
-        */
-        std::vector<std::vector<double>> &getSourceResults(void)
-        {
-            return this->_res_sources;
-        }
-
-        /*!
-            @brief  Returns the results for the plot nodes (AC analysis)
-            @return The results
-        */
-        std::vector<std::vector<std::complex<double>>> &getNodesResultsCd(void)
-        {
-            return this->_res_nodes_cd;
-        }
-
-        /*!
-            @brief  Returns the results for the plot source (AC analysis)
-            @return The results
-        */
-        std::vector<std::vector<std::complex<double>>> &getSourceResultsCd(void)
-        {
-            return this->_res_sources_cd;
-        }
-
+		/* Methods */
 		return_codes_e run(void);
 	private:
 		/* Analysis supported */
@@ -93,17 +40,17 @@ class simulator_engine
         void setPlotResultsCd(DensVecCompD &vec);
 
 		/* Simulator sub-engines */
-		MNA _mna_engine;
+		MNA _mna_engine;                //!< The MNA engine, generates MNA matrices and vectors.
 
 		/* Simulator state/parameters */
-        bool _run;
-		ODE_meth_t _ode_method;
+        bool _run;                      //!< Flag that indicates whether the results are valid or not.
+		ODE_meth_t _ode_method;         //!< ODE method to be used for transient analysis.
 
 		/* Vectors used to save the plot/save the results */
-		std::vector<std::vector<double>> _res_nodes;
-        std::vector<std::vector<double>> _res_sources;
-		std::vector<std::vector<std::complex<double>>> _res_nodes_cd;
-		std::vector<std::vector<std::complex<double>>> _res_sources_cd;
+		std::vector<std::vector<double>> _res_nodes;                    //!< Results for nodes voltages, used in plotting.
+        std::vector<std::vector<double>> _res_sources;                  //!< Results for sources current, used in plotting.
+		std::vector<std::vector<std::complex<double>>> _res_nodes_cd;   //!< Results for sources current, used in plotting (AC only).
+		std::vector<std::vector<std::complex<double>>> _res_sources_cd; //!< Results for sources current, used in plotting (AC only).
 };
 
 #endif // __SIM_ENGINE_H //

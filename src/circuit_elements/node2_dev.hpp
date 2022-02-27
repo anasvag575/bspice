@@ -6,9 +6,7 @@
 #include <iostream>
 #include "base_types.hpp"
 
-/**
- *  The complete device representation of node_2 devices (elements with 2 nodes associated with them).
- */
+//! The complete device representation of node_2 devices (elements with 2 nodes associated with them).
 class node2_device
 {
     public:
@@ -32,19 +30,19 @@ class node2_device
             @brief    Get the device's value
             @return   The value.
         */
-        const double Val(void) { return _value; }
+        double Val(void) { return _value; }
 
         /*!
             @brief    Get the positive idx node of the device.
             @return   The idx.
         */
-        const IntTp PosNodeID(void) { return _nodes_ids[0]; }
+        IntTp PosNodeID(void) { return _nodes_ids[0]; }
 
         /*!
             @brief    Get the negative idx node of the device.
             @return   The idx.
         */
-        const IntTp NegNodeID(void) { return _nodes_ids[1]; }
+        IntTp NegNodeID(void) { return _nodes_ids[1]; }
 
         /*!
             @brief    Get the positive node name of the device.
@@ -60,13 +58,13 @@ class node2_device
 
         /*!
             @brief    Set the device's name
-            @param    The name.
+            @param    name The name.
         */
         void setName(const std::string &name) { _name = name; }
 
         /*!
             @brief    Set the value of the device
-            @return   The value.
+            @return   val The value.
         */
         void setVal(const double val) { _value = val; }
 
@@ -84,7 +82,7 @@ class node2_device
         /*!
             @brief   Set the node IDs of the device.
             @param   pos    The positive node ID.
-            @param   pos    The positive node ID.
+            @param   neg    The negative node ID.
         */
         void setNodeIDs(const IntTp pos, const IntTp neg)
         {
@@ -121,10 +119,7 @@ class node2_device
         std::array<IntTp, 2> _nodes_ids;  					   //!< The node IDs
 };
 
-/**
- *  The packed device representation of node_2 devices (elements with 2 nodes associated with them).
- *  Used during MNA construction.
- */
+//! The packed device (MNA) representation of node_2 devices (elements with 2 nodes associated with them).
 class node2_device_packed
 {
     public:
@@ -169,14 +164,14 @@ class node2_device_packed
 
         /*!
             @brief    Set the value of the device
-            @return   The value.
+            @param   val The value.
         */
         void setVal(double val) { _value = val; }
 
         /*!
             @brief   Set the node IDs of the device.
             @param   pos    The positive node ID.
-            @param   pos    The positive node ID.
+            @param   neg    The positive node ID.
         */
         void setNodeIDs(IntTp pos, IntTp neg)
         {

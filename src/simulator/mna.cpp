@@ -2,118 +2,84 @@
 #include "mna.hpp"
 
 /*!
+    @brief    Default constructor.
+*/
+MNA::MNA()
+{
+    _system_dim = 0;
+    _ivs_offset = 0;
+    _coil_offset = 0;
+    _vcvs_offset = 0;
+    _ccvs_offset = 0;
+    _sweep_source_idx = 0;
+    _sim_step = 0;
+    _analysis_type = OP;
+    _scale = DEC_SCALE;
+}
+
+/*!
     @brief      Initializes the MNA engine with the parameters
     defined by the circuit input.
     @param      circuit_manager     The circuit.
 */
-MNA::MNA(Circuit &circuit_manager)
+MNA::MNA(circuit &circuit_manager)
 {
-    /* Conversion for every element */
-    for(auto &it : circuit_manager.Coils()) this->_coils.push_back({it});
-    for(auto &it : circuit_manager.Capacitors()) this->_caps.push_back({it});
-    for(auto &it : circuit_manager.Resistors()) this->_res.push_back({it});
-    for(auto &it : circuit_manager.ICS()) this->_ics.push_back({it, it});
-    for(auto &it : circuit_manager.IVS()) this->_ivs.push_back({it, it});
-    for(auto &it : circuit_manager.VCVS()) this->_vcvs.push_back({it});
-    for(auto &it : circuit_manager.VCCS()) this->_vccs.push_back({it});
-    for(auto &it : circuit_manager.CCVS()) this->_ccvs.push_back({it});
-    for(auto &it : circuit_manager.CCCS()) this->_cccs.push_back({it});
+    /* Create the packed representation */
+    CreatePackedVecs(circuit_manager);
 
-    /* Set up system dimension */
-    auto nodes_dim = circuit_manager.Nodes().size();
-
-    // SOS! This is the organization of the voltage like elements in the matrix
-    this->_ivs_offset = nodes_dim;
-    this->_coil_offset = nodes_dim + this->_ivs.size();
-    this->_vcvs_offset = this->_coil_offset + this->_coils.size();
-    this->_ccvs_offset = this->_vcvs_offset + this->_vcvs.size();
-    this->_system_dim = this->_ccvs_offset + this->_ccvs.size();
-    // SOS!
-
-
-    this->_analysis_type = circuit_manager.AnalysisType();
-    this->_scale = circuit_manager.AnalysisScale();
-    this->_sim_store_start = 0; // TODO
-
-    /* Create the simulation vector */
-    double start = circuit_manager.SimStart();
-    double end = circuit_manager.SimEnd();
-    double steps = circuit_manager.SimStep();
-    this->_sim_step = steps;
-
-    if(this->_analysis_type != OP)
-    {
-        /* Now create the simulation times/values vector */
-        if(this->_scale == DEC_SCALE)
-        {
-            /* For AC we generate based on step (since argument is [points]) */
-            if(this->_analysis_type == AC) linspaceVecGen(this->_sim_vals, start, end, static_cast<size_t>(steps));
-            else StepVecGen(this->_sim_vals, start, end, steps);
-        }
-        else
-        {
-            /* Generate logarithmically spaced vector */
-            logspaceVecGen(this->_sim_vals, start, end, static_cast<size_t>(steps));
-        }
-    }
-    else
-    {
-        this->_sim_vals.push_back(0.0);
-    }
+    /* Set the parameters of the class */
+    SetMNAParams(circuit_manager);
 
     /* Create the indices for plotting */
-    updatePlotIdx(circuit_manager);
-
-    /* In case we have a DC analysis source */
-    if(this->_analysis_type == DC)
-    {
-        /* 2-level index to get the exact position of the source */
-        std::string &src_dut = circuit_manager.DCSource();
-        auto &namesmap = circuit_manager.ElementNames();
-
-        /* Get idx to access the appropriate vector */
-        this->_sweep_source_idx = namesmap.find(src_dut)->second;
-
-        /* Voltage sweep needs an offset */
-        if(src_dut[0] == 'V') this->_sweep_source_idx += this->_ivs_offset;
-    }
+    CreatePlotIdx(circuit_manager);
 }
+
+
 
 /*!
-    @brief      Update the plot nodes/sources indices.
-    @param      circuit_manager     The circuit.
+    @brief      Returns the type of analysis performed.
+    @return     The analysis type.
 */
-void MNA::updatePlotIdx(Circuit &circuit_manager)
-{
-    this->_nodes_idx.clear();
-    this->_sources_idx.clear();
+analysis_t MNA::AnalysisType(void) { return _analysis_type; }
 
-    /* Create the indices vector for nodes or IVS currents */
-    auto &node_names = circuit_manager.PlotNodes();
-    auto &source_names = circuit_manager.PlotSources();
+/*!
+    @brief      Returns the type of scale used.
+    @return     The scale.
+*/
+as_scale_t MNA::AnalysisScale(void) { return _scale; }
 
-    /* Get the maps needed */
-    auto &nodesmap = circuit_manager.Nodes();
-    auto &elementsmap = circuit_manager.ElementNames();
+/*!
+    @brief      Returns the MNA system dimension.
+    @return     The dimension.
+*/
+IntTp MNA::SystemDim(void) { return _system_dim; }
 
-    for(auto &it : node_names)
-    {
-        /* Search the map - Always exists */
-        auto tmp = nodesmap.find(it);
+/*!
+    @brief      Returns the simulation step.
+    @return     The simulation step.
+*/
+double MNA::SimStep(void) { return _sim_step; }
 
-        /* For nodes idx is the unique node ID */
-        this->_nodes_idx.push_back(tmp->second);
-    }
+/*!
+    @brief      Returns the vectors containing the simulation
+    values.
+    @return     The vector.
+*/
+const std::vector<double> &MNA::SimVals(void) { return _sim_vals; }
 
-    for(auto &it : source_names)
-    {
-        /* Search the map - Always exists */
-        auto tmp = elementsmap.find(it);
+/*!
+    @brief      Returns the nodes indices vector, according to plot order.
+    @return     The indices vector.
+*/
+const std::vector<IntTp> &MNA::NodesIdx(void) { return _nodes_idx; }
 
-        /* For voltage sources, (IVSoffset + <idx in the IVS vector>) */
-        this->_sources_idx.push_back(tmp->second + this->_ivs_offset);
-    }
-}
+/*!
+    @brief      Returns the sources indices vector, according to plot order.
+    @return     The indices vector.
+*/
+const std::vector<IntTp> &MNA::SourceIdx(void) { return _sources_idx; }
+
+
 
 /*!
 	@brief      Inserts the MNA stamp of the resistor in triplet form
@@ -359,7 +325,6 @@ void MNA::CccsMNAStamp(tripletList_d &mat, cccs_packed &source)
         mat.push_back(triplet_eig_d(neg, source_idx, -val));
     }
 }
-
 
 
 
@@ -620,7 +585,6 @@ void MNA::CccsMNAStamp(tripletList_cd &mat, cccs_packed &source)
 
 
 
-
 /*!
 	@brief      Evaluates an EXPONENTIAL source at a given simulation time.
 	@param		vvals		The parameters of the exponential source.
@@ -772,7 +736,6 @@ void MNA::UpdateTRANVec(DensVecD &rh, double time)
 
 
 
-
 /*!
 	@brief      Creates the MNA system for the OP (Operating point) analysis,
 	creating the left hand side matrix and the right hand side vector.
@@ -834,7 +797,7 @@ void MNA::CreateMNASystemOP(SparMatD &mat, DensVecD &rh)
 	@brief      Creates the MNA system for the DC (direct current) analysis,
 	creating the left hand side matrix and the right hand side matrix.
 	@param		mat			The DC system matrix to be generated.
-	@param		rh			The DC system right side matrix to be generated.
+	@param		rhs			The DC system right side matrix to be generated.
 */
 void MNA::CreateMNASystemDC(SparMatD &mat, DenseMatD &rhs)
 {
@@ -860,6 +823,7 @@ void MNA::CreateMNASystemDC(SparMatD &mat, DenseMatD &rhs)
 /*!
     @brief      Updates the vector for the DC analysis step.
     @param      rh          The DC system right side vector, OP initial results only.
+    @param      sweep_val   The current value of the DC source that is sweeped.
 */
 void MNA::UpdateMNASystemDCVec(DensVecD &rh, double sweep_val)
 {
@@ -976,6 +940,158 @@ void MNA::CreateMNASystemAC(DensVecCompD &rh)
 
 
 
+/*!
+    @brief      Create the plot nodes/sources indices.
+    @param      circuit_manager     The circuit.
+*/
+void MNA::CreatePlotIdx(circuit &circuit_manager)
+{
+    /* Create the indices vector for nodes or IVS currents */
+    auto &node_names = circuit_manager.PlotNodes();
+    auto &source_names = circuit_manager.PlotSources();
+
+    /* Get the maps needed */
+    auto &nodesmap = circuit_manager.Nodes();
+    auto &elementsmap = circuit_manager.ElementNames();
+
+    for(auto &it : node_names)
+    {
+        /* Search the map - Always exists */
+        auto tmp = nodesmap.find(it);
+
+        /* For nodes idx is the unique node ID */
+        this->_nodes_idx.push_back(tmp->second);
+    }
+
+    for(auto &it : source_names)
+    {
+        /* Search the map - Always exists */
+        auto tmp = elementsmap.find(it);
+
+        /* For voltage sources, (IVSoffset + <idx in the IVS vector>) */
+        this->_sources_idx.push_back(tmp->second + this->_ivs_offset);
+    }
+}
+
+/*!
+    @brief      Create the packed representation of the devices.
+    @param      circuit_manager     The circuit.
+*/
+void MNA::CreatePackedVecs(circuit &circuit_manager)
+{
+    /* Conversion for every element */
+    for(auto &it : circuit_manager.Capacitors())
+    {
+        auto cp = it;
+        this->_caps.push_back({cp});
+    }
+
+    for(auto &it : circuit_manager.Resistors())
+    {
+        auto cp = it; // Make a copy
+        this->_res.push_back({cp});
+    }
+
+    for(auto &it : circuit_manager.Coils())
+    {
+        auto cp = it;
+        this->_coils.push_back({cp});
+    }
+
+    for(auto &it : circuit_manager.ICS())
+    {
+        auto cp = it;
+        this->_ics.push_back({cp, cp});
+    }
+
+    for(auto &it : circuit_manager.IVS())
+    {
+        auto cp = it;
+        this->_ivs.push_back({cp, cp});
+    }
+
+    for(auto &it : circuit_manager.VCVS())
+    {
+        auto cp = it;
+        this->_vcvs.push_back({cp});
+    }
+
+    for(auto &it : circuit_manager.VCCS())
+    {
+        auto cp = it;
+        this->_vccs.push_back({cp});
+    }
+
+    for(auto &it : circuit_manager.CCVS())
+    {
+        auto cp = it;
+        this->_ccvs.push_back({cp});
+    }
+
+    for(auto &it : circuit_manager.CCCS())
+    {
+        auto cp = it;
+        this->_cccs.push_back({cp});
+    }
+}
+
+/*!
+    @brief      Set all the parameters of the MNA engine. This also,
+    sets the offsets of each voltage like element inside the MNA system.
+    @param      circuit_manager     The circuit.
+*/
+void MNA::SetMNAParams(circuit &circuit_manager)
+{
+    /* Set up system dimension */
+    auto nodes_dim = circuit_manager.Nodes().size();
+
+    // SOS! This is the organization of the voltage like elements in the matrix
+    _ivs_offset = nodes_dim;
+    _coil_offset = nodes_dim + _ivs.size();
+    _vcvs_offset = _coil_offset + _coils.size();
+    _ccvs_offset = _vcvs_offset + _vcvs.size();
+    _system_dim = _ccvs_offset + _ccvs.size();
+    // SOS!
+
+    _analysis_type = circuit_manager.AnalysisType();
+    _scale = circuit_manager.AnalysisScale();
+
+    /* Create the simulation vector */
+    double start = circuit_manager.SimStart();
+    double end = circuit_manager.SimEnd();
+    double steps = circuit_manager.SimStep();
+    _sim_step = steps;
+
+    if(this->_analysis_type != OP)
+    {
+        /* Now create the simulation times/values vector */
+        if(this->_scale == DEC_SCALE)
+        {
+            /* For AC we generate based on step (since argument is [points]) */
+            if(this->_analysis_type == AC) linspaceVecGen(this->_sim_vals, start, end, static_cast<size_t>(steps));
+            else StepVecGen(this->_sim_vals, start, end, steps);
+        }
+        else
+        {
+            /* Generate logarithmically spaced vector */
+            logspaceVecGen(this->_sim_vals, start, end, static_cast<size_t>(steps));
+        }
+    }
+
+    /* In case we have a DC analysis source */
+    if(this->_analysis_type == DC)
+    {
+        /* 2-level index to get the exact position of the source */
+        const std::string &src_dut = circuit_manager.DCSource();
+        auto &namesmap = circuit_manager.ElementNames();
+
+        /* Get idx to access the appropriate vector */
+        this->_sweep_source_idx = namesmap.find(src_dut)->second;
+
+        /* Voltage sweep needs an offset */
+        if(src_dut[0] == 'V') this->_sweep_source_idx += this->_ivs_offset;
+    }
+}
 
 /*!
     @brief      Prints the triplet matrix given. Used only for debugging.

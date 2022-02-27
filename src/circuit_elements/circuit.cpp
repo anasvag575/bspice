@@ -2,154 +2,149 @@
 #include <algorithm>
 #include "circuit.hpp"
 
-/************ GETTERS / SETTERS ************/
 
 
 /*!
     @brief    Get the resistors in the circuit.
     @return   The resistors vector.
 */
-std::vector<Resistor> &Circuit::Resistors(void) { return _res; }
+const std::vector<resistor> &circuit::Resistors(void) { return _res; }
 
 /*!
     @brief    Get the capacitors in the circuit.
     @return   The capacitors vector.
 */
-std::vector<Capacitor> &Circuit::Capacitors(void) { return _caps; }
+const std::vector<capacitor> &circuit::Capacitors(void) { return _caps; }
 
 /*!
     @brief    Get the coils in the circuit.
     @return   The coils vector.
 */
-std::vector<Coil> &Circuit::Coils(void) { return _coils; }
+const std::vector<coil> &circuit::Coils(void) { return _coils; }
 
 /*!
     @brief    Get the ICS in the circuit.
     @return   The ICS vector.
 */
-std::vector<ics> &Circuit::ICS(void) { return _ics; }
+const std::vector<ics> &circuit::ICS(void) { return _ics; }
 
 /*!
     @brief    Get the IVS in the circuit.
     @return   The IVS vector.
 */
-std::vector<ivs> &Circuit::IVS(void) { return _ivs; }
+const std::vector<ivs> &circuit::IVS(void) { return _ivs; }
 
 /*!
     @brief    Get the VCVS in the circuit.
     @return   The VCVS vector.
 */
-std::vector<vcvs> &Circuit::VCVS(void) { return _vcvs; }
+const std::vector<vcvs> &circuit::VCVS(void) { return _vcvs; }
 
 /*!
     @brief    Get the VCCS in the circuit.
     @return   The VCCS vector.
 */
-std::vector<vccs> &Circuit::VCCS(void) { return _vccs; }
+const std::vector<vccs> &circuit::VCCS(void) { return _vccs; }
 
 /*!
     @brief    Get the CCVS in the circuit.
     @return   The CCVS vector.
 */
-std::vector<ccvs> &Circuit::CCVS(void) { return _ccvs; }
+const std::vector<ccvs> &circuit::CCVS(void) { return _ccvs; }
 
 /*!
     @brief    Get the CCCS in the circuit.
     @return   The CCCS vector.
 */
-std::vector<cccs> &Circuit::CCCS(void) { return _cccs; }
+const std::vector<cccs> &circuit::CCCS(void) { return _cccs; }
 
 /*!
-    @brief    Get the nodes map (map contains the <NodeName, NodeNum> pairs).
+    @brief    Get the nodes map (<NodeName, NodeNum> pairs).
     @return   The map.
 */
-hashmap_str_t &Circuit::Nodes(void) { return _nodes; }
+const hashmap_str_t &circuit::Nodes(void) { return _nodes; }
 
 /*!
-    @brief    Get the elements map (map contains the <ElmementName, ElementID> pairs).
+    @brief    Get the elements map (<ElmementName, ElementID> pairs).
     @return   The map.
 */
-hashmap_str_t &Circuit::ElementNames(void) { return _element_names; }
+const hashmap_str_t &circuit::ElementNames(void) { return _element_names; }
 
 /*!
     @brief    Get the nodes to be plotted in the circuit.
-    @return   The nodesNames vector.
+    @return   The vector.
 */
-std::vector<std::string> &Circuit::PlotNodes(void) { return _plot_nodes; }
+const std::vector<std::string> &circuit::PlotNodes(void) { return _plot_nodes; }
 
 /*!
     @brief    Get the sources to be plotted in the circuit.
-    @return   The sources vector.
+    @return   The vector.
 */
-std::vector<std::string> &Circuit::PlotSources(void) { return _plot_sources; }
+const std::vector<std::string> &circuit::PlotSources(void) { return _plot_sources; }
 
 /*!
     @brief    Get the simulation start value.
-    @return   The start.
+    @return   The start value.
 */
-double Circuit::SimStart(void) { return _sim_start; }
+double circuit::SimStart(void) { return _sim_start; }
 
 /*!
     @brief    Get the simulation end value.
-    @return   The end.
+    @return   The end value.
 */
-double Circuit::SimEnd(void) { return _sim_end; }
+double circuit::SimEnd(void) { return _sim_end; }
 
 /*!
     @brief    Get the simulation step.
-    @return   The step.
+    @return   The step value.
 */
-double Circuit::SimStep(void) { return _sim_step; }
+double circuit::SimStep(void) { return _sim_step; }
 
 /*!
     @brief    Get the DC source for analysis.
     @return   The DC source name.
 */
-std::string &Circuit::DCSource(void) { return _source; }
+const std::string &circuit::DCSource(void) { return _source; }
 
 /*!
     @brief    Get the analysis type.
-    @return   The type enum.
+    @return   The type.
 */
-analysis_t Circuit::AnalysisType(void) { return _type; }
+analysis_t circuit::AnalysisType(void) { return _type; }
 
 /*!
     @brief    Get the analysis scale.
-    @return   The scale enum.
+    @return   The scale.
 */
-as_scale_t Circuit::AnalysisScale(void) { return _scale; }
+as_scale_t circuit::AnalysisScale(void) { return _scale; }
 
 /*!
     @brief    Get the ODE method to be used for transient.
     @return   The method.
 */
-ODE_meth_t Circuit::ODEMethod(void) { return _ode_method; }
+ODE_meth_t circuit::ODEMethod(void) { return _ode_method; }
 
 /*!
     @brief    Returns the last error during parsing of the netlist.
     @return   Error code.
 */
-return_codes_e Circuit::errcode(void) { return _errcode; }
+return_codes_e circuit::errcode(void) { return _errcode; }
 
 /*!
     @brief    Check if the current circuit is valid.
-    @return   True or False.
+    @return   Boolean.
 */
-bool Circuit::valid(void) { return _errcode == RETURN_SUCCESS;}
+bool circuit::valid(void) { return _errcode == RETURN_SUCCESS;}
 
-
-/***************** METHODS *****************/
 
 
 /*!
     @brief    Routine, that creates a circuit representation of the specified netlist
-    given by the input argument (input_file). The line is parsed line by line and
-    forms the necessary elements (R, L, C, etc..) and SPICE cards (.DC, .TRAN, etc..)
-    for the circuit.
-    @param    input_file    The file that contains the SPICE netlist.
-    @return   The error code, in case of error, otherwise RETURN_SUCCESS.
+    given by the input argument (input_file). The file is parsed line by line and
+    forms the necessary SPICE elements and cards of the circuit.
+    @param    input_file_name    The file that contains the SPICE netlist.
 */
-Circuit::Circuit(std::string &input_file_name)
+circuit::circuit(const std::string &input_file_name)
 {
     /* Checks for file input */
     std::ifstream input_file(input_file_name);
@@ -357,7 +352,7 @@ Circuit::Circuit(std::string &input_file_name)
 /*!
     @brief Initializer routine for the class.
 */
-void Circuit::init(void)
+void circuit::init(void)
 {
     this->_ode_method = BACKWARDS_EULER;
     this->_scale = DEC_SCALE;
@@ -375,7 +370,7 @@ void Circuit::init(void)
   	@param	match	Syntax parser instantiation.
     @return   The error code, in case of error, otherwise RETURN_SUCCESS.
 */
-return_codes_e Circuit::SPICECard(std::vector<std::string> &tokens, parser &match)
+return_codes_e circuit::SPICECard(std::vector<std::string> &tokens, parser &match)
 {
 	/* Check whether we have '.' character */
 	std::string spice_card;
@@ -435,7 +430,7 @@ return_codes_e Circuit::SPICECard(std::vector<std::string> &tokens, parser &matc
     @param  tokens  The tokens that contain the OPTIONS card.
     @return   The error code, in case of error, otherwise RETURN_SUCCESS.
 */
-return_codes_e Circuit::setCircuitOptions(std::vector<std::string> &tokens)
+return_codes_e circuit::setCircuitOptions(std::vector<std::string> &tokens)
 {
     auto it = tokens.begin() + 1;
     bool integr_found = false;
@@ -477,7 +472,7 @@ return_codes_e Circuit::setCircuitOptions(std::vector<std::string> &tokens)
   	  - Set the circuit dimension and the source offset in the MNA equivalent matrix.
     @return   The error code, in case of error, otherwise RETURN_SUCCESS.
 */
-return_codes_e Circuit::verify(void)
+return_codes_e circuit::verify(void)
 {
 	return_codes_e errcode;
     auto namemap_end = this->_element_names.end();
@@ -566,15 +561,13 @@ return_codes_e Circuit::verify(void)
 }
 
 
-/****************** DEBUG ******************/
-
 
 /*!
     @brief    Internal debug routine, that recreates the nodesmap, based on
     the ordering defined by debug_circuit(). Used only for debugging.
     @param  element   The current element whose nodes we insert in the map
 */
-void Circuit::debug_insert_nodes(node2_device &element)
+void circuit::debug_insert_nodes(node2_device &element)
 {
     auto &pos_name = element.PosNode();
     auto &neg_name = element.NegNode();
@@ -624,7 +617,7 @@ void Circuit::debug_insert_nodes(node2_device &element)
     the ordering defined by debug_circuit(). Used only for debugging.
     @param  element   The current element whose nodes we insert in the map
 */
-void Circuit::debug_insert_nodes(node4_device &element)
+void circuit::debug_insert_nodes(node4_device &element)
 {
     auto &pos_name = element.PosNode();
     auto &neg_name = element.NegNode();
@@ -713,16 +706,16 @@ void Circuit::debug_insert_nodes(node4_device &element)
     specified by the comparator and the recreate the elements and nodes maps.
     Used only for debugging.
 */
-void Circuit::debug_circuit(void)
+void circuit::debug_circuit(void)
 {
     /* Perform ordering of the elements in their containers by name and
      * then order the nodes unique numbering by inserting in this exact order:
      * IVS - Coils - ICS - Res - Caps - VCCS - VCVS */
 	using namespace std;
 
-	vector<Coil> tmp_coils = this->_coils;
-	vector<Capacitor> tmp_caps = this->_caps;
-	vector<Resistor> tmp_res = this->_res;
+	vector<coil> tmp_coils = this->_coils;
+	vector<capacitor> tmp_caps = this->_caps;
+	vector<resistor> tmp_res = this->_res;
 	vector<ivs> tmp_ivs = this->_ivs;
 	vector<ics> tmp_ics = this->_ics;
     vector<vccs> tmp_vccs = this->_vccs;

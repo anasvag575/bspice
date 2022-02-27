@@ -6,71 +6,23 @@
 #include "math_util.hpp"
 
 
+
+//! A simulator class. The purpose of this class is to construct MNA matrices and vectors.
 class MNA
 {
 	public:
-		/*!
-			@brief    Default constructor.
-		*/
-		MNA()
-		{
-			_system_dim = 0;
-			_ivs_offset = 0;
-			_coil_offset = 0;
-			_vcvs_offset = 0;
-			_ccvs_offset = 0;
-			_sweep_source_idx = 0;
-			_sim_store_start = 0;
-			_sim_step = 0;
-			_analysis_type = OP;
-			_scale = DEC_SCALE;
-		}
-
-		/*!
-			@brief      Returns the MNA system dimension.
-			@return		The dimension.
-		*/
-		IntTp getSystemDim(void) { return _system_dim; }
-
-		/*!
-			@brief      Returns the vectors containing the simulation
-			values.
-			@return 	The vector.
-		*/
-		std::vector<double> &getSimVals(void) { return this->_sim_vals; }
-
-        /*!
-            @brief      Returns the simulation step.
-            @return     The simulation step.
-        */
-        double getSimStep(void) { return _sim_step; }
-
-        /*!
-            @brief      Returns the type of analysis performed.
-            @return     The analysis type.
-        */
-		analysis_t getAnalysisType(void) { return this->_analysis_type; }
-
-        /*!
-            @brief      Returns the type of scale used.
-            @return     The scale.
-        */
-		as_scale_t getAnalysisScale(void) { return this->_scale; }
-
-        /*!
-            @brief      Returns the nodes indices vector, according to plot order.
-            @return     The indices vector.
-        */
-		std::vector<IntTp> &getNodesIdx(void) { return this->_nodes_idx; }
-
-        /*!
-            @brief      Returns the sources indices vector, according to plot order.
-            @return     The indices vector.
-        */
-        std::vector<IntTp> &getSourceIdx(void) { return this->_sources_idx; }
-
         /* Constructors */
-        MNA(Circuit &circuit_manager);
+		MNA();
+		MNA(circuit &circuit_manager);
+
+		/* Getters */
+        analysis_t AnalysisType(void);
+        as_scale_t AnalysisScale(void);
+		IntTp SystemDim(void);
+        double SimStep(void);
+		const std::vector<double> &SimVals(void);
+		const std::vector<IntTp> &NodesIdx(void);
+		const std::vector<IntTp> &SourceIdx(void);
 
         /* MNA and systems formation */
         void CreateMNASystemOP(SparMatD &mat, DensVecD &rh);
@@ -111,43 +63,44 @@ class MNA
 		double PULSESourceEval(std::vector<double> &vvals, double time);
 		double PWLSourceEval(std::vector<double> &tvals, std::vector<double> &vvals, double time);
 
-        /* Update plot nodes/sources */
-        void updatePlotIdx(Circuit &circuit_manager);
+        /* Assisting methods for constructor */
+        void CreatePlotIdx(circuit &circuit_manager);
+        void CreatePackedVecs(circuit &circuit_manager);
+        void SetMNAParams(circuit &circuit_manager);
 
 		/* Debug functionalities */
 		void debug_triplet_mat(tripletList_d &mat);
 
 		/* Information about the system */
-		IntTp _system_dim;
-		IntTp _ivs_offset;
-		IntTp _coil_offset;
-        IntTp _vcvs_offset;
-        IntTp _ccvs_offset;
+		IntTp _system_dim;                      //!< The MNA matrix dimension (dim x dim).
+		IntTp _ivs_offset;                      //!< The offset of the IVS in the MNA array/vectors.
+		IntTp _coil_offset;                     //!< The offset of the coils in the MNA array/vectors.
+        IntTp _vcvs_offset;                     //!< The offset of the VCVS in the MNA array/vectors.
+        IntTp _ccvs_offset;                     //!< The offset of the CCVS in the MNA array/vectors.
 
 		/* Elements */
-        std::vector<resistor_packed> _res;
-        std::vector<capacitor_packed> _caps;
-        std::vector<coil_packed> _coils;
-        std::vector<ics_packed> _ics;
-        std::vector<ivs_packed> _ivs;
-        std::vector<vcvs_packed> _vcvs;
-        std::vector<vccs_packed> _vccs;
-        std::vector<ccvs_packed> _ccvs;
-        std::vector<cccs_packed> _cccs;
+        std::vector<resistor_packed> _res;      //!< Packed representation of resistors in the circuit.
+        std::vector<capacitor_packed> _caps;    //!< Packed representation of capacitors in the circuit.
+        std::vector<coil_packed> _coils;        //!< Packed representation of coils in the circuit.
+        std::vector<ics_packed> _ics;           //!< Packed representation of ICS in the circuit.
+        std::vector<ivs_packed> _ivs;           //!< Packed representation of IVS in the circuit.
+        std::vector<vcvs_packed> _vcvs;         //!< Packed representation of VCVS in the circuit.
+        std::vector<vccs_packed> _vccs;         //!< Packed representation of VCCS in the circuit.
+        std::vector<ccvs_packed> _ccvs;         //!< Packed representation of CCVS in the circuit.
+        std::vector<cccs_packed> _cccs;         //!< Packed representation of CCCS in the circuit.
 
         /* Simulation vector */
-        std::vector<double> _sim_vals;
-        double _sim_step;
+        std::vector<double> _sim_vals;          //!< The simulation vector for the MNA matrix.
+        double _sim_step;                       //!< The simulation step for the MNA matrix.
 
         /* Indexing vectors, for results */
-        std::vector<IntTp> _sources_idx;
-        std::vector<IntTp> _nodes_idx;
-        IntTp _sweep_source_idx;
+        std::vector<IntTp> _sources_idx;        //!< The indices of the sources, for plotting.
+        std::vector<IntTp> _nodes_idx;          //!< The indices of the nodes, for plotting.
+        IntTp _sweep_source_idx;                //!< The index of the source, in case of DC analysis.
 
         /* Simulation info */
-		analysis_t _analysis_type;
-		as_scale_t _scale;
-		IntTp _sim_store_start; //TODO
+		analysis_t _analysis_type;              //!< The type of analysis performed.
+		as_scale_t _scale;                      //!< Scale of the analysis.
 };
 
 #endif // __MNA_H //
