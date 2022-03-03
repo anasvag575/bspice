@@ -27,9 +27,16 @@
 *.lib
 
 #Folders
-!src/
-!CMakeLists.txt
-!README.md
+doc/
+build/
+external_packed/
+test/
+doxygen/
+
+#Eclipse IDE related
+.project
+.cproject
+.settings/
 
 # Executables
 *.exe
