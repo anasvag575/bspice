@@ -68,6 +68,9 @@ simulator::simulator(circuit &circuit_manager)
     this->_mna_engine = MNA(circuit_manager);
     _run = false;
     _ode_method = circuit_manager.ODEMethod();
+
+    //TODO - Clear circuit to save memory
+    circuit_manager.clear();
 }
 
 /*!

@@ -47,6 +47,7 @@ class circuit
         ODE_meth_t ODEMethod(void);
         return_codes_e errcode(void);
         bool valid(void);
+        void clear(void);
 
     private:
         void init(void);

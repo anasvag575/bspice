@@ -136,6 +136,29 @@ return_codes_e circuit::errcode(void) { return _errcode; }
 */
 bool circuit::valid(void) { return _errcode == RETURN_SUCCESS;}
 
+/*!
+    @brief    Clear circuit redundant information, used before entering simulation.
+*/
+void circuit::clear(void)
+{
+    /* Release vector memory */
+    std::vector<resistor>().swap(_res);
+    std::vector<capacitor>().swap(_caps);
+    std::vector<coil>().swap(_coils);
+    std::vector<ics>().swap(_ics);
+    std::vector<ivs>().swap(_ivs);
+    std::vector<vcvs>().swap(_vcvs);
+    std::vector<vccs>().swap(_vccs);
+    std::vector<ccvs>().swap(_ccvs);
+    std::vector<cccs>().swap(_cccs);
+
+    /* Release maps memory */
+    hashmap_str_t().swap(_element_names);
+    hashmap_str_t().swap(_nodes);
+
+    /* Leave out the plot names since they are needed... */
+}
+
 
 
 /*!
