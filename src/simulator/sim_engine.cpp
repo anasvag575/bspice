@@ -5,50 +5,54 @@
 #ifdef BSPICE_EIGEN_USE_KLU
     #include "KLUSupport"
 
-    /* KLU direct solvers - Supports both int/long */
+    /** KLU direct solvers - Supports both int/long*/
     typedef Eigen::KLU<SparMatD> direct_solver;
+
+    /** Complex KLU direct solver - Supports both int/long */
     typedef Eigen::KLU<SparMatCompD> direct_solver_c;
 #else
-    /* Eigens direct solvers - Support both int/long int */
+    /** Eigen direct solver - Supports both int/long */
     typedef Eigen::SparseLU<SparMatD, Eigen::COLAMDOrdering<IntTp>> direct_solver;
+
+    /** Complex Eigen direct solver - Supports both int/long */
     typedef Eigen::SparseLU<SparMatCompD, Eigen::COLAMDOrdering<IntTp>> direct_solver_c;
 #endif
 
 
 
 /*!
-    @brief  Returns whether the simulator is in a valid state (run valid).
+    @brief  Returns whether the simulator is in a valid state or not.
     @return True, in case of active results, otherwise false.
 */
 bool simulator::valid(void) { return _run; }
 
 /*!
-    @brief  Returns the simulation vector used for the analysis
-    @return The simulation vector (sweep-val)
+    @brief  Returns the simulation vector used for the analysis.
+    @return The simulation vector.
 */
 const std::vector<double> &simulator::SimulationVec(void) { return _mna_engine.SimVals();  }
 
 /*!
-    @brief  Returns the results for the plot nodes
-    @return The results
+    @brief  Returns the results for the plot nodes.
+    @return The results.
 */
 const std::vector<std::vector<double>> &simulator::NodesResults(void) { return _res_nodes; }
 
 /*!
-    @brief  Returns the results for the plot source
-    @return The results
+    @brief  Returns the results for the plot source.
+    @return The results.
 */
 const std::vector<std::vector<double>> &simulator::SourceResults(void) { return _res_sources; }
 
 /*!
-    @brief  Returns the results for the plot nodes (AC analysis)
-    @return The results
+    @brief  Returns the results for the plot nodes (AC analysis).
+    @return The results.
 */
 const std::vector<std::vector<std::complex<double>>> &simulator::NodesResultsCd(void) { return _res_nodes_cd; }
 
 /*!
-    @brief  Returns the results for the plot source (AC analysis)
-    @return The results
+    @brief  Returns the results for the plot source (AC analysis).
+    @return The results.
 */
 const std::vector<std::vector<std::complex<double>>> &simulator::SourceResultsCd(void) { return _res_sources_cd; }
 
@@ -67,7 +71,7 @@ simulator::simulator(circuit &circuit_manager)
 }
 
 /*!
-	@brief      Performs a simulation run based on the initialization performed.
+	@brief      Performs a simulation run based on the configuration.
 	@return		Error code in case of error, otherwise RETURN_SUCCESS.
 */
 return_codes_e simulator::run(void)
@@ -474,7 +478,7 @@ return_codes_e simulator::Gear2ODESolve(void)
 
 /*!
     @brief      Sets the results of the simulation for any non-AC analysis.
-    @param      vec   Vector containing the results of the current simulation point
+    @param      vec   Vector containing the results of the current simulation point.
 */
 void simulator::setPlotResults(DensVecD &vec)
 {
@@ -494,7 +498,7 @@ void simulator::setPlotResults(DensVecD &vec)
 
 /*!
     @brief      Sets the results of the simulation for the AC analysis.
-    @param      vec   Vector containing the results of the current simulation point
+    @param      vec   Vector containing the results of the current simulation point.
 */
 void simulator::setPlotResultsCd(DensVecCompD &vec)
 {

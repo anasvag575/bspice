@@ -7,7 +7,11 @@
 #include <iostream>
 #include "base_types.hpp"
 
-//! The complete device representation of node_4 devices (elements with 4 nodes associated with them).
+//! The complete device representation of 4-node-basic (elements with 4 nodes associated with them).
+/*!
+  This class sets the representation used during SPICE netlist parsing (names and tokens are also kept),
+  which are not needed for the simulation but serve as information for the user (in case of error).
+*/
 class node4_device : public node2_device
 {
     public:
@@ -21,13 +25,13 @@ class node4_device : public node2_device
         }
 
         /*!
-            @brief    Get the depended positive idx node of the device.
+            @brief    Get the depended positive node ID of the device.
             @return   The idx.
         */
         IntTp DepPosNodeID(void) { return _dep_nodes_ids[0]; }
 
         /*!
-            @brief    Get the depended negative idx node of the device.
+            @brief    Get the depended negative node ID of the device.
             @return   The idx.
         */
         IntTp DepNegNodeID(void) { return _dep_nodes_ids[1]; }
@@ -69,14 +73,16 @@ class node4_device : public node2_device
         /*!
             @brief    Overloaded operator for stdout, that prints the contents of the
             element.
-            @return   The reference to the stream.
+            @param    os    The stream reference.
+            @param    dev   The device reference.
+            @return   The   reference to the stream.
         */
-        friend std::ostream &operator<<(std::ostream& os, node4_device& a)
+        friend std::ostream &operator<<(std::ostream& os, node4_device& dev)
         {
-            os << a.Name() << " " ;
-            os << a.PosNodeID() << " " << a.NegNodeID() << " " << a.DepPosNodeID() << " " << a.DepNegNodeID() << " ";
-//            os << a.PosNode() << " " << a.NegNode() << " " << a.DepPosNode() << " " << a.DepNegNode() << " ";
-            os << a.Val() << "\n";
+            os << dev.Name() << " " ;
+            os << dev.PosNodeID() << " " << dev.NegNodeID() << " " << dev.DepPosNodeID() << " " << dev.DepNegNodeID() << " ";
+//            os << dev.PosNode() << " " << dev.NegNode() << " " << dev.DepPosNode() << " " << dev.DepNegNode() << " ";
+            os << dev.Val() << "\n";
 
             return os;
         }
@@ -86,7 +92,11 @@ class node4_device : public node2_device
         std::array<IntTp, 2> _dep_nodes_ids;                   //!< The depended node IDs
 };
 
-//! The packed device (MNA)representation of node_4 devices (elements with 4 nodes associated with them).
+//! The packed device (MNA) representation of 4-node-basic devices (elements with 4 nodes associated with them).
+/*!
+  This class sets the representation used during SPICE MNA formation and simulation (only IDs and values kept),
+  increasing temporal locality during MNA reconstructions and reducing memory usage.
+*/
 class node4_device_packed : public node2_device_packed
 {
     public:

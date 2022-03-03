@@ -6,7 +6,11 @@
 #include <iostream>
 #include "base_types.hpp"
 
-//! The complete device representation of node_2 devices (elements with 2 nodes associated with them).
+//! The complete device representation of 2-node-basic devices (elements with 2 nodes associated with them).
+/*!
+  This class sets the representation used during SPICE netlist parsing (names and tokens are also kept),
+  which are not needed for the simulation but serve as information for the user (in case of error).
+*/
 class node2_device
 {
     public:
@@ -64,7 +68,7 @@ class node2_device
 
         /*!
             @brief    Set the value of the device
-            @return   val The value.
+            @param    val The value.
         */
         void setVal(const double val) { _value = val; }
 
@@ -93,14 +97,16 @@ class node2_device
         /*!
             @brief    Overloaded operator for stdout, that prints the contents of the
             element.
-            @return   The reference to the stream.
+            @param    os    The stream reference.
+            @param    dev   The device reference.
+            @return   The   reference to the stream.
         */
-        friend std::ostream &operator<<(std::ostream& os, const node2_device& a)
+        friend std::ostream &operator<<(std::ostream& os, const node2_device& dev)
         {
-        	os << a._name << " " ;
-        	os << a._nodes_ids[0] << " " << a._nodes_ids[1] << " ";
-//        	os << a._node_names[0] << " " << a._node_names[1] << " ";
-        	os << a._value << "\n";
+        	os << dev._name << " " ;
+        	os << dev._nodes_ids[0] << " " << dev._nodes_ids[1] << " ";
+//        	os << dev._node_names[0] << " " << dev._node_names[1] << " ";
+        	os << dev._value << "\n";
 
         	return os;
         }
@@ -108,9 +114,10 @@ class node2_device
         /*!
             @brief    Overloaded comparison operator, used when sorting
             elements in a container.
-            @return   Boolean with the results of the comparison.
+            @param    dev     The device reference
+            @return         Boolean with the results of the comparison.
         */
-        bool operator<(node2_device &b) { return this->_name < b._name; }
+        bool operator<(node2_device &dev) { return this->_name < dev._name; }
 
     private:
         std::string _name;									   //!< Name of element
@@ -119,7 +126,11 @@ class node2_device
         std::array<IntTp, 2> _nodes_ids;  					   //!< The node IDs
 };
 
-//! The packed device (MNA) representation of node_2 devices (elements with 2 nodes associated with them).
+//! The packed device (MNA) representation of 2-node-basic devices (elements with 2 nodes associated with them).
+/*!
+  This class sets the representation used during SPICE MNA formation and simulation (only IDs and values kept),
+  increasing temporal locality during MNA reconstructions and reducing memory usage.
+*/
 class node2_device_packed
 {
     public:
@@ -164,7 +175,7 @@ class node2_device_packed
 
         /*!
             @brief    Set the value of the device
-            @param   val The value.
+            @param    val The value.
         */
         void setVal(double val) { _value = val; }
 

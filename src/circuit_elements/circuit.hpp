@@ -5,7 +5,15 @@
 #include <fstream>
 #include "parser.hpp"
 
-//! A circuit class. The purpose of this class is to represent a spice netlist.
+//! A circuit class. The purpose of this class is to represent a SPICE netlist.
+/*!
+  This class has all the information provided from the SPICE netlist. This information
+  includes:
+  - Simulator options.
+  - SPICE Elements with their respective connections.
+  - SPICE cards and their information.
+  - Information for assisting the BSPICE operation.
+*/
 class circuit
 {
     public:
@@ -69,7 +77,7 @@ class circuit
         /* SPICE CARDS/OPTIONS - Analysis */
         double _sim_start;				//!< The simulation start value.
         double _sim_end;				//!< The simulation end value.
-        double _sim_step;				//!< The simulation step.
+        double _sim_step;				//!< The simulation step value.
         as_scale_t _scale;				//!< Scale of the analysis.
         analysis_t _type;				//!< Analysis type.
         ODE_meth_t _ode_method;         //!< ODE method in case of transient.

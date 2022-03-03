@@ -7,6 +7,13 @@
 #include "plot.hpp"
 
 //! Class that sets up a connection with GNUPLOT for plotting.
+/*!
+  Supporting class used only for organization purposes and safety reasons
+  (exception handling). The methods provided:
+  - Connect with Gnuplot utility and manage communication.
+  - Create and manage different plot windows.
+  - Configure the plots/legends.
+*/
 class GNU_plotter
 {
 
@@ -83,7 +90,7 @@ void GNU_plotter::next_plot()
 
 /*!
     @brief      Sends the final plot command to GNUPLOT to display the graph.
-    @param      plotnames     The legend names for the staff to plot.
+    @param      plotnames     The legend names for the plots.
 */
 void GNU_plotter::finalize(const std::vector<std::string> &plotnames)
 {
@@ -104,12 +111,10 @@ void GNU_plotter::finalize(const std::vector<std::string> &plotnames)
     @brief      Sends the data that will be plotted on the current window.
     @param      xvals     The x values vector, simulation vector.
     @param      yvals     The y values vector(s), result(s) vector.
+    @param      log       Whether the data is in logarithmic scale or not.
 */
 void GNU_plotter::sendPlotData(const std::vector<double> &xvals, const std::vector<std::vector<double>> &yvals, bool log)
 {
-	using std::vector;
-	using std::endl;
-
 	for(size_t i = 0; i < xvals.size(); i++)
 	{
 	    auto &tmp = yvals[i];
@@ -120,7 +125,7 @@ void GNU_plotter::sendPlotData(const std::vector<double> &xvals, const std::vect
 		/* Create the columns of data */
 		if(log)
 		{
-		    for(size_t k = 0; k < tmp.size(); k++) this->_data_file << "\t" << 20 * log10(tmp[k]);
+		    for(size_t k = 0; k < tmp.size(); k++) this->_data_file << "\t" << 20 * std::log10(tmp[k]);
 		}
 		else
 		{
@@ -132,22 +137,18 @@ void GNU_plotter::sendPlotData(const std::vector<double> &xvals, const std::vect
 	}
 
 	/* Endl also performs a flush */
-	this->_data_file << endl;
+	this->_data_file << std::endl;
 }
 
 /*!
     @brief      Sends the data that will be plotted on the current window, for AC analysis only.
     @param      xvals     The x values vector, simulation vector.
     @param      yvals     The y values vector(s), result(s) vector.
-    @param      mag       Whether to send magnitude data or phase
+    @param      mag       Whether to send magnitude data or phase.
+    @param      log       Whether the data is in logarithmic scale or not.
 */
 void GNU_plotter::sendPlotData(const std::vector<double> &xvals, const std::vector<std::vector<std::complex<double>>> &yvals, bool log, bool mag)
 {
-    using std::vector;
-    using std::abs;
-    using std::arg;
-    using std::endl;
-
     for(size_t i = 0; i < xvals.size(); i++)
     {
         auto &tmp = yvals[i];
@@ -160,17 +161,17 @@ void GNU_plotter::sendPlotData(const std::vector<double> &xvals, const std::vect
         {
             if(log)
             {
-                for(size_t k = 0; k < tmp.size(); k++) this->_data_file << "\t" << 20 * log10(abs(tmp[k]));
+                for(size_t k = 0; k < tmp.size(); k++) this->_data_file << "\t" << 20 * std::log10(std::abs(tmp[k]));
             }
             else
             {
-                for(size_t k = 0; k < tmp.size(); k++) this->_data_file << "\t" << abs(tmp[k]);
+                for(size_t k = 0; k < tmp.size(); k++) this->_data_file << "\t" << std::abs(tmp[k]);
             }
         }
         else
         {
             /* Arg returns in radians convert to degrees */
-            for(size_t k = 0; k < tmp.size(); k++) this->_data_file << "\t" << arg(tmp[k]) * 180/M_PI;
+            for(size_t k = 0; k < tmp.size(); k++) this->_data_file << "\t" << std::arg(tmp[k]) * 180/M_PI;
         }
 
         /* Next sim time */
@@ -178,7 +179,7 @@ void GNU_plotter::sendPlotData(const std::vector<double> &xvals, const std::vect
     }
 
     /* Endl also performs a flush */
-    this->_data_file << endl;
+    this->_data_file << std::endl;
 }
 
 /*!
@@ -261,9 +262,6 @@ void GNU_plotter::setPlotOptions(analysis_t type, as_scale_t scale, std::string 
 */
 void GNU_plotter::plot(circuit &circuit_manager, simulator &simulator_manager)
 {
-	using std::vector;
-	using std::complex;
-
 	auto &plotsources = circuit_manager.PlotSources();
 	auto &plotnodes = circuit_manager.PlotNodes();
 
@@ -346,39 +344,36 @@ void GNU_plotter::plot(circuit &circuit_manager, simulator &simulator_manager)
 */
 void print_cout(circuit &circuit_manager, simulator &simulator_manager)
 {
-    using std::vector;
-    using std::cout;
-
     auto &plotsources = circuit_manager.PlotSources();
     auto &plotnodes = circuit_manager.PlotNodes();
 
-    cout << "***PLOT - RESULTS***\n";
+    std::cout << "***PLOT - RESULTS***\n";
 
     /* Send */
     if(plotsources.size())
     {
-        cout << "Branch currents:\n";
+        std::cout << "Branch currents:\n";
 
         auto &res = simulator_manager.SourceResults();
         auto &tmp = res.front();
 
         for(size_t i = 0; i < tmp.size(); i++)
         {
-            cout << "\t" << plotsources[i] << ": "  << tmp[i] << "\n";
+            std::cout << "\t" << plotsources[i] << ": "  << tmp[i] << "\n";
         }
     }
 
     /* Send */
     if(plotnodes.size())
     {
-        cout << "Node Voltages:\n";
+        std::cout << "Node Voltages:\n";
 
         auto &res = simulator_manager.NodesResults();
         auto &tmp = res.front();
 
         for(size_t i = 0; i < tmp.size(); i++)
         {
-            cout << "\t" << plotnodes[i] << ": "  << tmp[i] << "\n";
+            std::cout << "\t" << plotnodes[i] << ": "  << tmp[i] << "\n";
         }
     }
 }
@@ -386,7 +381,8 @@ void print_cout(circuit &circuit_manager, simulator &simulator_manager)
 /*!
     @brief      Wrapper that calls the appropriate routines for plotting of data.
     @param      circuit_manager     The simulated circuit.
-    @param      simulator_manager   The simulator engines, containing the results of the simulation.
+    @param      simulator_manager   The simulator engine, containing the results of the simulation.
+    @return     The error code, in case of error, otherwise RETURN_SUCCESS.
 */
 return_codes_e plot(circuit &circuit_manager, simulator &simulator_manager)
 {

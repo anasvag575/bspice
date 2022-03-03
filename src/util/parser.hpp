@@ -6,11 +6,13 @@
 #include "circuit_elements.hpp"
 #include "simulator_types.hpp"
 
-/**
-    Class that defines a SPICE parser engine.
-    Provides a tokenizer, converters for strings to numbers and contaings
-    the basic parsing routines for all the SPICE elements and cards.
- */
+
+
+//! A parser class. The purpose of this class is to provide a SPICE parser engine.
+/*!
+  The class tokenizes lines of the SPICE netlist, which then form SPICE elements
+  or cards. These are resolved using the provided syntax/grammar methods.
+*/
 class parser
 {
     public:
@@ -40,10 +42,27 @@ class parser
 		return_codes_e parseSourceSpec(std::vector<std::string> &tokens, source_spec &spec);
 
         /* Spice Cards */
-		return_codes_e parseDCCard(std::vector<std::string> &tokens, double &points, double &stop, double &start, as_scale_t &scale, std::string &source);
-		return_codes_e parseTRANCard(std::vector<std::string> &tokens, double &step, double &tstop, double &tstart);
-		return_codes_e parseACCard(std::vector<std::string> &tokens, double &points, double &fstop, double &fstart, as_scale_t &scale);
-		return_codes_e parsePLOTCard(std::vector<std::string> &tokens, std::vector<std::string> &plot_nodes, std::vector<std::string> &plot_sources);
+		return_codes_e parseDCCard(std::vector<std::string> &tokens,
+		                           double &points,
+		                           double &stop,
+		                           double &start,
+		                           as_scale_t &scale,
+		                           std::string &source);
+
+		return_codes_e parseTRANCard(std::vector<std::string> &tokens,
+		                             double &step,
+		                             double &tstop,
+		                             double &tstart);
+
+		return_codes_e parseACCard(std::vector<std::string> &tokens,
+		                           double &points,
+		                           double &fstop,
+		                           double &fstart,
+		                           as_scale_t &scale);
+
+		return_codes_e parsePLOTCard(std::vector<std::string> &tokens,
+		                             std::vector<std::string> &plot_nodes,
+		                             std::vector<std::string> &plot_sources);
 
     private:
 		/* Grammar methods for components */
@@ -55,23 +74,32 @@ class parser
         bool IsValidNode(const std::string &token);
         bool IsValidName(const std::string &token);
         bool IsValidFpValue(const std::string &token);
-        bool IsValidIntValue(std::string &token);
+        bool IsValidIntValue(const std::string &token);
 
         /* Methods for Spice Elements */
-        bool isValidTwoNodeElement(std::vector<std::string> &tokens);
-        bool isValidTwoNodeEnhancedElement(std::vector<std::string> &tokens);
-        bool isValidFourNodeElement(std::vector<std::string> &tokens);
-        bool isValidCurrentControlElement(std::vector<std::string> &tokens);
+        bool isValidTwoNodeElement(const std::vector<std::string> &tokens);
+        bool isValidFourNodeElement(const std::vector<std::string> &tokens);
+        bool isValidCurrentControlElement(const std::vector<std::string> &tokens);
 
         // TODO - Also modify to have modifiers for the floating number extensions
 //        _decimal_number = std::regex("(([0-9]+)(\\.[0-9]+)?([FPNUMKGT]|(MEG))?)|([0-9]+E[+-][0-9]+)", std::regex_constants::icase);
 
-        /* Delimiters */	// TODO - Choose the version either strtok or stdregex
+        // TODO - Choose the version either strtok or stdregex
 //        const std::regex _delimiters = std::regex("[ (),\\s]+");
+
+        //!< String with all the delimiter characters used for tokenization.
         const char* _delimiters = " (),\t\n\r";
+
+        //!< Regex pattern used for alphanumeric types.
         const std::regex _alphanumeric = std::regex("[[:alnum:]]+", std::regex_constants::icase);
+
+        //!< Regex pattern used for decimal numbers.
         const std::regex _decimal_number = std::regex("([[:digit:]]+)(\\.[[:digit:]]+)?(E[+-][[:digit:]]+)?", std::regex_constants::icase);
+
+        //!< Regex pattern used for integer numbers.
         const std::regex _integer_number = std::regex("([[:digit:]]+)(E[+-][[:digit:]]+)?", std::regex_constants::icase);
+
+        //!< Regex pattern used for alphanumerics with underscores.
         const std::regex _alphanumeric_with_underscores = std::regex("[[:alnum:]_]+", std::regex_constants::icase);
 };
 

@@ -324,7 +324,7 @@ circuit::circuit(const std::string &input_file_name)
         std::cout << "CCCS: " << this->_cccs.size() << "\n";
 
         std::cout << "ICS: " << this->_ics.size() << "\n";
-        for(auto &it : this->_ics) ics_count[it.getType()]++;
+        for(auto &it : this->_ics) ics_count[it.Type()]++;
         std::cout << "\tConstant: " << ics_count[CONSTANT_SOURCE] << "\n";
         std::cout << "\tExp: " << ics_count[EXP_SOURCE] << "\n";
         std::cout << "\tSine: " << ics_count[SINE_SOURCE] << "\n";
@@ -332,7 +332,7 @@ circuit::circuit(const std::string &input_file_name)
         std::cout << "\tPulse: " << ics_count[PULSE_SOURCE] << "\n";
 
         std::cout << "IVS: " << this->_ivs.size() << "\n";
-        for(auto &it : this->_ivs) ivs_count[it.getType()]++;
+        for(auto &it : this->_ivs) ivs_count[it.Type()]++;
         std::cout << "\tConstant: " << ivs_count[CONSTANT_SOURCE] << "\n";
         std::cout << "\tExp: " << ivs_count[EXP_SOURCE] << "\n";
         std::cout << "\tSine: " << ivs_count[SINE_SOURCE] << "\n";

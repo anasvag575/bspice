@@ -54,9 +54,9 @@ static std::string bspice_error_report(return_codes_e errcode)
 
 /*!
     @brief      The entire simulation run, non-interactive.
-    @param      argc The command line process's number of arguments
-    @param      argv The command line process's arguments vector
-    @return     Error code in case of error, otherwise RETURN_SUCESS
+    @param      argc The command line process's number of arguments.
+    @param      argv The command line process's arguments vector.
+    @return     Error code in case of error, otherwise RETURN_SUCESS.
 */
 static return_codes_e bspice_single_run(int argc, char **argv)
 {
@@ -79,8 +79,8 @@ static return_codes_e bspice_single_run(int argc, char **argv)
 
 /*!
     @brief      The program entry point.
-    @param      argc The command line process's number of arguments
-    @param      argv The command line process's arguments vector
+    @param      argc The command line process's number of arguments.
+    @param      argv The command line process's arguments vector.
     @return     Error code in case of error, otherwise RETURN_SUCESS.
 */
 int main(int argc, char **argv)
@@ -92,7 +92,7 @@ int main(int argc, char **argv)
         return FAIL_ARG_NUM;
     }
 
-    /* Non-interactive */
+    /* Enter BSPICE */
     return_codes_e err = bspice_single_run(argc, argv);
     if(err != RETURN_SUCCESS) std::cout << bspice_error_report(err) << std::endl;
     return err;

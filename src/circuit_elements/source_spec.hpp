@@ -7,11 +7,19 @@
 #include "simulator_types.hpp"
 
 //! The transient specification of ICS and IVS (AC and TRAN_SPEC).
+/*!
+  Class provides the specifications and the optional parameters of a source (IVS and ICS):
+  - Type of source (Needed only for transient analysis)
+  - AC specification (AC magnitude and AC phase)
+  - TRAN specification (Transient source type parameters)
+*/
 class source_spec
 {
     public:
         /*!
-            @brief    Default constructor.
+            @brief    Default constructor. In case the user
+            does not specify AC specs for this source, we
+            set it to 1, since it is the most common use case.
         */
 		source_spec()
 		{
@@ -23,7 +31,27 @@ class source_spec
 			@brief   Returns the AC value of this source.
 			@return	 The AC value.
 		*/
-		std::complex<double> getACVal(void) { return _ac_val; }
+		std::complex<double> ACVal(void) { return _ac_val; }
+
+        /*!
+            @brief      Returns the type of source (for transient analysis).
+            @return     The type.
+        */
+        tran_source_t Type(void) { return _type; }
+
+        /*!
+            @brief  Returns the transient values for transient type source.
+            For PWL sources it returns the current/voltage values, while
+            in all sources, the parameters.
+            @return     The values vector.
+        */
+        std::vector<double> &TranVals(void) { return _tran_vals; }
+
+        /*!
+            @brief  Returns the transient time values for PWL source.
+            @return     The values vector.
+        */
+        std::vector<double> &TranTimes(void) { return _tran_time; }
 
 		/*!
 			@brief  Set the complex AC value with the inputs
@@ -34,30 +62,10 @@ class source_spec
 		void setACVal(double ac_mag, double ac_phase) { _ac_val = std::polar(ac_mag, ac_phase); }
 
 		/*!
-			@brief      Returns the type of source (for transient analysis).
-			@return 	The type
-		*/
-		tran_source_t getType(void) { return _type; }
-
-		/*!
 			@brief  Sets the type of source (for transient analysis).
-			@param 	type	The type
+			@param 	type	The type.
 		*/
 		void setType(tran_source_t type) { _type = type; }
-
-		/*!
-			@brief  Returns the transient values for transient type source.
-			For PWL sources it returns the current/voltage values, while
-			in all sources, the parameters.
-			@return 	The values vector
-		*/
-		std::vector<double> &getTranVals(void) { return _tran_vals; }
-
-		/*!
-			@brief  Returns the transient time values for PWL source.
-			@return 	The values vector
-		*/
-		std::vector<double> &getTranTimes(void) { return _tran_time; }
 
     private:
         /* AC analysis */

@@ -108,6 +108,7 @@ void MNA::ResMNAStamp(tripletList_d &mat, resistor_packed &res)
 	@param      mat    The triplet matrix to insert the stamp.
 	@param		offset The offset of the stamp inside the array.
 	@param		coil   The coil.
+	@param      type   The type of analysis performed.
 
 */
 void MNA::CoilMNAStamp(tripletList_d &mat, IntTp offset, coil_packed &coil, const analysis_t type)
@@ -138,6 +139,7 @@ void MNA::CoilMNAStamp(tripletList_d &mat, IntTp offset, coil_packed &coil, cons
     (i, j, val) inside the mat array.
     @param      mat    The triplet matrix to insert the stamp.
     @param		cap	   The capacitor.
+    @param      type   The type of analysis performed.
 */
 void MNA::CapMNAStamp(tripletList_d &mat, capacitor_packed &cap, const analysis_t type)
 {
@@ -177,7 +179,7 @@ void MNA::IcsMNAStamp(DensVecD &rh, ics_packed &source)
     (i, j, val) inside the mat array.
     @param      mat    The triplet matrix to insert the stamp.
     @param      rh     The right hand side vector of the system.
-    @param		offset The offset of the stamp inside the array
+    @param		offset The offset of the stamp inside the array.
     @param		source The IVS.
 */
 void MNA::IvsMNAStamp(tripletList_d &mat, DensVecD &rh, IntTp offset, ivs_packed &source)
@@ -203,7 +205,7 @@ void MNA::IvsMNAStamp(tripletList_d &mat, DensVecD &rh, IntTp offset, ivs_packed
     @brief      Inserts the MNA stamp of the VCVS in triplet form
     (i, j, val) inside the mat array.
     @param      mat    The triplet matrix to insert the stamp.
-    @param      offset The offset of the stamp inside the array
+    @param      offset The offset of the stamp inside the array.
     @param      source The VCVS.
 */
 void MNA::VcvsMNAStamp(tripletList_d &mat, IntTp offset, vcvs_packed &source)
@@ -239,7 +241,6 @@ void MNA::VcvsMNAStamp(tripletList_d &mat, IntTp offset, vcvs_packed &source)
     @brief      Inserts the MNA stamp of the VCCS in triplet form
     (i, j, val) inside the mat array.
     @param      mat    The triplet matrix to insert the stamp.
-    @param      offset The offset of the stamp inside the array
     @param      source The VCCS.
 */
 void MNA::VccsMNAStamp(tripletList_d &mat, vccs_packed &source)
@@ -356,7 +357,7 @@ void MNA::ResMNAStamp(tripletList_cd &mat, resistor_packed &res)
     @param      mat    The triplet matrix to insert the stamp.
     @param      offset The offset of the stamp inside the array.
     @param      coil   The coil.
-    @param      freq   The frequency we generate the array at
+    @param      freq   The frequency we generate the matrix at.
 */
 void MNA::CoilMNAStamp(tripletList_cd &mat, IntTp offset, coil_packed &coil, double freq)
 {
@@ -384,7 +385,7 @@ void MNA::CoilMNAStamp(tripletList_cd &mat, IntTp offset, coil_packed &coil, dou
     (i, j, val) inside the mat array. For AC analysis only.
     @param      mat    The triplet matrix to insert the stamp.
     @param      cap    The capacitor.
-    @param      freq   The frequency we generate the array at
+    @param      freq   The frequency we generate the matrix at.
 */
 void MNA::CapMNAStamp(tripletList_cd &mat, capacitor_packed &cap, double freq)
 {
@@ -411,7 +412,7 @@ void MNA::CapMNAStamp(tripletList_cd &mat, capacitor_packed &cap, double freq)
 void MNA::IcsMNAStamp(DensVecCompD &rh, ics_packed &source)
 {
     auto pos = source.PosNodeID(), neg = source.NegNodeID();
-    auto val = source.getACVal();
+    auto val = source.ACVal();
 
     if(pos != -1) rh[pos] -= val;
     if(neg != -1) rh[neg] += val;
@@ -421,7 +422,7 @@ void MNA::IcsMNAStamp(DensVecCompD &rh, ics_packed &source)
     @brief      Inserts the MNA stamp of the IVS in triplet form
     (i, j, val) inside the mat array. For AC analysis only.
     @param      mat    The triplet matrix to insert the stamp.
-    @param      offset The offset of the stamp inside the array
+    @param      offset The offset of the stamp inside the array.
     @param      source The IVS.
 */
 void MNA::IvsMNAStamp(tripletList_cd &mat, IntTp offset, ivs_packed &source)
@@ -446,19 +447,19 @@ void MNA::IvsMNAStamp(tripletList_cd &mat, IntTp offset, ivs_packed &source)
     @brief      Inserts the MNA stamp of the IVS in triplet form
     (i, j, val) inside the right hand side vector. For AC analysis only.
     @param      rh     The right hand side vector of the system.
-    @param      offset The offset of the stamp inside the array
+    @param      offset The offset of the stamp inside the array.
     @param      source The IVS.
 */
 void MNA::IvsMNAStamp(DensVecCompD &rh, IntTp offset, ivs_packed &source)
 {
-    rh[offset] += source.getACVal();
+    rh[offset] += source.ACVal();
 }
 
 /*!
     @brief      Inserts the MNA stamp of the VCVS in triplet form
     (i, j, val) inside the mat array. For AC analysis only.
     @param      mat    The triplet matrix to insert the stamp.
-    @param      offset The offset of the stamp inside the array
+    @param      offset The offset of the stamp inside the array.
     @param      source The VCVS.
 */
 void MNA::VcvsMNAStamp(tripletList_cd &mat, IntTp offset, vcvs_packed &source)
@@ -495,7 +496,6 @@ void MNA::VcvsMNAStamp(tripletList_cd &mat, IntTp offset, vcvs_packed &source)
     @brief      Inserts the MNA stamp of the VCCS in triplet form
     (i, j, val) inside the mat array. For AC analysis only.
     @param      mat    The triplet matrix to insert the stamp.
-    @param      offset The offset of the stamp inside the array
     @param      source The VCCS.
 */
 void MNA::VccsMNAStamp(tripletList_cd &mat, vccs_packed &source)
@@ -535,7 +535,7 @@ void MNA::VccsMNAStamp(tripletList_cd &mat, vccs_packed &source)
     @brief      Inserts the MNA stamp of the CCVS in triplet form
     (i, j, val) inside the mat array. For AC analysis only.
     @param      mat    The triplet matrix to insert the stamp.
-    @param      offset The offset of the stamp inside the array
+    @param      offset The offset of the stamp inside the array.
     @param      source The CCVS.
 */
 void MNA::CcvsMNAStamp(tripletList_cd &mat, IntTp offset, ccvs_packed &source)
@@ -668,7 +668,7 @@ double MNA::PULSESourceEval(std::vector<double> &vvals, double time)
 /*!
 	@brief      Evaluates a PWL (Piese-Wise Linear) source at a given simulation time.
 	@param		tvals		The time(x) values of the PWL.
-	@param		vvals		The voltage/current(y) values of the PWL.
+	@param		vvals		The voltage/current values(y) of the PWL.
 	@param		time		The simulation time.
 */
 double MNA::PWLSourceEval(std::vector<double> &tvals, std::vector<double> &vvals, double time)
@@ -694,15 +694,15 @@ void MNA::UpdateTRANVec(DensVecD &rh, double time)
 	/* Transient stamps for IVS */
 	for(auto &it : this->_ivs)
 	{
-		auto &vvals = it.getTranVals();
+		auto &vvals = it.TranVals();
 		double val;
 
-		switch(it.getType())
+		switch(it.Type())
 		{
 			case CONSTANT_SOURCE: val = it.Val(); break;
 			case EXP_SOURCE: val = EXPSourceEval(vvals, time); break;
 			case SINE_SOURCE: val = SINSourceEval(vvals, time); break;
-            case PWL_SOURCE: val = PWLSourceEval(it.getTranTimes(), vvals, time); break;
+            case PWL_SOURCE: val = PWLSourceEval(it.TranTimes(), vvals, time); break;
 			case PULSE_SOURCE: val = PULSESourceEval(vvals, time); break;
 			default: val = 0; // Will never reach here
 		}
@@ -716,15 +716,15 @@ void MNA::UpdateTRANVec(DensVecD &rh, double time)
 	{
 		auto pos = it.PosNodeID();
 		auto neg = it.NegNodeID();
-		auto &vvals = it.getTranVals();
+		auto &vvals = it.TranVals();
 		double val;
 
-		switch(it.getType())
+		switch(it.Type())
 		{
 			case CONSTANT_SOURCE: val = it.Val(); break;
 			case EXP_SOURCE: val = EXPSourceEval(vvals, time); break;
 			case SINE_SOURCE: val = SINSourceEval(vvals, time); break;
-			case PWL_SOURCE: val = PWLSourceEval(it.getTranTimes(), vvals, time); break;
+			case PWL_SOURCE: val = PWLSourceEval(it.TranTimes(), vvals, time); break;
 			case PULSE_SOURCE: val = PULSESourceEval(vvals, time); break;
 			default: val = 0; // Will never reach here
 		}
@@ -1037,7 +1037,7 @@ void MNA::CreatePackedVecs(circuit &circuit_manager)
 
 /*!
     @brief      Set all the parameters of the MNA engine. This also,
-    sets the offsets of each voltage like element inside the MNA system.
+    sets the offsets of each voltage-source-like element inside the MNA system.
     @param      circuit_manager     The circuit.
 */
 void MNA::SetMNAParams(circuit &circuit_manager)
@@ -1095,9 +1095,9 @@ void MNA::SetMNAParams(circuit &circuit_manager)
 
 /*!
     @brief      Prints the triplet matrix given. Used only for debugging.
-    @param      mat     The triplet matrix to be printed
+    @param      mat     The triplet matrix to be printed.
 */
-void debug_triplet_mat(tripletList_d &mat)
+void MNA::debug_triplet_mat(tripletList_d &mat)
 {
     /* Set precision */
     std::cout.precision(15);

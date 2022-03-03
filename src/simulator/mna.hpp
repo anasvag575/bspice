@@ -7,7 +7,18 @@
 
 
 
-//! A simulator class. The purpose of this class is to construct MNA matrices and vectors.
+//! An MNA class. The purpose of this class is to construct MNA matrices and vectors.
+/*!
+  This class has all the methods needed to create the MNA matrices for each corresponding
+  simulation provided by BSPICE. The location of each element in the MNA matrix is kept
+  as internal information managed by this class only.\n
+  Some of the provided methods can perform:
+  - General MNA Matrix construction.
+  - General MNA vector construction.
+  - MNA stampers.
+  - TRAN vector updates.
+  - Plot vector construction and storing.
+*/
 class MNA
 {
 	public:

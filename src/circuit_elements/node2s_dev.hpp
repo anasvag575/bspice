@@ -7,7 +7,11 @@
 #include <iostream>
 #include "base_types.hpp"
 
-//! The complete device representation of node_2 devices (elements with 2 nodes associated with them and a depended source).
+//! The complete device representation of 2-node-source (elements with 2 nodes associated with them and a depended source).
+/*!
+  This class sets the representation used during SPICE netlist parsing (names and tokens are also kept),
+  which are not needed for the simulation but serve as information for the user (in case of error).
+*/
 class node2s_device : public node2_device
 {
     public:
@@ -46,14 +50,16 @@ class node2s_device : public node2_device
         /*!
             @brief    Overloaded operator for stdout, that prints the contents of the
             element.
-            @return   The reference to the stream.
+            @param      os  The reference to the stream.
+            @param      dev The reference to the device.
+            @return         The reference to the stream.
         */
-        friend std::ostream &operator<<(std::ostream& os, node2s_device& a)
+        friend std::ostream &operator<<(std::ostream& os, node2s_device& dev)
         {
-        	os << a.Name() << " " ;
-            os << a.PosNodeID() << " " << a.NegNodeID() << " " << a.SourceID() << " ";
-//            os << a.PosNode() << " " << a.NegNode() << " " << a.SourceName() << " ";;
-        	os << a.Val() << "\n";
+        	os << dev.Name() << " " ;
+            os << dev.PosNodeID() << " " << dev.NegNodeID() << " " << dev.SourceID() << " ";
+//            os << dev.PosNode() << " " << dev.NegNode() << " " << dev.SourceName() << " ";;
+        	os << dev.Val() << "\n";
 
         	return os;
         }
@@ -63,7 +69,11 @@ class node2s_device : public node2_device
         IntTp _source_id;           //!< The depended source ID
 };
 
-//! The packed device (MNA)representation of node_2 devices (elements with 2 nodes associated with them and a depended source).
+//! The packed device (MNA) representation of 2-node-source (elements with 2 nodes associated with them and a depended source).
+/*!
+  This class sets the representation used during SPICE MNA formation and simulation (only IDs and values kept),
+  increasing temporal locality during MNA reconstructions and reducing memory usage.
+*/
 class node2s_device_packed : public node2_device_packed
 {
     public:

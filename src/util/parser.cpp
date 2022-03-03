@@ -1,13 +1,12 @@
 #include "parser.hpp"
 
 /*!
-	@brief      Function that tokenizes the input line and converts, from the spice file.
+	@brief      Function that tokenizes the input line from the spice file.
 	The tokens are returned in uppercase only, since SPICE format is not case sensitive.
-	Returns, the tokens in the provided argument and whether the vector
-	is empty or not (with valid tokens)
+	Returns, the tokens in the provided argument and whether the vector is empty or not (with any valid tokens).
 	@param      line    		  The line to be tokenized.
 	@param      tokens    		  The tokens that form the current spice element/card.
-	@return     True in case the vector is not empty.
+	@return     True in case the vector is not empty, otherwise false.
 */
 bool parser::tokenizer(std::string &line, std::vector<std::string> &tokens)
 {
@@ -34,7 +33,8 @@ bool parser::tokenizer(std::string &line, std::vector<std::string> &tokens)
     if(tokens.empty()) return false;
 
 	// REGEX version //
-//    std::sregex_token_iterator first{line.begin(), line.end(), _delimiters, -1}, last;//the '-1' is what makes the regex split (-1 := what was not matched)
+    //the '-1' is what makes the regex split (-1 := what was not matched)
+//    std::sregex_token_iterator first{line.begin(), line.end(), _delimiters, -1}, last;
 //    tokens = {first, last};
 //
 //    /* Empty line or line with 1 empty string */
@@ -46,30 +46,31 @@ bool parser::tokenizer(std::string &line, std::vector<std::string> &tokens)
     return true;
 }
 
-/************** SPICE ELEMENTS **************/
+
 
 /*!
-    @brief      Routine parses the token stream and checks the input maps where it:
-                    - Verifies correct grammar and syntax of the tokens.
-                    - Verifies the uniqueness of the element.
-                    - Checks if new nodes are added to the circuit.
-    The values then are loaded in this element, therefore this routine serving as the main initializer
-    of this type of element. <2-node basic> is an element of this type (ETYPE = R/L/C):
-                            ##### ETYPE<name> <V+> <V-> <Value> #####
-    @param      tokens    The tokens that form the coil element.
-    @param      node2_device   Element reference.
+    @brief  Routine parses the token stream and checks the input maps where it:
+            - Verifies correct grammar and syntax of the tokens.
+            - Verifies the uniqueness of the element.
+            - Checks if new nodes are added to the circuit.
+    The values then are loaded in this element, therefore this routine serves as the main initializer
+    of this type of element (2-node-basic and 2-node-extend).\n
+    [2-node-basic] is an element of this type  => [R/L/C][name] [V+] [V-] [Value]\n
+    [2-node-extend] is an element of this type => [I/V][name] [V+] [V-] [Value] {AC [mag] [phase]} {TRAN_SPEC}\n
+    @param      tokens      The tokens that form the element.
+    @param      element     Element reference.
     @param      nodes     	Map that contains all the nodes in the circuit along with their unique nodeNum.
     @param      elements  	Map that contains all the unique elements along with their ID in the circuit.
-    @param      id   		Unique ID of this element.
-    @param		complete	Flag if node device to be parsed is node2(true) or node2-xxx(false)
+    @param      device_id   Unique ID of this element.
+    @param		complete	Flag if device to be parsed is 2-node-basic(true) or 2-node-extend(false)
     @return     RETURN_SUCCESS or appropriate failure code.
 */
 return_codes_e parser::parse2NodeDevice(std::vector<std::string> &tokens,
-											   node2_device &element,
-											   hashmap_str_t &elements,
-											   hashmap_str_t &nodes,
-											   size_t device_id,
-											   bool complete)
+										node2_device &element,
+										hashmap_str_t &elements,
+										hashmap_str_t &nodes,
+										size_t device_id,
+										bool complete)
 {
 	/* Check the size of the tokens at hand.
 	 * Complete devices need exactly 4, while extended at least 4 */
@@ -100,19 +101,18 @@ return_codes_e parser::parse2NodeDevice(std::vector<std::string> &tokens,
 }
 
 /*!
-    @brief      Routine parses the token stream and checks the input maps where it:
-                    - Verifies correct grammar and syntax of the tokens.
-                    - Verifies the uniqueness of the element.
-                    - Checks if new nodes are added to the circuit.
-    The values then are loaded in this element, therefore this routine serving as the main initializer
-    of this type of element. <2-node basic> is an element of this type (ETYPE = R/L/C):
-                            ##### ETYPE<name> <V+> <V-> <Value> #####
-    @param      tokens    The tokens that form the coil element.
-    @param      node2_device   Element reference.
+    @brief  Routine parses the token stream and checks the input maps where it:
+            - Verifies correct grammar and syntax of the tokens.
+            - Verifies the uniqueness of the element.
+            - Checks if new nodes are added to the circuit.
+    The values then are loaded in this element, therefore this routine serves as the main initializer
+    of this type of element (2-node-source).\n
+    [2-node-source] is an element of this type => [H/F][name] [V+] [V-] [Vname] [Value]\n
+    @param      tokens      The tokens that form the element.
+    @param      element     Element reference.
     @param      nodes       Map that contains all the nodes in the circuit along with their unique nodeNum.
     @param      elements    Map that contains all the unique elements along with their ID in the circuit.
-    @param      id          Unique ID of this element.
-    @param      complete    Flag if node device to be parsed is node2(true) or node2-xxx(false)
+    @param      device_id   Unique ID of this element.
     @return     RETURN_SUCCESS or appropriate failure code.
 */
 return_codes_e parser::parse2SNodeDevice(std::vector<std::string> &tokens,
@@ -122,7 +122,7 @@ return_codes_e parser::parse2SNodeDevice(std::vector<std::string> &tokens,
                                          size_t device_id)
 {
     /* Check correct syntax */
-    if(tokens.size() != 5 || !isValidTwoNodeEnhancedElement(tokens)) return FAIL_PARSER_INVALID_FORMAT;
+    if(!isValidCurrentControlElement(tokens)) return FAIL_PARSER_INVALID_FORMAT;
 
     /* Check uniqueness  */
     if(elements.find(tokens[0]) != elements.end()) return FAIL_PARSER_ELEMENT_EXISTS;
@@ -147,18 +147,19 @@ return_codes_e parser::parse2SNodeDevice(std::vector<std::string> &tokens,
 }
 
 /*!
-    @brief      Routine parses the token stream and checks the input maps where it:
-                    - Verifies correct grammar and syntax of the tokens.
-                    - Verifies the uniqueness of the element.
-                    - Checks if new nodes are added to the circuit.
+    @brief  Routine parses the token stream and checks the input maps where it:
+            - Verifies correct grammar and syntax of the tokens.
+            - Verifies the uniqueness of the element.
+            - Checks if new nodes are added to the circuit.
     The values then are loaded in this element, therefore this routine serving as the main initializer
-    of this type of element. <4-node basic> is an element of this type (ETYPE = E/G):
-                            ##### ETYPE<name> <V+> <V-> <Vd+> <Vd-> <Value> #####
-    @param      tokens    The tokens that form the coil element.
-    @param      node4_device   Element reference.
+    of this type of element (4-node-basic).
+    [4-node-basic] is an element of this type (ETYPE = E/G) => [E/G][name] [V+] [V-] [Vd+] [Vd-] [Value]
+                            #####  #####
+    @param      tokens      The tokens that form the coil element.
+    @param      element     Element reference.
     @param      nodes       Map that contains all the nodes in the circuit along with their unique nodeNum.
     @param      elements    Map that contains all the unique elements along with their ID in the circuit.
-    @param      id          Unique ID of this element.
+    @param      device_id   Unique ID of this element.
     @return     RETURN_SUCCESS or appropriate failure code.
 */
 return_codes_e parser::parse4NodeDevice(std::vector<std::string> &tokens,
@@ -196,15 +197,14 @@ return_codes_e parser::parse4NodeDevice(std::vector<std::string> &tokens,
 }
 
 /*!
-    @brief      Routine parses the token stream:
-                    - Verifies correct grammar and syntax of the tokens.
-                    - Checks for duplicate AC or TRAN_SPEC.
-    The values then are loaded in this element, therefore this routine serving as the main initializer
-    of this type of element. A source_spec belongs to an element of this type
-    (2-node extend-2 => ETYPE = I/V):
-                 ##### ETYPE<name> <V+> <V-> <Value> {AC <mag> <phase>} {TRAN_SPEC} #####
-    @param      tokens    		The tokens that form the source_spec.
-    @param      source_spec    Source spec reference.
+    @brief  Routine parses the token stream:
+            - Verifies correct grammar and syntax of the tokens.
+            - Checks for duplicate AC or TRAN_SPEC.
+    The values then are loaded in this element, therefore this routine serves as the main initializer
+    of this type of element (2-node extend).\n
+    A source_spec belongs to an element of [2-node extend] => [I/V][name] [V+] [V-] [Value] {AC [mag] [phase]} {TRAN_SPEC}\n
+    @param      tokens      The tokens that form the source_spec.
+    @param      spec        Source spec reference.
     @return     RETURN_SUCCESS or appropriate failure code.
 */
 return_codes_e parser::parseSourceSpec(std::vector<std::string> &tokens, source_spec &spec)
@@ -214,8 +214,8 @@ return_codes_e parser::parseSourceSpec(std::vector<std::string> &tokens, source_
     size_t tokens_left = tokens.size() - 4;
     size_t idx = 4;
 
-    auto &tvals = spec.getTranTimes();
-    auto &vvals = spec.getTranVals();
+    auto &tvals = spec.TranTimes();
+    auto &vvals = spec.TranVals();
 
     /* TODO - More readable and efficient */
     while(tokens_left && format)
@@ -310,12 +310,12 @@ return_codes_e parser::parseSourceSpec(std::vector<std::string> &tokens, source_
     return RETURN_SUCCESS;
 }
 
-/************** SPICE CARDS **************/
+
 
 /*!
-    @brief      Function verifies the syntaxes for a direct analysis spice card (.DC):
-                    ##### .DC  {DEC/LIN } <Element>  <stop>  <start>  <step> #####
-                    ##### .DC  {LOG}  <Element>  <stop>  <start>  <points> #####
+    @brief  Function verifies the syntaxes for a direct analysis spice card (.DC):\n
+            => .DC  [DEC/LIN] [Element]  [stop]  [start]  step]\n
+            => .DC  LOG  [Element]  [stop]  [start]  [points]\n
     Along with this, it returns the appropriate values for each token.
     @param      tokens      The tokens that form the element.
     @param      points      Either the step (DEC/LIN scale) or the points per decade (LOG).
@@ -323,9 +323,14 @@ return_codes_e parser::parseSourceSpec(std::vector<std::string> &tokens, source_
     @param      start       The start voltage/current of the analysis.
     @param      scale       The scale of the analysis (DEC or LOG)
     @param      source      The element name, of the source under analysis (ICS or IVS)
-    @return     The error code in case of error, otherwise RETURN_SUCESS.
+    @return     RETURN_SUCCESS or appropriate failure code.
 */
-return_codes_e parser::parseDCCard(std::vector<std::string> &tokens, double &points, double &stop, double &start, as_scale_t &scale, std::string &source)
+return_codes_e parser::parseDCCard(std::vector<std::string> &tokens,
+                                   double &points,
+                                   double &stop,
+                                   double &start,
+                                   as_scale_t &scale,
+                                   std::string &source)
 {
     if(tokens.size() != 5 && tokens.size() != 6) return FAIL_PARSER_INVALID_FORMAT;
 
@@ -362,8 +367,8 @@ return_codes_e parser::parseDCCard(std::vector<std::string> &tokens, double &poi
 }
 
 /*!
-	@brief      Function verifies the syntax for a transient analysis spice card (.TRAN):
-							##### .TRAN  <tstep>  <tstop>  #####
+	@brief  Function verifies the syntax for a transient analysis spice card (.TRAN):
+            => .TRAN  [tstep]  [tstop]
 	Along with this, it returns the value contained in the <Value> token via the
 	converted_val argument.
 
@@ -371,7 +376,7 @@ return_codes_e parser::parseDCCard(std::vector<std::string> &tokens, double &poi
 	@param      step     	The time step point of the analysis.
 	@param      tstop     	The end time of the analysis
 	@param      tstart     	Starting time of the analysis, always set at 0.
-	@return     The error code in case of error, otherwise RETURN_SUCESS.
+	@return     RETURN_SUCCESS or appropriate failure code.
 */
 return_codes_e parser::parseTRANCard(std::vector<std::string> &tokens, double &step, double &tstop, double &tstart)
 {
@@ -396,18 +401,22 @@ return_codes_e parser::parseTRANCard(std::vector<std::string> &tokens, double &s
 }
 
 /*!
-	@brief      Function verifies the syntaxes for a frequency analysis spice card (.AC):
-					##### .AC  DEC/LIN  <step>  <stop>  <start> #####
-					##### .AC  LOG  <points>  <stop>  <start>  #####
+	@brief  Function verifies the syntaxes for a frequency analysis spice card (.AC):
+            => .AC  DEC/LIN  [step]  [stop]  [start]
+            => .AC  LOG  [points]  [stop]  [start]
 	Along with this, it returns the appropriate values for each token.
 	@param      tokens    	The tokens that form the element.
 	@param      points     	Either the step (DEC/LIN scale) or the points per decade (LOG).
 	@param      fstop     	The end voltage/current of the analysis.
 	@param      fstart     	The start voltage/current of the analysis.
-	@param		scale		The scale of the analysis (DEC or LOG)
-	@return     The error code in case of error, otherwise RETURN_SUCESS.
+	@param		scale		The scale of the analysis (DEC or LOG).
+	@return     RETURN_SUCCESS or appropriate failure code.
 */
-return_codes_e parser::parseACCard(std::vector<std::string> &tokens, double &points, double &fstop, double &fstart, as_scale_t &scale)
+return_codes_e parser::parseACCard(std::vector<std::string> &tokens,
+                                   double &points,
+                                   double &fstop,
+                                   double &fstart,
+                                   as_scale_t &scale)
 {
     if(tokens.size() != 5) return FAIL_PARSER_INVALID_FORMAT;
 
@@ -433,22 +442,24 @@ return_codes_e parser::parseACCard(std::vector<std::string> &tokens, double &poi
 }
 
 /*!
-	@brief      Function verifies the syntaxes for a plot/print spice card (.PLOT):
-					##### .PLOT  V(nodename1) I(Vsourcename1) ... V(nodenameN) #####
+	@brief  Function verifies the syntaxes for a plot/print spice card (.PLOT):
+            => .PLOT  V(nodename1) I(Vsourcename1) ... V(nodenameN)
 	Along with this, it returns the tokens (names of the nodes or sources).
 	@param      tokens    		The tokens that form the element.
 	@param      plot_nodes		The nodes to be plotted
 	@param      plot_sources 	The sources to be plotted
-	@return     The error code in case of error, otherwise RETURN_SUCESS.
+	@return     RETURN_SUCCESS or appropriate failure code.
 */
-return_codes_e parser::parsePLOTCard(std::vector<std::string> &tokens, std::vector<std::string> &plot_nodes, std::vector<std::string> &plot_sources)
+return_codes_e parser::parsePLOTCard(std::vector<std::string> &tokens,
+                                     std::vector<std::string> &plot_nodes,
+                                     std::vector<std::string> &plot_sources)
 {
 	size_t tmp_size = tokens.size() - 1;
 	size_t idx = 1;
 
 	/* Since tokenization by the initial breakdown of the tokens, eliminates
 	 * parentheses we do not have to resplit the tokens based on a different pattern/spec.
-	 * The tokens are already in the form of {<V> nodename} or {<I> Vsourcename} */
+	 * The tokens are already in the form of {[V] nodename} or {[I] Vsourcename} */
 
 	/* Size has to be an odd number since we have pairs */
 	if(tmp_size % 2) return FAIL_PARSER_INVALID_FORMAT;
@@ -479,12 +490,12 @@ return_codes_e parser::parsePLOTCard(std::vector<std::string> &tokens, std::vect
 	return RETURN_SUCCESS;
 }
 
-/************* GRAMMAR **************/
+
 
 /*!
     @brief      Function returns the unique ID of a node in the circuit
     (index in the MNA matrix), given the name of a node.
-    @param      nodes     The nodes hashmap with <name, ID> associations .
+    @param      nodes     The nodes hashmap with {name, ID} associations .
     @param      name      The node name.
     @return     The node unique ID.
 */
@@ -529,15 +540,15 @@ IntTp parser::resolveIntNum(const std::string &num)
     return stod(num);
 }
 
-/************** SYNTAX **************/
+
 
 /*!
-	@brief      Function verifies the basic element syntax of this type (Resistors, Coils, Capacitors):
-						        #####<Element>  <V+>  <V->  <Value>#####
+	@brief  Function verifies the basic element syntax of this type (Resistors, Coils, Capacitors):\n
+            => [Element]  [V+]  [V-]  [Value]
 	@param      tokens      The tokens that form the element.
-	@return     Valid(true) syntax or not(false)
+	@return     Valid(true) syntax or not(false).
 */
-bool parser::isValidTwoNodeElement(std::vector<std::string> &tokens)
+bool parser::isValidTwoNodeElement(const std::vector<std::string> &tokens)
 {
     /* Verify */
     bool format = IsValidName(tokens[0]) && IsValidNode(tokens[1]) &&
@@ -547,29 +558,12 @@ bool parser::isValidTwoNodeElement(std::vector<std::string> &tokens)
 }
 
 /*!
-    @brief      Function verifies the basic element syntax of this type (CCVS, CCCS):
-                                #####<Element>  <V+>  <V-> <ElementSourceName>  <Value>#####
-    @param      tokens      The tokens that form the element.
-    @return     Valid(true) syntax or not(false)
-*/
-bool parser::isValidTwoNodeEnhancedElement(std::vector<std::string> &tokens)
-{
-    /* Verify */
-    bool format = IsValidName(tokens[0]) && IsValidNode(tokens[1]) &&
-                  IsValidNode(tokens[2]) && IsValidName(tokens[3]) &&
-                  IsValidFpValue(tokens[4]);
-
-    return format;
-}
-
-
-/*!
-	@brief      Function verifies a basic element syntax of this type (Voltage controlled sources):
-						#####<Element>  <V+>  <V->  <Vex+>  <Vex->  <Value>#####
+	@brief  Function verifies a basic element syntax of this type (Voltage controlled sources):\n
+            =>[Element]  [V+]  [V-]  [Vex]>  [Vex-]  [Value]
 	@param      tokens    		  The tokens that form the element.
-	@return     Valid(true) syntax or not(false)
+	@return     Valid(true) syntax or not(false).
 */
-bool parser::isValidFourNodeElement(std::vector<std::string> &tokens)
+bool parser::isValidFourNodeElement(const std::vector<std::string> &tokens)
 {
     if(tokens.size() != 6) return false;
 
@@ -582,29 +576,30 @@ bool parser::isValidFourNodeElement(std::vector<std::string> &tokens)
 }
 
 /*!
-	@brief      Function verifies a basic element syntax of this type (Current controlled sources):
-						#####<Element>  <V+>  <V->  <Element> <Value>#####
-	@param      tokens    		  The tokens that form the element.
-	@return     Valid(true) syntax or not(false)
+    @brief  Function verifies the basic element syntax of this type (Current controlled sources):\n
+            => [Element]  [V+]  [V-] [ElementSourceName]  [Value]
+    @param      tokens      The tokens that form the element.
+    @return     Valid(true) syntax or not(false).
 */
-bool parser::isValidCurrentControlElement(std::vector<std::string> &tokens)
+bool parser::isValidCurrentControlElement(const std::vector<std::string> &tokens)
 {
     if(tokens.size() != 5) return false;
 
     /* Verify */
     bool format = IsValidName(tokens[0]) && IsValidNode(tokens[1]) &&
                   IsValidNode(tokens[2]) && IsValidName(tokens[3]) &&
-                  IsValidFpValue(tokens[3]);
+                  IsValidFpValue(tokens[4]);
 
     return format;
 }
 
 
+
 /*!
-	@brief      Internal function verifies that verifies the validity of a <NodeType>
+	@brief      Internal function verifies that verifies the validity of a [NodeType]
 	token and returns the result of the appraisal.
-	@param      token    	The node's name
-	@return     Valid(true) syntax or not(false)
+	@param      token    	The token.
+	@return     Valid(true) syntax or not(false).
 */
 bool parser::IsValidNode(const std::string &token)
 {
@@ -612,10 +607,10 @@ bool parser::IsValidNode(const std::string &token)
 }
 
 /*!
-	@brief      Internal function verifies that verifies the validity of an <ElementType>
+	@brief      Internal function verifies that verifies the validity of an [ElementType]
 	token and returns the result of the appraisal.
-	@param      token    	The element's name
-	@return     Valid(true) syntax or not(false)
+	@param      token       The token.
+	@return     Valid(true) syntax or not(false).
 */
 bool parser::IsValidName(const std::string &token)
 {
@@ -625,8 +620,8 @@ bool parser::IsValidName(const std::string &token)
 /*!
     @brief      Internal function that verifies a floating point number
     and returns the result of the appraisal.
-    @param      token         The token
-    @return     Valid(true) syntax or not(false)
+    @param      token       The token.
+    @return     Valid(true) syntax or not(false).
 */
 bool parser::IsValidFpValue(const std::string &token)
 {
@@ -636,10 +631,10 @@ bool parser::IsValidFpValue(const std::string &token)
 /*!
     @brief      Internal function that verifies an integer number
     and returns the result of the appraisal.
-    @param      token         The token
-    @return     Valid(true) syntax or not(false)
+    @param      token       The token.
+    @return     Valid(true) syntax or not(false).
 */
-bool parser::IsValidIntValue(std::string &node)
+bool parser::IsValidIntValue(const std::string &token)
 {
-    return std::regex_match(node, _integer_number);
+    return std::regex_match(token, _integer_number);
 }

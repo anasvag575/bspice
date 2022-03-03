@@ -5,6 +5,14 @@
 #include "simulator_types.hpp"
 
 //! A simulator class. The purpose of this class is to represent the simulation engine.
+/*!
+  This class has all the methods needed to perform simulation on the given SPICE circuit.
+  Therefore, in this class, the following are provided:
+  - Different solvers depending on configuration.
+  - Simulation methods (TRAN, AC, DC, OP).
+  - Different ODE methods for TRAN.
+  - Access to the results of the simulation.
+*/
 class simulator
 {
 	public:
