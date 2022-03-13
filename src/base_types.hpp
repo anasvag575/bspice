@@ -4,7 +4,7 @@
 /** Integer size used inside BSPICE. */
 typedef int IntTp;
 
-/** Floating point accuracy used inside BSPICE. */
+/** TODO - Floating point accuracy used inside BSPICE. */
 typedef double FpTp;
 
 #ifdef BSPICE_EIGEN_USE_STLMAPS

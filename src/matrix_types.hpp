@@ -14,7 +14,7 @@ typedef std::vector<triplet_eig_d> tripletList_d;
 /** Eigen Triplet structure (Complex). */
 typedef Eigen::Triplet<std::complex<double>, IntTp> triplet_eig_cd;
 
-/** Eigen Triplet Vector (Reals). */
+/** Eigen Triplet Vector (Complex). */
 typedef std::vector<triplet_eig_cd> tripletList_cd;
 
 /** Eigen sparse matrix of unknown size (Reals). */

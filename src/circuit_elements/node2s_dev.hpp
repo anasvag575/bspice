@@ -18,7 +18,7 @@ class node2s_device : public node2_device
         /*!
             @brief    Default constructor.
         */
-		node2s_device(void)
+		node2s_device() noexcept
 		{
 		    _source_id = -1;
 		}
@@ -27,13 +27,13 @@ class node2s_device : public node2_device
             @brief    Get the depended source name.
             @return   The name
         */
-		const std::string SourceName(void) { return _source_name; }
+		const std::string SourceName(void) noexcept { return _source_name; }
 
         /*!
             @brief    Get the depended source ID.
             @return   The ID.
         */
-        IntTp SourceID(void) { return _source_id; }
+        IntTp SourceID(void) noexcept { return _source_id; }
 
         /*!
             @brief    Set the depended source name.
@@ -45,7 +45,7 @@ class node2s_device : public node2_device
             @brief    Set the depended source ID.
             @param    source_id   The ID.
         */
-        void SetSourceID(IntTp source_id) { _source_id = source_id; }
+        void SetSourceID(IntTp source_id) noexcept { _source_id = source_id; }
 
         /*!
             @brief    Overloaded operator for stdout, that prints the contents of the
@@ -65,8 +65,8 @@ class node2s_device : public node2_device
         }
 
     private:
-        std::string _source_name;   //!< The depended source name
-        IntTp _source_id;           //!< The depended source ID
+        std::string _source_name;   //!< The depended source name.
+        IntTp _source_id;           //!< The depended source ID.
 };
 
 //! The packed device (MNA) representation of 2-node-source (elements with 2 nodes associated with them and a depended source).
@@ -80,7 +80,7 @@ class node2s_device_packed : public node2_device_packed
         /*!
             @brief    Default constructor.
         */
-        node2s_device_packed()
+        node2s_device_packed() noexcept
         {
             _source_id = -1;
         }
@@ -89,7 +89,7 @@ class node2s_device_packed : public node2_device_packed
             @brief      Constructor, converts extended to packed.
             @param  src The extended version of the device.
         */
-        node2s_device_packed(node2s_device &src)
+        node2s_device_packed(node2s_device &src) noexcept
         {
             setNodeIDs(src.PosNodeID(), src.NegNodeID());
             setVal(src.Val());
@@ -100,10 +100,10 @@ class node2s_device_packed : public node2_device_packed
             @brief    Get the depended source ID.
             @return   The ID.
         */
-        IntTp SourceID(void) { return _source_id; }
+        IntTp SourceID(void) noexcept { return _source_id; }
 
     private:
-        IntTp _source_id;    //!< The depended source ID
+        IntTp _source_id;    //!< The depended source ID.
 };
 
 #endif // __NODE2_DEV_HPP //

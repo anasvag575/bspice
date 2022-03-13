@@ -31,13 +31,13 @@ class source_spec
 			@brief   Returns the AC value of this source.
 			@return	 The AC value.
 		*/
-		std::complex<double> ACVal(void) { return _ac_val; }
+		std::complex<double> ACVal(void) noexcept { return _ac_val; }
 
         /*!
             @brief      Returns the type of source (for transient analysis).
             @return     The type.
         */
-        tran_source_t Type(void) { return _type; }
+        tran_source_t Type(void) noexcept { return _type; }
 
         /*!
             @brief  Returns the transient values for transient type source.
@@ -45,13 +45,13 @@ class source_spec
             in all sources, the parameters.
             @return     The values vector.
         */
-        std::vector<double> &TranVals(void) { return _tran_vals; }
+        std::vector<double> &TranVals(void) noexcept { return _tran_vals; }
 
         /*!
             @brief  Returns the transient time values for PWL source.
             @return     The values vector.
         */
-        std::vector<double> &TranTimes(void) { return _tran_time; }
+        std::vector<double> &TranTimes(void) noexcept { return _tran_time; }
 
 		/*!
 			@brief  Set the complex AC value with the inputs
@@ -65,7 +65,7 @@ class source_spec
 			@brief  Sets the type of source (for transient analysis).
 			@param 	type	The type.
 		*/
-		void setType(tran_source_t type) { _type = type; }
+		void setType(tran_source_t type) noexcept { _type = type; }
 
     private:
         /* AC analysis */

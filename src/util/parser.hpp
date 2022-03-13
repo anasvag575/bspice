@@ -17,50 +17,50 @@ class parser
 {
     public:
 		/* Spice line tokenizer */
-		bool tokenizer(std::string &line, std::vector<std::string> &tokens);
+		bool tokenizer(const std::string &line, std::vector<std::string> &tokens);
 
 		/* Spice elements */
-		return_codes_e parse2NodeDevice(std::vector<std::string> &tokens,
+		return_codes_e parse2NodeDevice(const std::vector<std::string> &tokens,
 									    node2_device &element,
 									    hashmap_str_t &elements,
 										hashmap_str_t &nodes,
 									    size_t device_id,
 									    bool complete);
 
-        return_codes_e parse2SNodeDevice(std::vector<std::string> &tokens,
+        return_codes_e parse2SNodeDevice(const std::vector<std::string> &tokens,
                                         node2s_device &element,
                                         hashmap_str_t &elements,
                                         hashmap_str_t &nodes,
                                         size_t device_id);
 
-        return_codes_e parse4NodeDevice(std::vector<std::string> &tokens,
+        return_codes_e parse4NodeDevice(const std::vector<std::string> &tokens,
                                         node4_device &element,
                                         hashmap_str_t &elements,
                                         hashmap_str_t &nodes,
                                         size_t device_id);
 
-		return_codes_e parseSourceSpec(std::vector<std::string> &tokens, source_spec &spec);
+		return_codes_e parseSourceSpec(const std::vector<std::string> &tokens, source_spec &spec);
 
         /* Spice Cards */
-		return_codes_e parseDCCard(std::vector<std::string> &tokens,
+		return_codes_e parseDCCard(const std::vector<std::string> &tokens,
 		                           double &points,
 		                           double &stop,
 		                           double &start,
 		                           as_scale_t &scale,
 		                           std::string &source);
 
-		return_codes_e parseTRANCard(std::vector<std::string> &tokens,
+		return_codes_e parseTRANCard(const std::vector<std::string> &tokens,
 		                             double &step,
 		                             double &tstop,
 		                             double &tstart);
 
-		return_codes_e parseACCard(std::vector<std::string> &tokens,
+		return_codes_e parseACCard(const std::vector<std::string> &tokens,
 		                           double &points,
 		                           double &fstop,
 		                           double &fstart,
 		                           as_scale_t &scale);
 
-		return_codes_e parsePLOTCard(std::vector<std::string> &tokens,
+		return_codes_e parsePLOTCard(const std::vector<std::string> &tokens,
 		                             std::vector<std::string> &plot_nodes,
 		                             std::vector<std::string> &plot_sources);
 
@@ -84,22 +84,23 @@ class parser
         // TODO - Also modify to have modifiers for the floating number extensions
 //        _decimal_number = std::regex("(([0-9]+)(\\.[0-9]+)?([FPNUMKGT]|(MEG))?)|([0-9]+E[+-][0-9]+)", std::regex_constants::icase);
 
-        // TODO - Choose the version either strtok or stdregex
-//        const std::regex _delimiters = std::regex("[ (),\\s]+");
-
-        //!< String with all the delimiter characters used for tokenization.
+#ifdef DBSPICE_TOKENIZER_USE_REGEX
+        /** Regex with all the delimiter characters used for tokenization. */
+        const std::regex _delimiters = std::regex("[ (),\\s]+");
+#else
+        /** String with all the delimiter characters used for tokenization. */
         const char* _delimiters = " (),\t\n\r";
-
-        //!< Regex pattern used for alphanumeric types.
+#endif
+        /** Regex pattern used for alphanumeric types. */
         const std::regex _alphanumeric = std::regex("[[:alnum:]]+", std::regex_constants::icase);
 
-        //!< Regex pattern used for decimal numbers.
+        /** Regex pattern used for decimal numbers. */
         const std::regex _decimal_number = std::regex("([[:digit:]]+)(\\.[[:digit:]]+)?(E[+-][[:digit:]]+)?", std::regex_constants::icase);
 
-        //!< Regex pattern used for integer numbers.
+        /** Regex pattern used for integer numbers. */
         const std::regex _integer_number = std::regex("([[:digit:]]+)(E[+-][[:digit:]]+)?", std::regex_constants::icase);
 
-        //!< Regex pattern used for alphanumerics with underscores.
+        /** Regex pattern used for alphanumerics with underscores. */
         const std::regex _alphanumeric_with_underscores = std::regex("[[:alnum:]_]+", std::regex_constants::icase);
 };
 

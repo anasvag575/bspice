@@ -8,37 +8,37 @@
 	@param      tokens    		  The tokens that form the current spice element/card.
 	@return     True in case the vector is not empty, otherwise false.
 */
-bool parser::tokenizer(std::string &line, std::vector<std::string> &tokens)
+bool parser::tokenizer(const std::string &line, std::vector<std::string> &tokens)
 {
-	// TODO - Choose the version either strtok or stdregex
+    /* Clear the token vector from previous lines */
+    tokens.clear();
 
     // STRTOK version //
-	std::string linecopy(line);
-	char *token_tmp = linecopy.data();
-	char *tmp = NULL;
-	tmp = strtok(token_tmp, _delimiters);
+#ifndef DBSPICE_TOKENIZER_USE_REGEX
 
-	/* Clear the token vector from previous lines */
-	tokens.clear();
+	std::string linecopy(line);
+	char *line_ptr = linecopy.data();
+	char *tmp = NULL;
+	tmp = strtok(line_ptr, _delimiters);
 
 	if(tmp) tokens.push_back(tmp);
 
-	while(1)
+	while(tmp)
 	{
 		tmp = strtok(NULL, _delimiters);
 		if(tmp) tokens.push_back(tmp);
-		else break;
 	}
 
+	/* Empty line */
     if(tokens.empty()) return false;
+#else
+    // the '-1' is what makes the regex split (-1 := what was not matched)
+    std::sregex_token_iterator first{line.begin(), line.end(), _delimiters, -1}, last;
+    tokens = {first, last};
 
-	// REGEX version //
-    //the '-1' is what makes the regex split (-1 := what was not matched)
-//    std::sregex_token_iterator first{line.begin(), line.end(), _delimiters, -1}, last;
-//    tokens = {first, last};
-//
-//    /* Empty line or line with 1 empty string */
-//    if(tokens.empty() || (tokens.size() == 1 && !tokens[0].size())) return false;
+    /* Empty line or line with 1 empty string */
+    if(tokens.empty() || (tokens.size() == 1 && !tokens[0].size())) return false;
+#endif
 
     /* Convert the strings to uppercase characters */
     for (auto& t : tokens) std::transform(t.begin(), t.end(), t.begin(), ::toupper);
@@ -65,7 +65,7 @@ bool parser::tokenizer(std::string &line, std::vector<std::string> &tokens)
     @param		complete	Flag if device to be parsed is 2-node-basic(true) or 2-node-extend(false)
     @return     RETURN_SUCCESS or appropriate failure code.
 */
-return_codes_e parser::parse2NodeDevice(std::vector<std::string> &tokens,
+return_codes_e parser::parse2NodeDevice(const std::vector<std::string> &tokens,
 										node2_device &element,
 										hashmap_str_t &elements,
 										hashmap_str_t &nodes,
@@ -115,7 +115,7 @@ return_codes_e parser::parse2NodeDevice(std::vector<std::string> &tokens,
     @param      device_id   Unique ID of this element.
     @return     RETURN_SUCCESS or appropriate failure code.
 */
-return_codes_e parser::parse2SNodeDevice(std::vector<std::string> &tokens,
+return_codes_e parser::parse2SNodeDevice(const std::vector<std::string> &tokens,
                                          node2s_device &element,
                                          hashmap_str_t &elements,
                                          hashmap_str_t &nodes,
@@ -138,8 +138,8 @@ return_codes_e parser::parse2SNodeDevice(std::vector<std::string> &tokens,
 
     /* Set */
     element.setName(tokens[0]);
-    element.SetSourceName(tokens[3]);
     element.setNodeNames(tokens[1], tokens[2]);
+    element.SetSourceName(tokens[3]);
     element.setNodeIDs(posID, negID);
     element.setVal(val);
 
@@ -162,7 +162,7 @@ return_codes_e parser::parse2SNodeDevice(std::vector<std::string> &tokens,
     @param      device_id   Unique ID of this element.
     @return     RETURN_SUCCESS or appropriate failure code.
 */
-return_codes_e parser::parse4NodeDevice(std::vector<std::string> &tokens,
+return_codes_e parser::parse4NodeDevice(const std::vector<std::string> &tokens,
                                                node4_device &element,
                                                hashmap_str_t &elements,
                                                hashmap_str_t &nodes,
@@ -207,7 +207,7 @@ return_codes_e parser::parse4NodeDevice(std::vector<std::string> &tokens,
     @param      spec        Source spec reference.
     @return     RETURN_SUCCESS or appropriate failure code.
 */
-return_codes_e parser::parseSourceSpec(std::vector<std::string> &tokens, source_spec &spec)
+return_codes_e parser::parseSourceSpec(const std::vector<std::string> &tokens, source_spec &spec)
 {
     /* Verify */
     bool format = true, ac_found = false, tran_found = false;
@@ -232,6 +232,10 @@ return_codes_e parser::parseSourceSpec(std::vector<std::string> &tokens, source_
             /* Set the values */
             double ac_mag = resolveFloatNum(tokens[idx + 1]);
             double ac_phase = M_PI/180 * resolveFloatNum(tokens[idx + 2]); // Also have to convert to radians
+
+            /* Magnitude has to be positive */
+            if(ac_mag <= 0) return FAIL_PARSER_AC_SPEC_NEG;
+
             spec.setACVal(ac_mag, ac_phase);
 
             /* Found our first source and incrementing our indices */
@@ -325,7 +329,7 @@ return_codes_e parser::parseSourceSpec(std::vector<std::string> &tokens, source_
     @param      source      The element name, of the source under analysis (ICS or IVS)
     @return     RETURN_SUCCESS or appropriate failure code.
 */
-return_codes_e parser::parseDCCard(std::vector<std::string> &tokens,
+return_codes_e parser::parseDCCard(const std::vector<std::string> &tokens,
                                    double &points,
                                    double &stop,
                                    double &start,
@@ -378,7 +382,10 @@ return_codes_e parser::parseDCCard(std::vector<std::string> &tokens,
 	@param      tstart     	Starting time of the analysis, always set at 0.
 	@return     RETURN_SUCCESS or appropriate failure code.
 */
-return_codes_e parser::parseTRANCard(std::vector<std::string> &tokens, double &step, double &tstop, double &tstart)
+return_codes_e parser::parseTRANCard(const std::vector<std::string> &tokens,
+                                     double &step,
+                                     double &tstop,
+                                     double &tstart)
 {
     if(tokens.size() != 3) return FAIL_PARSER_INVALID_FORMAT;
 
@@ -412,7 +419,7 @@ return_codes_e parser::parseTRANCard(std::vector<std::string> &tokens, double &s
 	@param		scale		The scale of the analysis (DEC or LOG).
 	@return     RETURN_SUCCESS or appropriate failure code.
 */
-return_codes_e parser::parseACCard(std::vector<std::string> &tokens,
+return_codes_e parser::parseACCard(const std::vector<std::string> &tokens,
                                    double &points,
                                    double &fstop,
                                    double &fstart,
@@ -450,7 +457,7 @@ return_codes_e parser::parseACCard(std::vector<std::string> &tokens,
 	@param      plot_sources 	The sources to be plotted
 	@return     RETURN_SUCCESS or appropriate failure code.
 */
-return_codes_e parser::parsePLOTCard(std::vector<std::string> &tokens,
+return_codes_e parser::parsePLOTCard(const std::vector<std::string> &tokens,
                                      std::vector<std::string> &plot_nodes,
                                      std::vector<std::string> &plot_sources)
 {
@@ -588,7 +595,7 @@ bool parser::isValidCurrentControlElement(const std::vector<std::string> &tokens
     /* Verify */
     bool format = IsValidName(tokens[0]) && IsValidNode(tokens[1]) &&
                   IsValidNode(tokens[2]) && IsValidName(tokens[3]) &&
-                  IsValidFpValue(tokens[4]);
+                  IsValidFpValue(tokens[4]) && tokens[3][0] == 'V';
 
     return format;
 }

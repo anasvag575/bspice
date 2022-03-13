@@ -1,6 +1,7 @@
 #include <chrono>		/* For time reporting */
 #include <algorithm>
 #include "circuit.hpp"
+#include <unordered_map>    /* TODO - For multimap */
 
 
 
@@ -8,136 +9,136 @@
     @brief    Get the resistors in the circuit.
     @return   The resistors vector.
 */
-const std::vector<resistor> &circuit::Resistors(void) { return _res; }
+const std::vector<resistor> &circuit::Resistors(void) noexcept { return _res; }
 
 /*!
     @brief    Get the capacitors in the circuit.
     @return   The capacitors vector.
 */
-const std::vector<capacitor> &circuit::Capacitors(void) { return _caps; }
+const std::vector<capacitor> &circuit::Capacitors(void) noexcept { return _caps; }
 
 /*!
     @brief    Get the coils in the circuit.
     @return   The coils vector.
 */
-const std::vector<coil> &circuit::Coils(void) { return _coils; }
+const std::vector<coil> &circuit::Coils(void) noexcept { return _coils; }
 
 /*!
     @brief    Get the ICS in the circuit.
     @return   The ICS vector.
 */
-const std::vector<ics> &circuit::ICS(void) { return _ics; }
+const std::vector<ics> &circuit::ICS(void) noexcept { return _ics; }
 
 /*!
     @brief    Get the IVS in the circuit.
     @return   The IVS vector.
 */
-const std::vector<ivs> &circuit::IVS(void) { return _ivs; }
+const std::vector<ivs> &circuit::IVS(void) noexcept { return _ivs; }
 
 /*!
     @brief    Get the VCVS in the circuit.
     @return   The VCVS vector.
 */
-const std::vector<vcvs> &circuit::VCVS(void) { return _vcvs; }
+const std::vector<vcvs> &circuit::VCVS(void) noexcept { return _vcvs; }
 
 /*!
     @brief    Get the VCCS in the circuit.
     @return   The VCCS vector.
 */
-const std::vector<vccs> &circuit::VCCS(void) { return _vccs; }
+const std::vector<vccs> &circuit::VCCS(void) noexcept { return _vccs; }
 
 /*!
     @brief    Get the CCVS in the circuit.
     @return   The CCVS vector.
 */
-const std::vector<ccvs> &circuit::CCVS(void) { return _ccvs; }
+const std::vector<ccvs> &circuit::CCVS(void) noexcept { return _ccvs; }
 
 /*!
     @brief    Get the CCCS in the circuit.
     @return   The CCCS vector.
 */
-const std::vector<cccs> &circuit::CCCS(void) { return _cccs; }
+const std::vector<cccs> &circuit::CCCS(void) noexcept { return _cccs; }
 
 /*!
     @brief    Get the nodes map (<NodeName, NodeNum> pairs).
     @return   The map.
 */
-const hashmap_str_t &circuit::Nodes(void) { return _nodes; }
+const hashmap_str_t &circuit::Nodes(void) noexcept { return _nodes; }
 
 /*!
     @brief    Get the elements map (<ElmementName, ElementID> pairs).
     @return   The map.
 */
-const hashmap_str_t &circuit::ElementNames(void) { return _element_names; }
+const hashmap_str_t &circuit::ElementNames(void) noexcept { return _element_names; }
 
 /*!
     @brief    Get the nodes to be plotted in the circuit.
     @return   The vector.
 */
-const std::vector<std::string> &circuit::PlotNodes(void) { return _plot_nodes; }
+const std::vector<std::string> &circuit::PlotNodes(void) noexcept { return _plot_nodes; }
 
 /*!
     @brief    Get the sources to be plotted in the circuit.
     @return   The vector.
 */
-const std::vector<std::string> &circuit::PlotSources(void) { return _plot_sources; }
-
-/*!
-    @brief    Get the simulation start value.
-    @return   The start value.
-*/
-double circuit::SimStart(void) { return _sim_start; }
-
-/*!
-    @brief    Get the simulation end value.
-    @return   The end value.
-*/
-double circuit::SimEnd(void) { return _sim_end; }
-
-/*!
-    @brief    Get the simulation step.
-    @return   The step value.
-*/
-double circuit::SimStep(void) { return _sim_step; }
+const std::vector<std::string> &circuit::PlotSources(void) noexcept { return _plot_sources; }
 
 /*!
     @brief    Get the DC source for analysis.
     @return   The DC source name.
 */
-const std::string &circuit::DCSource(void) { return _source; }
+const std::string &circuit::DCSource(void) noexcept { return _source; }
+
+/*!
+    @brief    Get the simulation start value.
+    @return   The start value.
+*/
+double circuit::SimStart(void) noexcept { return _sim_start; }
+
+/*!
+    @brief    Get the simulation end value.
+    @return   The end value.
+*/
+double circuit::SimEnd(void) noexcept { return _sim_end; }
+
+/*!
+    @brief    Get the simulation step.
+    @return   The step value.
+*/
+double circuit::SimStep(void) noexcept { return _sim_step; }
 
 /*!
     @brief    Get the analysis type.
     @return   The type.
 */
-analysis_t circuit::AnalysisType(void) { return _type; }
+analysis_t circuit::AnalysisType(void) noexcept { return _type; }
 
 /*!
     @brief    Get the analysis scale.
     @return   The scale.
 */
-as_scale_t circuit::AnalysisScale(void) { return _scale; }
+as_scale_t circuit::AnalysisScale(void) noexcept { return _scale; }
 
 /*!
     @brief    Get the ODE method to be used for transient.
     @return   The method.
 */
-ODE_meth_t circuit::ODEMethod(void) { return _ode_method; }
+ODE_meth_t circuit::ODEMethod(void) noexcept { return _ode_method; }
 
 /*!
     @brief    Returns the last error during parsing of the netlist.
     @return   Error code.
 */
-return_codes_e circuit::errcode(void) { return _errcode; }
+return_codes_e circuit::errcode(void) noexcept { return _errcode; }
 
 /*!
     @brief    Check if the current circuit is valid.
     @return   Boolean.
 */
-bool circuit::valid(void) { return _errcode == RETURN_SUCCESS;}
+bool circuit::valid(void) noexcept { return _errcode == RETURN_SUCCESS;}
 
 /*!
-    @brief    Clear circuit redundant information, used before entering simulation.
+    @brief    Clear circuit redundant information, optional use before entering simulation.
 */
 void circuit::clear(void)
 {
@@ -186,8 +187,14 @@ circuit::circuit(const std::string &input_file_name)
     /* Info */
     std::cout << "\n[INFO]: Loading file...\n";
 
-    /* Default initialize class before continuing */
-    init();
+    /* Default initialize values in case netlist does not do so */
+    this->_ode_method = BACKWARDS_EULER;
+    this->_scale = DEC_SCALE;
+    this->_type = OP;
+    this->_errcode = FAIL_LOADING_FILE;
+    this->_sim_step = 0;
+    this->_sim_start = 0;
+    this->_sim_end = 0;
 
     /* Start of parsing - For statistics */
     auto begin_time = std::chrono::high_resolution_clock::now();
@@ -215,6 +222,7 @@ circuit::circuit(const std::string &input_file_name)
             {
                 id = this->_res.size();
                 errcode = syntax_match.parse2NodeDevice(tokens, node2_base, this->_element_names, this->_nodes, id, true);
+                node2_base.setLinenum(linenum);
                 this->_res.push_back({node2_base}); // C++17 aggregation initialize
 
                 break;
@@ -223,6 +231,7 @@ circuit::circuit(const std::string &input_file_name)
             {
                 id = this->_caps.size();
                 errcode = syntax_match.parse2NodeDevice(tokens, node2_base, this->_element_names, this->_nodes, id, true);
+                node2_base.setLinenum(linenum);
                 this->_caps.push_back({node2_base}); // C++17 aggregation initialize
 
                 break;
@@ -231,6 +240,7 @@ circuit::circuit(const std::string &input_file_name)
             {
                 id = this->_coils.size();
                 errcode = syntax_match.parse2NodeDevice(tokens, node2_base, this->_element_names, this->_nodes, id, true);
+                node2_base.setLinenum(linenum);
                 this->_coils.push_back({node2_base}); // C++17 aggregation initialize
 
                 break;
@@ -239,6 +249,7 @@ circuit::circuit(const std::string &input_file_name)
             {
                 id = this->_ics.size();
                 errcode = syntax_match.parse2NodeDevice(tokens, node2_base, this->_element_names, this->_nodes, id, false);
+                node2_base.setLinenum(linenum);
 
                 /* Continue parsing only in case of success */
                 if(errcode == RETURN_SUCCESS) errcode = syntax_match.parseSourceSpec(tokens, source_spec_base);
@@ -250,6 +261,7 @@ circuit::circuit(const std::string &input_file_name)
             {
                 id = this->_ivs.size();
                 errcode = syntax_match.parse2NodeDevice(tokens, node2_base, this->_element_names, this->_nodes, id, false);
+                node2_base.setLinenum(linenum);
 
                 /* Continue parsing only in case of success */
                 if(errcode == RETURN_SUCCESS) errcode = syntax_match.parseSourceSpec(tokens, source_spec_base);
@@ -261,6 +273,7 @@ circuit::circuit(const std::string &input_file_name)
             {
                 id = this->_vcvs.size();
                 errcode = syntax_match.parse4NodeDevice(tokens, node4_base, this->_element_names, this->_nodes, id);
+                node4_base.setLinenum(linenum);
 
                 this->_vcvs.push_back({node4_base}); // C++17 aggregation initialize
                 break;
@@ -269,6 +282,7 @@ circuit::circuit(const std::string &input_file_name)
             {
                 id = this->_vccs.size();
                 errcode = syntax_match.parse4NodeDevice(tokens, node4_base, this->_element_names, this->_nodes, id);
+                node4_base.setLinenum(linenum);
 
                 this->_vccs.push_back({node4_base}); // C++17 aggregation initialize
                 break;
@@ -277,6 +291,7 @@ circuit::circuit(const std::string &input_file_name)
             {
                 id = this->_ccvs.size();
                 errcode = syntax_match.parse2SNodeDevice(tokens, node2s_base, this->_element_names, this->_nodes, id);
+                node2s_base.setLinenum(linenum);
 
                 this->_ccvs.push_back({node2s_base}); // C++17 aggregation initialize
                 break;
@@ -285,6 +300,7 @@ circuit::circuit(const std::string &input_file_name)
             {
                 id = this->_cccs.size();
                 errcode = syntax_match.parse2SNodeDevice(tokens, node2s_base, this->_element_names, this->_nodes, id);
+                node2s_base.setLinenum(linenum);
 
                 this->_cccs.push_back({node2s_base}); // C++17 aggregation initialize
                 break;
@@ -321,6 +337,11 @@ circuit::circuit(const std::string &input_file_name)
     /* Verify that circuit meets the criteria */
     input_file.close();
     errcode = verify();
+    this->_errcode = errcode;
+    if(errcode != RETURN_SUCCESS) return;
+
+    /* Verify the circuit topology */
+    errcode = topology();
     this->_errcode = errcode;
 
     /* Output information only in case of success */
@@ -370,20 +391,6 @@ circuit::circuit(const std::string &input_file_name)
         std::cout << "Total sources to plot: " << this->_plot_sources.size() << "\n";
         std::cout << "************************************\n\n";
     }
-}
-
-/*!
-    @brief Initializer routine for the class.
-*/
-void circuit::init(void)
-{
-    this->_ode_method = BACKWARDS_EULER;
-    this->_scale = DEC_SCALE;
-    this->_type = OP;
-    this->_errcode = FAIL_LOADING_FILE;
-    this->_sim_step = 0;
-    this->_sim_start = 0;
-    this->_sim_end = 0;
 }
 
 /*!
@@ -489,20 +496,15 @@ return_codes_e circuit::setCircuitOptions(std::vector<std::string> &tokens)
 
 /*!
     @brief    Internal routine, that verifies the following for a given circuit:
-      - There is something to be plotted for the plotter (some plot card in the circuit)
-  	  - Plot nodes for a plot card already exists in the circuit
+  	  - Plot nodes for a plot card already exists in the circuit.
   	  - DC analysis source already exists in the circuit (if any DC analysis is active)
   	  - Set the circuit dimension and the source offset in the MNA equivalent matrix.
     @return   The error code, in case of error, otherwise RETURN_SUCCESS.
 */
 return_codes_e circuit::verify(void)
 {
-	return_codes_e errcode;
     auto namemap_end = this->_element_names.end();
     auto nodemap_end = this->_nodes.end();
-
-    /* Check that there is something to plot for the simulation */
-    if(!this->_plot_nodes.size() && !this->_plot_sources.size()) return FAIL_PLOTTER_NOTHING_TO_PLOT;
 
     /* After parsing the file, in case of DC analysis verify that the simulated source exists */
     if(this->_type == DC)
@@ -512,9 +514,8 @@ return_codes_e circuit::verify(void)
     	/* Does not exist in map */
     	if(name_it == namemap_end)
     	{// TODO - Transfer to error function outside
-    		errcode = FAIL_PARSER_ELEMENT_NOT_EXISTS;
-    		std::cout << "[ERROR - " << errcode << "]: Element <" << this->_source << "> (DC CARD)" << std::endl;
-    		return errcode;
+    		std::cout << "[ERROR - " << FAIL_PARSER_ELEMENT_NOT_EXISTS << "]: Element <" << this->_source << "> (DC CARD)" << std::endl;
+    		return FAIL_PARSER_ELEMENT_NOT_EXISTS;
     	}
     }
 
@@ -526,9 +527,8 @@ return_codes_e circuit::verify(void)
 		/* Does not exist in map */
 		if(node_it == namemap_end)
 		{// TODO - Transfer to error function outside
-			errcode = FAIL_PARSER_ELEMENT_NOT_EXISTS;
-			std::cout << "[ERROR - " << errcode << "]: Element <" << *it << "> (PLOT CARD)" << std::endl;
-			return errcode;
+			std::cout << "[ERROR - " << FAIL_PARSER_ELEMENT_NOT_EXISTS << "]: Element <" << *it << "> (PLOT CARD)" << std::endl;
+			return FAIL_PARSER_ELEMENT_NOT_EXISTS;
 		}
     }
 
@@ -540,9 +540,8 @@ return_codes_e circuit::verify(void)
 		/* Does not exist in map */
 		if(node_it == nodemap_end)
 		{// TODO - Transfer to error function outside
-			errcode = FAIL_PARSER_ELEMENT_NOT_EXISTS;
-			std::cout << "[ERROR - " << errcode << "]: Element <" << *it << "> (PLOT CARD)" << std::endl;
-			return errcode;
+			std::cout << "[ERROR - " << FAIL_PARSER_ELEMENT_NOT_EXISTS << "]: Element <" << *it << "> (PLOT CARD)" << std::endl;
+			return FAIL_PARSER_ELEMENT_NOT_EXISTS;
 		}
     }
 
@@ -552,11 +551,10 @@ return_codes_e circuit::verify(void)
         auto map_it = this->_element_names.find(it.SourceName());
 
         /* Does not exist in map or wrong type of element */
-        if(map_it == namemap_end)// || it.SourceName()[0] != 'V')
+        if(map_it == namemap_end)
         {// TODO - Transfer to error function outside
-            errcode = FAIL_PARSER_ELEMENT_NOT_EXISTS;
-            std::cout << "[ERROR - " << errcode << "]: Element <" << it.SourceName() << "> (CCVS DEPENDENCY)" << std::endl;
-            return errcode;
+            std::cout << "[ERROR - " << FAIL_PARSER_ELEMENT_NOT_EXISTS << "]: Element <" << it.SourceName() << "> (CCVS DEPENDENCY)" << std::endl;
+            return FAIL_PARSER_ELEMENT_NOT_EXISTS;
         }
 
         /* Set the source ID */
@@ -569,16 +567,46 @@ return_codes_e circuit::verify(void)
         auto map_it = this->_element_names.find(it.SourceName());
 
         /* Does not exist in map or wrong type of element */
-        if(map_it == namemap_end)// || it.SourceName()[0] != 'V')
+        if(map_it == namemap_end)
         {// TODO - Transfer to error function outside
-            errcode = FAIL_PARSER_ELEMENT_NOT_EXISTS;
-            std::cout << "[ERROR - " << errcode << "]: Element <" << it.SourceName() << "> (CCCS DEPENDENCY)" << std::endl;
-            return errcode;
+            std::cout << "[ERROR - " << FAIL_PARSER_ELEMENT_NOT_EXISTS << "]: Element <" << it.SourceName() << "> (CCCS DEPENDENCY)" << std::endl;
+            return FAIL_PARSER_ELEMENT_NOT_EXISTS;
         }
 
         /* Set the source ID */
         it.SetSourceID(map_it->second);
     }
+
+    return RETURN_SUCCESS;
+}
+
+/*!
+    @brief    Internal routine, that performs topology checks on the circuit:
+    // TODO - Fill up
+    @return   The error code, in case of error, otherwise RETURN_SUCCESS.
+*/
+return_codes_e circuit::topology(void)
+{
+    /* Rules of circuit (in order to not generate warnings!):
+     * 1) Short circuits are eliminated from parser and checked there!
+     * 2)   */
+
+    /* Create a multimap of nodes to element names */
+    std::unordered_multimap<IntTp, IntTp> nodes_to_dev;
+    size_t count = 0;
+
+    for(auto &it : _ics){ }
+    for(auto &it : _cccs){ }
+    for(auto &it : _vccs){ }
+
+
+
+    /* Current sources in the same branch */
+
+    /* IVS - IVS on the exact same nodes (check with ground) */
+
+    /* Path to ground */
+
 
     return RETURN_SUCCESS;
 }
@@ -734,17 +762,15 @@ void circuit::debug_circuit(void)
     /* Perform ordering of the elements in their containers by name and
      * then order the nodes unique numbering by inserting in this exact order:
      * IVS - Coils - ICS - Res - Caps - VCCS - VCVS */
-	using namespace std;
-
-	vector<coil> tmp_coils = this->_coils;
-	vector<capacitor> tmp_caps = this->_caps;
-	vector<resistor> tmp_res = this->_res;
-	vector<ivs> tmp_ivs = this->_ivs;
-	vector<ics> tmp_ics = this->_ics;
-    vector<vccs> tmp_vccs = this->_vccs;
-    vector<vcvs> tmp_vcvs = this->_vcvs;
-    vector<cccs> tmp_cccs = this->_cccs;
-    vector<ccvs> tmp_ccvs = this->_ccvs;
+    std::vector<coil> tmp_coils = this->_coils;
+    std::vector<capacitor> tmp_caps = this->_caps;
+    std::vector<resistor> tmp_res = this->_res;
+    std::vector<ivs> tmp_ivs = this->_ivs;
+    std::vector<ics> tmp_ics = this->_ics;
+    std::vector<vccs> tmp_vccs = this->_vccs;
+    std::vector<vcvs> tmp_vcvs = this->_vcvs;
+    std::vector<cccs> tmp_cccs = this->_cccs;
+    std::vector<ccvs> tmp_ccvs = this->_ccvs;
 
 	/* Sort by name */
 	sort(tmp_coils.begin(), tmp_coils.end());
@@ -793,15 +819,15 @@ void circuit::debug_circuit(void)
     this->_cccs = tmp_cccs;
     this->_ccvs = tmp_ccvs;
 
-	cout.precision(12);
-	cout << std::fixed;
-	for(auto &it : tmp_ivs) cout << it;
-	for(auto &it : tmp_coils) cout << it;
-	for(auto &it : tmp_ics) cout << it;
-	for(auto &it : tmp_res) cout << it;
-	for(auto &it : tmp_caps) cout << it;
-    for(auto &it : tmp_vccs) cout << it;
-    for(auto &it : tmp_vcvs) cout << it;
-    for(auto &it : tmp_cccs) cout << it;
-    for(auto &it : tmp_ccvs) cout << it;
+	std::cout.precision(12);
+	std::cout << std::fixed;
+	for(auto &it : tmp_ivs) std::cout << it;
+	for(auto &it : tmp_coils) std::cout << it;
+	for(auto &it : tmp_ics) std::cout << it;
+	for(auto &it : tmp_res) std::cout << it;
+	for(auto &it : tmp_caps) std::cout << it;
+    for(auto &it : tmp_vccs) std::cout << it;
+    for(auto &it : tmp_vcvs) std::cout << it;
+    for(auto &it : tmp_cccs) std::cout << it;
+    for(auto &it : tmp_ccvs) std::cout << it;
 }

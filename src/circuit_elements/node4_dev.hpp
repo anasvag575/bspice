@@ -18,7 +18,7 @@ class node4_device : public node2_device
         /*!
             @brief    Default constructor.
         */
-        node4_device(void)
+        node4_device() noexcept
         {
             _dep_nodes_ids[0] = -1;
             _dep_nodes_ids[1] = -1;
@@ -28,25 +28,25 @@ class node4_device : public node2_device
             @brief    Get the depended positive node ID of the device.
             @return   The idx.
         */
-        IntTp DepPosNodeID(void) { return _dep_nodes_ids[0]; }
+        IntTp DepPosNodeID(void) noexcept { return _dep_nodes_ids[0]; }
 
         /*!
             @brief    Get the depended negative node ID of the device.
             @return   The idx.
         */
-        IntTp DepNegNodeID(void) { return _dep_nodes_ids[1]; }
+        IntTp DepNegNodeID(void) noexcept { return _dep_nodes_ids[1]; }
 
         /*!
             @brief    Get the depended positive node name of the device.
             @return   The name.
         */
-        const std::string &DepPosNode(void) { return _dep_node_names[0]; }
+        const std::string &DepPosNode(void) noexcept { return _dep_node_names[0]; }
 
         /*!
             @brief    Get the depended negative node name of the device.
             @return   The name.
         */
-        const std::string &DepNegNode(void) { return _dep_node_names[1]; }
+        const std::string &DepNegNode(void) noexcept { return _dep_node_names[1]; }
 
         /*!
             @brief   Set the depended nodes names of the device.
@@ -64,7 +64,7 @@ class node4_device : public node2_device
             @param   dep_pos    The depended positive node ID.
             @param   dep_neg    The depended negative node ID.
         */
-        void setDepNodeIDs(const IntTp dep_pos, const IntTp dep_neg)
+        void setDepNodeIDs(const IntTp dep_pos, const IntTp dep_neg) noexcept
         {
             _dep_nodes_ids[0] = dep_pos;
             _dep_nodes_ids[1] = dep_neg;
@@ -88,8 +88,8 @@ class node4_device : public node2_device
         }
 
     private:
-        std::array<std::string, 2> _dep_node_names;            //!< The depended node names
-        std::array<IntTp, 2> _dep_nodes_ids;                   //!< The depended node IDs
+        std::array<std::string, 2> _dep_node_names;            //!< The depended node names.
+        std::array<IntTp, 2> _dep_nodes_ids;                   //!< The depended node IDs.
 };
 
 //! The packed device (MNA) representation of 4-node-basic devices (elements with 4 nodes associated with them).
@@ -103,7 +103,7 @@ class node4_device_packed : public node2_device_packed
         /*!
             @brief    Default constructor.
         */
-        node4_device_packed()
+        node4_device_packed() noexcept
         {
             _dep_nodes_ids[0] = -1;
             _dep_nodes_ids[1] = -1;
@@ -113,7 +113,7 @@ class node4_device_packed : public node2_device_packed
             @brief      Constructor, converts extended to packed.
             @param  src The extended version of the device.
         */
-        node4_device_packed(node4_device &src)
+        node4_device_packed(node4_device &src) noexcept
         {
             this->setNodeIDs(src.PosNodeID(), src.NegNodeID());
             this->setVal(src.Val());
@@ -125,16 +125,16 @@ class node4_device_packed : public node2_device_packed
             @brief    Get the depended positive idx node of the device.
             @return   The idx.
         */
-        IntTp DepPosNodeID(void) { return _dep_nodes_ids[0]; }
+        IntTp DepPosNodeID(void) noexcept { return _dep_nodes_ids[0]; }
 
         /*!
             @brief    Get the depended negative idx node of the device.
             @return   The idx.
         */
-        IntTp DepNegNodeID(void) { return _dep_nodes_ids[1]; }
+        IntTp DepNegNodeID(void) noexcept { return _dep_nodes_ids[1]; }
 
     private:
-        std::array<IntTp, 2> _dep_nodes_ids;                   //!< The node IDs
+        std::array<IntTp, 2> _dep_nodes_ids;                   //!< The node IDs.
 };
 
 #endif // __NODE4_DEV_HPP //

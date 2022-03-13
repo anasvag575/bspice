@@ -15,7 +15,7 @@ static std::string bspice_error_report(return_codes_e errcode)
 
     switch(errcode)
     {
-        case RETURN_SUCCESS: ret_str = "Success."; break;
+        case RETURN_SUCCESS: ret_str = ""; break;
         case FAIL_ARG_NUM: ret_str += "Invalid number of input arguments. Syntax is as follows => ./bspice <filename>"; break;
 
         /* Parser */
@@ -39,9 +39,6 @@ static std::string bspice_error_report(return_codes_e errcode)
         case FAIL_SIMULATOR_SOLVE: ret_str += "Failure during backwards solving (Solve failure)."; break;
 
         /* Plotter engine opcodes - Used inside plot.cpp */
-        case FAIL_PLOTTER_CIRCUIT_INVALID: ret_str += "No circuit is loaded currently, can't plot."; break;
-        case FAIL_PLOTTER_RESULTS_INVALID: ret_str += "Results are not available, need to run simulator in order to plot."; break;
-        case FAIL_PLOTTER_NOTHING_TO_PLOT: ret_str += "Failure, nothing to plot."; break;
         case FAIL_PLOTTER_IO_OPERATIONS: ret_str += "Failure in opening plot necessary plot I/O."; break;
 
         /* Debug codes, invisible to the user */
@@ -63,7 +60,7 @@ static return_codes_e bspice_single_run(int argc, char **argv)
     return_codes_e errcode = RETURN_SUCCESS;
     std::string input_file_name(argv[1]);
 
-    /* Step 2 - Instantiate a circuit, parse and then close the file */
+    /* Step 2 - Instantiate a circuit */
     circuit circuit_manager(input_file_name);
     errcode = circuit_manager.errcode();
     if(errcode != RETURN_SUCCESS) return errcode;
@@ -94,6 +91,7 @@ int main(int argc, char **argv)
 
     /* Enter BSPICE */
     return_codes_e err = bspice_single_run(argc, argv);
-    if(err != RETURN_SUCCESS) std::cout << bspice_error_report(err) << std::endl;
+    std::cout << bspice_error_report(err) << std::endl;
+
     return err;
 }

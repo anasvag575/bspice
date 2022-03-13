@@ -24,37 +24,37 @@
     @brief  Returns whether the simulator is in a valid state or not.
     @return True, in case of active results, otherwise false.
 */
-bool simulator::valid(void) { return _run; }
+bool simulator::valid(void) noexcept { return _run; }
 
 /*!
     @brief  Returns the simulation vector used for the analysis.
     @return The simulation vector.
 */
-const std::vector<double> &simulator::SimulationVec(void) { return _mna_engine.SimVals();  }
+const std::vector<double> &simulator::SimulationVec(void) noexcept { return _mna_engine.SimVals();  }
 
 /*!
     @brief  Returns the results for the plot nodes.
     @return The results.
 */
-const std::vector<std::vector<double>> &simulator::NodesResults(void) { return _res_nodes; }
+const std::vector<std::vector<double>> &simulator::NodesResults(void) noexcept { return _res_nodes; }
 
 /*!
     @brief  Returns the results for the plot source.
     @return The results.
 */
-const std::vector<std::vector<double>> &simulator::SourceResults(void) { return _res_sources; }
+const std::vector<std::vector<double>> &simulator::SourceResults(void) noexcept { return _res_sources; }
 
 /*!
     @brief  Returns the results for the plot nodes (AC analysis).
     @return The results.
 */
-const std::vector<std::vector<std::complex<double>>> &simulator::NodesResultsCd(void) { return _res_nodes_cd; }
+const std::vector<std::vector<std::complex<double>>> &simulator::NodesResultsCd(void) noexcept { return _res_nodes_cd; }
 
 /*!
     @brief  Returns the results for the plot source (AC analysis).
     @return The results.
 */
-const std::vector<std::vector<std::complex<double>>> &simulator::SourceResultsCd(void) { return _res_sources_cd; }
+const std::vector<std::vector<std::complex<double>>> &simulator::SourceResultsCd(void) noexcept { return _res_sources_cd; }
 
 
 
@@ -79,18 +79,13 @@ simulator::simulator(circuit &circuit_manager)
 */
 return_codes_e simulator::run(void)
 {
-	using std::cout;
-	using std::chrono::high_resolution_clock;
-	using std::chrono::duration_cast;
-	using std::chrono::milliseconds;    // Accuracy for report
-
 	return_codes_e ret;
     auto analys_type = this->_mna_engine.AnalysisType();
 
 	/* Statistics */
-	auto begin = high_resolution_clock::now();
+	auto begin = std::chrono::high_resolution_clock::now();
 
-	cout << "\n[INFO]: Starting simulation...\n";
+	std::cout << "\n[INFO]: Starting simulation...\n";
 
 	/* Depending on analysis, call the appropriate sub-simulator */
 	switch(analys_type)
@@ -103,17 +98,16 @@ return_codes_e simulator::run(void)
 	}
 
 	/* Statistics */
-	auto end = high_resolution_clock::now();
+	auto end = std::chrono::high_resolution_clock::now();
 
 	if(ret == RETURN_SUCCESS)
 	{
-        cout << "************************************\n";
-        cout << "**********SIMULATION INFO***********\n";
-        cout << "************************************\n";
-	    cout << "Total simulation time: " << duration_cast<milliseconds>(end-begin).count() << "ms\n";
-//	    cout << "Total simulation points: " << this->_mna_engine.getSimDim() << "\n"; // TODO
-	    cout << "System size: " << this->_mna_engine.SystemDim() << "\n";
-	    cout << "************************************\n\n";
+	    std::cout << "************************************\n";
+	    std::cout << "**********SIMULATION INFO***********\n";
+	    std::cout << "************************************\n";
+	    std::cout << "Total simulation time: " << std::chrono::duration_cast<std::chrono::milliseconds>(end-begin).count() << "ms\n";
+	    std::cout << "System size: " << this->_mna_engine.SystemDim() << "\n";
+	    std::cout << "************************************\n\n";
 
 	    this->_run = true;
 	}
@@ -127,8 +121,6 @@ return_codes_e simulator::run(void)
 */
 return_codes_e simulator::OP_analysis(void)
 {
-    using Eigen::Success; // Eigen success value
-
 	/* Solver and matrices */
 	direct_solver solver;
 	SparMatD mat;
@@ -141,13 +133,13 @@ return_codes_e simulator::OP_analysis(void)
 	solver.compute(mat);
 
 	/* Checks */
-	if(solver.info() != Success) return FAIL_SIMULATOR_FACTORIZATION;
+	if(solver.info() != Eigen::Success) return FAIL_SIMULATOR_FACTORIZATION;
 
 	/* 3) Solve */
 	DensVecD res = solver.solve(rh);
 
 	/* Checks */
-	if(solver.info() != Success) return FAIL_SIMULATOR_SOLVE;
+	if(solver.info() != Eigen::Success) return FAIL_SIMULATOR_SOLVE;
 
 	/* Set results */
 	setPlotResults(res);
@@ -161,8 +153,6 @@ return_codes_e simulator::OP_analysis(void)
 */
 return_codes_e simulator::DC_analysis(void)
 {
-    using Eigen::Success; // Eigen success value
-
 	direct_solver solver;
 	SparMatD mat;
     DensVecD rh, sol;
@@ -174,7 +164,7 @@ return_codes_e simulator::DC_analysis(void)
     solver.compute(mat);
 
     /* Checks */
-    if(solver.info() != Success) return FAIL_SIMULATOR_FACTORIZATION;
+    if(solver.info() != Eigen::Success) return FAIL_SIMULATOR_FACTORIZATION;
 
     auto &sim_vec = this->_mna_engine.SimVals();
 
@@ -189,7 +179,7 @@ return_codes_e simulator::DC_analysis(void)
         setPlotResults(sol);
 
         /* Checks */
-        if(solver.info() != Success) return FAIL_SIMULATOR_SOLVE;
+        if(solver.info() != Eigen::Success) return FAIL_SIMULATOR_SOLVE;
     }
 
 	return RETURN_SUCCESS;
@@ -216,8 +206,6 @@ return_codes_e simulator::TRAN_analysis(void)
 */
 return_codes_e simulator::AC_analysis(void)
 {
-    using Eigen::Success; // Eigen success value
-
     direct_solver_c solver;
     SparMatCompD mat;
     DensVecCompD rh;
@@ -237,13 +225,13 @@ return_codes_e simulator::AC_analysis(void)
         solver.compute(mat);
 
         /* Checks */
-        if(solver.info() != Success) return FAIL_SIMULATOR_FACTORIZATION;
+        if(solver.info() != Eigen::Success) return FAIL_SIMULATOR_FACTORIZATION;
 
         /* Return the result */
         DensVecCompD tmp = solver.solve(rh);
         setPlotResultsCd(tmp);
 
-        if(solver.info() != Success) return FAIL_SIMULATOR_SOLVE;
+        if(solver.info() != Eigen::Success) return FAIL_SIMULATOR_SOLVE;
     }
 
 
@@ -261,8 +249,6 @@ return_codes_e simulator::AC_analysis(void)
 */
 return_codes_e simulator::TRANpresolve(SparMatD &tran_mat, SparMatD &op_mat, DensVecD &op_res)
 {
-    using Eigen::Success; // Eigen success value
-
     /* Solver */
     direct_solver solver;
 
@@ -275,13 +261,13 @@ return_codes_e simulator::TRANpresolve(SparMatD &tran_mat, SparMatD &op_mat, Den
     solver.compute(op_mat);
 
     /* Checks */
-    if(solver.info() != Success) return FAIL_SIMULATOR_FACTORIZATION;
+    if(solver.info() != Eigen::Success) return FAIL_SIMULATOR_FACTORIZATION;
 
     /* t = 0 */
     op_res = solver.solve(op_res);
 
     /* Checks */
-    if(solver.info() != Success) return FAIL_SIMULATOR_SOLVE;
+    if(solver.info() != Eigen::Success) return FAIL_SIMULATOR_SOLVE;
 
     /* Create the transient matrix */
     this->_mna_engine.CreateMNASystemTRAN(tran_mat);
@@ -295,8 +281,6 @@ return_codes_e simulator::TRANpresolve(SparMatD &tran_mat, SparMatD &op_mat, Den
 */
 return_codes_e simulator::EulerODESolve(void)
 {
-    using Eigen::Success; // Eigen success value
-
     direct_solver solver;
     SparMatD tran_mat, op_mat;
     DensVecD cur;
@@ -316,7 +300,7 @@ return_codes_e simulator::EulerODESolve(void)
     solver.compute(op_mat);
 
     /* Checks */
-    if(solver.info() != Success) return FAIL_SIMULATOR_FACTORIZATION;
+    if(solver.info() != Eigen::Success) return FAIL_SIMULATOR_FACTORIZATION;
 
     /****** 3rd step Run for each simulation timepoint ******/
 
@@ -336,7 +320,7 @@ return_codes_e simulator::EulerODESolve(void)
         setPlotResults(old);
 
         /* Checks */
-        if(solver.info() != Success) return FAIL_SIMULATOR_SOLVE;
+        if(solver.info() != Eigen::Success) return FAIL_SIMULATOR_SOLVE;
     }
 
     return RETURN_SUCCESS;
@@ -348,8 +332,6 @@ return_codes_e simulator::EulerODESolve(void)
 */
 return_codes_e simulator::TrapODESolve(void)
 {
-    using Eigen::Success; // Eigen success value
-
     direct_solver solver;
     SparMatD tran_mat, op_mat;
     DensVecD cur;
@@ -377,7 +359,7 @@ return_codes_e simulator::TrapODESolve(void)
     solver.compute(op_mat);
 
     /* Checks */
-    if(solver.info() != Success) return FAIL_SIMULATOR_FACTORIZATION;
+    if(solver.info() != Eigen::Success) return FAIL_SIMULATOR_FACTORIZATION;
 
     /****** 3rd step Run for each simulation timepoint ******/
 
@@ -393,7 +375,7 @@ return_codes_e simulator::TrapODESolve(void)
         this->_mna_engine.UpdateTRANVec(cur, sim_vector[i - 1]);
 
         /* Checks */
-        if(solver.info() != Success) return FAIL_SIMULATOR_SOLVE;
+        if(solver.info() != Eigen::Success) return FAIL_SIMULATOR_SOLVE;
 
         old = solver.solve(cur);
         setPlotResults(old);
@@ -405,8 +387,6 @@ return_codes_e simulator::TrapODESolve(void)
 //TODO - Page 147 of SPECTRE design and stuff paper, does not work seems unstable
 return_codes_e simulator::Gear2ODESolve(void)
 {
-    using Eigen::Success; // Eigen success value
-
     direct_solver solver;
     SparMatD tran_mat, op_mat, tmp_op_mat;
     DensVecD cur, nxt, old;
@@ -429,7 +409,7 @@ return_codes_e simulator::Gear2ODESolve(void)
     solver.compute(tmp_op_mat);
 
     /* Checks */
-    if(solver.info() != Success) return FAIL_SIMULATOR_FACTORIZATION;
+    if(solver.info() != Eigen::Success) return FAIL_SIMULATOR_FACTORIZATION;
 
     old = cur;
     setPlotResults(old);
@@ -443,7 +423,7 @@ return_codes_e simulator::Gear2ODESolve(void)
     setPlotResults(cur);
 
     /* Checks */
-    if(solver.info() != Success) return FAIL_SIMULATOR_SOLVE;
+    if(solver.info() != Eigen::Success) return FAIL_SIMULATOR_SOLVE;
 
     /* Common steps - Set up matrices for every side */
     op_mat = op_mat + 3/2*tran_mat;
@@ -454,7 +434,7 @@ return_codes_e simulator::Gear2ODESolve(void)
     solver.compute(op_mat);
 
     /* Checks */
-    if(solver.info() != Success) return FAIL_SIMULATOR_FACTORIZATION;
+    if(solver.info() != Eigen::Success) return FAIL_SIMULATOR_FACTORIZATION;
 
     /****** 3rd step Run for each simulation timepoint ******/
 
@@ -464,7 +444,7 @@ return_codes_e simulator::Gear2ODESolve(void)
         this->_mna_engine.UpdateTRANVec(nxt, sim_vector[i]);
 
         /* Checks */
-        if(solver.info() != Success) return FAIL_SIMULATOR_SOLVE;
+        if(solver.info() != Eigen::Success) return FAIL_SIMULATOR_SOLVE;
 
         nxt = solver.solve(nxt);
         setPlotResults(nxt);

@@ -7,6 +7,8 @@
 #include "node4_dev.hpp"
 #include "source_spec.hpp"
 
+
+
 //! The coil class, used during circuit formation.
 class coil : public node2_device{};
 

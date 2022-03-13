@@ -21,12 +21,12 @@ class simulator
         simulator(circuit &circuit_manager);
 
         /* Getters */
-		bool valid(void);
-		const std::vector<double> &SimulationVec(void);
-		const std::vector<std::vector<double>> &NodesResults(void);
-		const std::vector<std::vector<double>> &SourceResults(void);
-		const std::vector<std::vector<std::complex<double>>> &NodesResultsCd(void);
-		const std::vector<std::vector<std::complex<double>>> &SourceResultsCd(void);
+		bool valid(void) noexcept;
+		const std::vector<double> &SimulationVec(void) noexcept;
+		const std::vector<std::vector<double>> &NodesResults(void) noexcept;
+		const std::vector<std::vector<double>> &SourceResults(void) noexcept;
+		const std::vector<std::vector<std::complex<double>>> &NodesResultsCd(void) noexcept;
+		const std::vector<std::vector<std::complex<double>>> &SourceResultsCd(void) noexcept;
 
 		/* Methods */
 		return_codes_e run(void);

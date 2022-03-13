@@ -11,8 +11,8 @@ set(CMAKE_VERBOSE_MAKEFILE ON)
 set(CMAKE_CXX_COMPILER "g++")
 
 # Base Compilation parameters and flags
-#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -g -march=native -O4 -flto -Wall")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -g -march=native -O2 -Wall")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -g -march=native -O4 -flto -Wall")
+#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -g -march=native -O2 -Wall")
 
 ######################################
 #### Parameters for the simulator ####
@@ -21,7 +21,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -g -march=native -O2 -Wall")
 #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
 #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DBSPICE_EIGEN_USE_STLMAPS")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DBSPICE_EIGEN_USE_KLU")
-#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DBSPICE_GUI_ENABLED")
+#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DBSPICE_TOKENIZER_USE_REGEX")
 
 #Output to the console some info
 message(STATUS "CMAKE_BUILD_TYPE: " ${CMAKE_BUILD_TYPE})

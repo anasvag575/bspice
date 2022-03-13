@@ -7,7 +7,7 @@
 
 //! A circuit class. The purpose of this class is to represent a SPICE netlist.
 /*!
-  This class has all the information provided from the SPICE netlist. This information
+  This class has all the information provided by the SPICE netlist. This information
   includes:
   - Simulator options.
   - SPICE Elements with their respective connections.
@@ -21,39 +21,39 @@ class circuit
 		circuit(const std::string &input_file_name);
 
         /* Elements contained in the circuit */
-        const std::vector<resistor> &Resistors(void);
-        const std::vector<capacitor> &Capacitors(void);
-        const std::vector<coil> &Coils(void);
-        const std::vector<ics> &ICS(void);
-        const std::vector<ivs> &IVS(void);
-        const std::vector<vcvs> &VCVS(void);
-        const std::vector<vccs> &VCCS(void);
-        const std::vector<ccvs> &CCVS(void);
-        const std::vector<cccs> &CCCS(void);
+        const std::vector<resistor> &Resistors(void) noexcept ;
+        const std::vector<capacitor> &Capacitors(void) noexcept;
+        const std::vector<coil> &Coils(void) noexcept;
+        const std::vector<ics> &ICS(void) noexcept;
+        const std::vector<ivs> &IVS(void) noexcept;
+        const std::vector<vcvs> &VCVS(void) noexcept;
+        const std::vector<vccs> &VCCS(void) noexcept;
+        const std::vector<ccvs> &CCVS(void) noexcept;
+        const std::vector<cccs> &CCCS(void) noexcept;
 
         /* Elements/Nodes/Plot names */
-        const hashmap_str_t &Nodes(void);
-        const hashmap_str_t &ElementNames(void);
-        const std::vector<std::string> &PlotNodes(void);
-        const std::vector<std::string> &PlotSources(void);
-        const std::string &DCSource(void);
+        const hashmap_str_t &Nodes(void) noexcept;
+        const hashmap_str_t &ElementNames(void) noexcept;
+        const std::vector<std::string> &PlotNodes(void) noexcept;
+        const std::vector<std::string> &PlotSources(void) noexcept;
+        const std::string &DCSource(void) noexcept;
 
         /* Analysis specifics */
-        double SimStart(void);
-        double SimEnd(void);
-        double SimStep(void);
-        analysis_t AnalysisType(void);
-        as_scale_t AnalysisScale(void);
-        ODE_meth_t ODEMethod(void);
-        return_codes_e errcode(void);
-        bool valid(void);
+        double SimStart(void) noexcept;
+        double SimEnd(void) noexcept;
+        double SimStep(void) noexcept;
+        analysis_t AnalysisType(void) noexcept;
+        as_scale_t AnalysisScale(void) noexcept;
+        ODE_meth_t ODEMethod(void) noexcept;
+        return_codes_e errcode(void) noexcept;
+        bool valid(void) noexcept;
         void clear(void);
 
     private:
-        void init(void);
         return_codes_e setCircuitOptions(std::vector<std::string> &tokens);
         return_codes_e SPICECard(std::vector<std::string> &tokens, parser &match);
         return_codes_e verify(void);
+        return_codes_e topology(void);
 
         /* Debugging only functions */
         void debug_insert_nodes(node2_device &element);

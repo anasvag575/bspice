@@ -123,4 +123,4 @@ T linearInterpolation(std::vector<T> &vec_x, std::vector<T> &vec_y, T itrp)
 	return y0 + ((y1 - y0) / (x1 - x0)) * (itrp - x0);
 }
 
-#endif
+#endif // __MATH_UTIL_H //

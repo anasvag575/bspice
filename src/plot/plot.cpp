@@ -23,11 +23,7 @@ class GNU_plotter
         void plot(circuit &circuit_manager, simulator &simulator_manager);
 
     private:
-        FILE *_pipe;                            //! File handler for the GNUPLOT sub-process pipe.
-        std::ofstream _data_file;               //! The active output data file.
-        std::vector<std::string> _file_names;   //! The vector of all the file names used.
-
-        void next_plot(void);
+        void nextPlot(void);
         void setPlotOptions(analysis_t type, as_scale_t scale, std::string &sweep, bool source, bool mag);
         void sendPlotData(const std::vector<double> &xvals,
                           const std::vector<std::vector<double>> &yvals,
@@ -36,6 +32,10 @@ class GNU_plotter
                           const std::vector<std::vector<std::complex<double>>> &yvals,
                           bool mag, bool log);
         void finalize(const std::vector<std::string> &plotnames);
+
+        FILE *_pipe;                            //! File handler for the GNUPLOT sub-process pipe.
+        std::ofstream _data_file;               //! The active output data file.
+        std::vector<std::string> _file_names;   //! The vector of all the file names used.
 };
 
 /*!
@@ -45,9 +45,9 @@ GNU_plotter::GNU_plotter()
 {
     _pipe = popen("gnuplot -persistent", "w");
 
-    /* TODO - Check that every opening went well */
+    // TODO - Handle exceptions?
     if(!this->_pipe)
-    {  // TODO - Handle
+    {
         throw std::runtime_error("[CRITICAL ERROR]: Could not open files related to GNUPLOT");
     }
 }
@@ -69,7 +69,7 @@ GNU_plotter::~GNU_plotter()
 /*!
     @brief    Creates the next plot window.
 */
-void GNU_plotter::next_plot()
+void GNU_plotter::nextPlot()
 {
     /* Close previous file */
     if(this->_data_file) this->_data_file.close();
@@ -83,9 +83,11 @@ void GNU_plotter::next_plot()
     /* Create the new file */
     _data_file = std::ofstream(filename, std::ios::out);
 
-    /* Throw */
-    if(!this->_data_file) // TODO - Handle
+    // TODO - Handle
+    if(!this->_data_file)
+    {
         throw std::runtime_error("[CRITICAL ERROR]: Could not open files related to GNUPLOT");
+    }
 }
 
 /*!
@@ -125,11 +127,13 @@ void GNU_plotter::sendPlotData(const std::vector<double> &xvals, const std::vect
 		/* Create the columns of data */
 		if(log)
 		{
-		    for(size_t k = 0; k < tmp.size(); k++) this->_data_file << "\t" << 20 * std::log10(tmp[k]);
+		    for(size_t k = 0; k < tmp.size(); k++)
+		        this->_data_file << "\t" << 20 * std::log10(tmp[k]);
 		}
 		else
 		{
-		    for(size_t k = 0; k < tmp.size(); k++) this->_data_file << "\t" << tmp[k];
+		    for(size_t k = 0; k < tmp.size(); k++)
+		        this->_data_file << "\t" << tmp[k];
 		}
 
 		/* Next sim time */
@@ -161,17 +165,20 @@ void GNU_plotter::sendPlotData(const std::vector<double> &xvals, const std::vect
         {
             if(log)
             {
-                for(size_t k = 0; k < tmp.size(); k++) this->_data_file << "\t" << 20 * std::log10(std::abs(tmp[k]));
+                for(size_t k = 0; k < tmp.size(); k++)
+                    this->_data_file << "\t" << 20 * std::log10(std::abs(tmp[k]));
             }
             else
             {
-                for(size_t k = 0; k < tmp.size(); k++) this->_data_file << "\t" << std::abs(tmp[k]);
+                for(size_t k = 0; k < tmp.size(); k++)
+                    this->_data_file << "\t" << std::abs(tmp[k]);
             }
         }
         else
         {
             /* Arg returns in radians convert to degrees */
-            for(size_t k = 0; k < tmp.size(); k++) this->_data_file << "\t" << std::arg(tmp[k]) * 180/M_PI;
+            for(size_t k = 0; k < tmp.size(); k++)
+                this->_data_file << "\t" << std::arg(tmp[k]) * 180/M_PI;
         }
 
         /* Next sim time */
@@ -272,7 +279,7 @@ void GNU_plotter::plot(circuit &circuit_manager, simulator &simulator_manager)
     /* Get the x-values */
     auto &x_simvals = simulator_manager.SimulationVec();
 
-    /* For TRAN we have only 1 value to print */
+    /* For TRAN/DC we have only 1 value to print */
 	if(analysis_type != AC)
 	{
         /* Send */
@@ -280,7 +287,7 @@ void GNU_plotter::plot(circuit &circuit_manager, simulator &simulator_manager)
         {
             auto &res = simulator_manager.SourceResults();
 
-            this->next_plot();
+            this->nextPlot();
             sendPlotData(x_simvals, res, analysis_scale == LOG_SCALE);
             setPlotOptions(analysis_type, analysis_scale, sweep_source, true, true);
             finalize(plotsources);
@@ -291,7 +298,7 @@ void GNU_plotter::plot(circuit &circuit_manager, simulator &simulator_manager)
         {
             auto &res = simulator_manager.NodesResults();
 
-            this->next_plot();
+            this->nextPlot();
             sendPlotData(x_simvals, res, analysis_scale == LOG_SCALE);
             setPlotOptions(analysis_type, analysis_scale, sweep_source, false, true);
             finalize(plotnodes);
@@ -305,13 +312,13 @@ void GNU_plotter::plot(circuit &circuit_manager, simulator &simulator_manager)
             auto &res = simulator_manager.SourceResultsCd();
 
             /* Magnitude */
-            this->next_plot();
+            this->nextPlot();
             sendPlotData(x_simvals, res, analysis_scale == LOG_SCALE, true);
             setPlotOptions(analysis_type, analysis_scale, sweep_source, true, true);
             finalize(plotsources);
 
             /* Phase */
-            this->next_plot();
+            this->nextPlot();
             sendPlotData(x_simvals, res, false, false);
             setPlotOptions(analysis_type, analysis_scale, sweep_source, true, false);
             finalize(plotsources);
@@ -323,13 +330,13 @@ void GNU_plotter::plot(circuit &circuit_manager, simulator &simulator_manager)
             auto &res = simulator_manager.NodesResultsCd();
 
             /* Magnitude */
-            this->next_plot();
+            this->nextPlot();
             sendPlotData(x_simvals, res, analysis_scale == LOG_SCALE, true);
             setPlotOptions(analysis_type, analysis_scale, sweep_source, false, true);
             finalize(plotnodes);
 
             /* Phase */
-            this->next_plot();
+            this->nextPlot();
             sendPlotData(x_simvals, res, false, false);
             setPlotOptions(analysis_type, analysis_scale, sweep_source, false, false);
             finalize(plotnodes);
@@ -386,12 +393,8 @@ void print_cout(circuit &circuit_manager, simulator &simulator_manager)
 */
 return_codes_e plot(circuit &circuit_manager, simulator &simulator_manager)
 {
-    using std::streamsize;
-    using std::cout;
-    using std::numeric_limits;
-
     /* Set precision */
-    streamsize cout_stream_sz = cout.precision(numeric_limits<double>::digits10 + 2);
+    std::streamsize cout_stream_sz = std::cout.precision(std::numeric_limits<double>::digits10 + 2);
 
     /* OP analysis needs only printing of the values */
     if(circuit_manager.AnalysisType() != OP)
@@ -405,7 +408,7 @@ return_codes_e plot(circuit &circuit_manager, simulator &simulator_manager)
     }
 
     /* Reset precision */
-    cout.precision(cout_stream_sz);
+    std::cout.precision(cout_stream_sz);
 
     return RETURN_SUCCESS;
 }

@@ -23,17 +23,17 @@ class MNA
 {
 	public:
         /* Constructors */
-		MNA();
+		MNA() noexcept;
 		MNA(circuit &circuit_manager);
 
 		/* Getters */
-        analysis_t AnalysisType(void);
-        as_scale_t AnalysisScale(void);
-		IntTp SystemDim(void);
-        double SimStep(void);
-		const std::vector<double> &SimVals(void);
-		const std::vector<IntTp> &NodesIdx(void);
-		const std::vector<IntTp> &SourceIdx(void);
+        analysis_t AnalysisType(void) noexcept;
+        as_scale_t AnalysisScale(void) noexcept;
+		IntTp SystemDim(void) noexcept;
+        double SimStep(void) noexcept;
+		const std::vector<double> &SimVals(void) noexcept;
+		const std::vector<IntTp> &NodesIdx(void) noexcept;
+		const std::vector<IntTp> &SourceIdx(void) noexcept;
 
         /* MNA and systems formation */
         void CreateMNASystemOP(SparMatD &mat, DensVecD &rh);
@@ -43,8 +43,8 @@ class MNA
 		void UpdateTRANVec(DensVecD &rh, double time);
         void CreateMNASystemAC(SparMatCompD &mat, double freq);
         void CreateMNASystemAC(DensVecCompD &rh);
-	private:
 
+	private:
 		/* MNA stampers */
 		void ResMNAStamp(tripletList_d &mat, resistor_packed &res);
 		void CoilMNAStamp(tripletList_d &mat, IntTp offset, coil_packed &coil, const analysis_t type);

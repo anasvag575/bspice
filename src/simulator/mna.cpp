@@ -4,7 +4,7 @@
 /*!
     @brief    Default constructor.
 */
-MNA::MNA()
+MNA::MNA() noexcept
 {
     _system_dim = 0;
     _ivs_offset = 0;
@@ -40,44 +40,44 @@ MNA::MNA(circuit &circuit_manager)
     @brief      Returns the type of analysis performed.
     @return     The analysis type.
 */
-analysis_t MNA::AnalysisType(void) { return _analysis_type; }
+analysis_t MNA::AnalysisType(void) noexcept { return _analysis_type; }
 
 /*!
     @brief      Returns the type of scale used.
     @return     The scale.
 */
-as_scale_t MNA::AnalysisScale(void) { return _scale; }
+as_scale_t MNA::AnalysisScale(void) noexcept { return _scale; }
 
 /*!
     @brief      Returns the MNA system dimension.
     @return     The dimension.
 */
-IntTp MNA::SystemDim(void) { return _system_dim; }
+IntTp MNA::SystemDim(void) noexcept { return _system_dim; }
 
 /*!
     @brief      Returns the simulation step.
     @return     The simulation step.
 */
-double MNA::SimStep(void) { return _sim_step; }
+double MNA::SimStep(void) noexcept { return _sim_step; }
 
 /*!
     @brief      Returns the vectors containing the simulation
     values.
     @return     The vector.
 */
-const std::vector<double> &MNA::SimVals(void) { return _sim_vals; }
+const std::vector<double> &MNA::SimVals(void) noexcept { return _sim_vals; }
 
 /*!
     @brief      Returns the nodes indices vector, according to plot order.
     @return     The indices vector.
 */
-const std::vector<IntTp> &MNA::NodesIdx(void) { return _nodes_idx; }
+const std::vector<IntTp> &MNA::NodesIdx(void) noexcept { return _nodes_idx; }
 
 /*!
     @brief      Returns the sources indices vector, according to plot order.
     @return     The indices vector.
 */
-const std::vector<IntTp> &MNA::SourceIdx(void) { return _sources_idx; }
+const std::vector<IntTp> &MNA::SourceIdx(void) noexcept { return _sources_idx; }
 
 
 
