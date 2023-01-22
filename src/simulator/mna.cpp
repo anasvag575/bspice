@@ -702,7 +702,7 @@ void MNA::UpdateTRANVec(DensVecD &rh, double time)
 			case CONSTANT_SOURCE: val = it.Val(); break;
 			case EXP_SOURCE: val = EXPSourceEval(vvals, time); break;
 			case SINE_SOURCE: val = SINSourceEval(vvals, time); break;
-            case PWL_SOURCE: val = PWLSourceEval(it.TranTimes(), vvals, time); break;
+			case PWL_SOURCE: val = PWLSourceEval(it.TranTimes(), vvals, time); break;
 			case PULSE_SOURCE: val = PULSESourceEval(vvals, time); break;
 			default: val = 0; // Will never reach here
 		}
@@ -776,17 +776,17 @@ void MNA::CreateMNASystemOP(SparMatD &mat, DensVecD &rh)
 		coil_start++;
 	}
 
-    for(auto &it : this->_vcvs)
-    {
-        VcvsMNAStamp(triplet_mat, vcvs_start, it);
-        vcvs_start++;
-    }
+	for(auto &it : this->_vcvs)
+	{
+		VcvsMNAStamp(triplet_mat, vcvs_start, it);
+		vcvs_start++;
+	}
 
-    for(auto &it : this->_ccvs)
-    {
-        CcvsMNAStamp(triplet_mat, ccvs_start, it);
-        ccvs_start++;
-    }
+	for(auto &it : this->_ccvs)
+	{
+		CcvsMNAStamp(triplet_mat, ccvs_start, it);
+		ccvs_start++;
+	}
 
 	/* 2) Compress the matrix into its final form */
 	mat.resize(mat_sz, mat_sz);
@@ -827,10 +827,10 @@ void MNA::CreateMNASystemDC(SparMatD &mat, DenseMatD &rhs)
 */
 void MNA::UpdateMNASystemDCVec(DensVecD &rh, double sweep_val)
 {
-    IntTp sweep_idx = this->_sweep_source_idx;
+	IntTp sweep_idx = this->_sweep_source_idx;
 
-    /* Update only the sweep value */
-    rh[sweep_idx] = sweep_val;
+	/* Update only the sweep value */
+	rh[sweep_idx] = sweep_val;
 }
 
 /*!

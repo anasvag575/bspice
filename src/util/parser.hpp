@@ -95,7 +95,9 @@ class parser
         const std::regex _alphanumeric = std::regex("[[:alnum:]]+", std::regex_constants::icase);
 
         /** Regex pattern used for decimal numbers. */
-        const std::regex _decimal_number = std::regex("([[:digit:]]+)(\\.[[:digit:]]+)?(E[+-][[:digit:]]+)?", std::regex_constants::icase);
+        // TODO - Fix regular expressions
+        //const std::regex _decimal_number = std::regex("^[+-]?([0-9]+([.][0-9]*)?|[.][0-9]+)$", std::regex_constants::icase);
+        const std::regex _decimal_number = std::regex("([-+])?([[:digit:]]+)(\\.[[:digit:]]+)?(E[+-][[:digit:]]+)?", std::regex_constants::icase);
 
         /** Regex pattern used for integer numbers. */
         const std::regex _integer_number = std::regex("([[:digit:]]+)(E[+-][[:digit:]]+)?", std::regex_constants::icase);
